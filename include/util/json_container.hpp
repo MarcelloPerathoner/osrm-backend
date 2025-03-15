@@ -37,6 +37,8 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <variant>
 #include <vector>
 
+#include "util/typedefs.hpp"
+
 namespace osrm::util::json
 {
 
@@ -70,6 +72,38 @@ struct Number
 };
 
 /**
+ * Typed signed integer.
+ *
+ * This one must be explicitly requested. eg.:
+ *
+ *   util::json::Integer{-42}
+ */
+struct Integer
+{
+    Integer() = default;
+    explicit Integer(long long value_) : value{value_} {}
+    long long value;
+};
+
+/**
+ * Typed unsigned integer.
+ *
+ * This one must be explicitly requested for numbers, eg.:
+ *
+ *   util::json::Unsigned{42}
+ *
+ * It will be automatically selected for OSMNodeID and OSMWayID.
+ */
+struct Unsigned
+{
+    Unsigned() = default;
+    explicit Unsigned(unsigned long long value_) : value{value_} {}
+    Unsigned(OSMNodeID value_) : value{from_alias<uint64_t>(value_) } {}
+    Unsigned(OSMWayID value_) : value{from_alias<uint64_t>(value_) } {}
+    unsigned long long value;
+};
+
+/**
  * Typed True.
  */
 struct True
@@ -95,7 +129,7 @@ struct Null
  *
  * Dispatch on its type by either by using apply_visitor or its get function.
  */
-using Value = std::variant<String, Number, Object, Array, True, False, Null>;
+using Value = std::variant<String, Number, Integer, Unsigned, Object, Array, True, False, Null>;
 
 /**
  * Typed Object.

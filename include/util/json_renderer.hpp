@@ -46,6 +46,20 @@ template <typename Out> struct Renderer
         write('"');
     }
 
+    void operator()(const Unsigned &number)
+    {
+        fmt::memory_buffer buffer;
+        fmt::format_to(std::back_inserter(buffer), FMT_COMPILE("{}"), number.value);
+        write(buffer.data(), buffer.size());
+    }
+
+    void operator()(const Integer &number)
+    {
+        fmt::memory_buffer buffer;
+        fmt::format_to(std::back_inserter(buffer), FMT_COMPILE("{}"), number.value);
+        write(buffer.data(), buffer.size());
+    }
+
     void operator()(const Number &number)
     {
         // we don't want to print NaN or Infinity

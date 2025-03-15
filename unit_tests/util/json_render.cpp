@@ -17,12 +17,51 @@ BOOST_AUTO_TEST_CASE(number_truncating)
     BOOST_CHECK_EQUAL(str, "42.99959996");
 }
 
-BOOST_AUTO_TEST_CASE(integer)
+BOOST_AUTO_TEST_CASE(explicit_integer)
 {
-    std::string str;
-    Renderer<std::string> renderer(str);
-    renderer(Number{42.0});
-    BOOST_CHECK_EQUAL(str, "42");
+    std::string output;
+    Renderer<std::string> renderer(output);
+
+    renderer(Integer{42});
+    BOOST_CHECK_EQUAL(output, "42");
+
+    output.clear();
+    renderer(Integer{-42});
+    BOOST_CHECK_EQUAL(output, "-42");
+
+    output.clear();
+    renderer(Integer{std::numeric_limits<int64_t>::min()});
+    BOOST_CHECK_EQUAL(output, "-9223372036854775808");
+
+    output.clear();
+    renderer(Integer{std::numeric_limits<int64_t>::max()});
+    BOOST_CHECK_EQUAL(output, "9223372036854775807");
+}
+
+BOOST_AUTO_TEST_CASE(explicit_unsigned)
+{
+    std::string output;
+    osrm::util::json::Renderer<std::string> renderer(output);
+
+    renderer(Unsigned{std::numeric_limits<uint64_t>::min()});
+    BOOST_CHECK_EQUAL(output, "0");
+
+    output.clear();
+    renderer(Unsigned{std::numeric_limits<uint64_t>::max()});
+    BOOST_CHECK_EQUAL(output, "18446744073709551615");
+}
+
+BOOST_AUTO_TEST_CASE(implicit_osm_id)
+{
+    std::string output;
+    osrm::util::json::Renderer<std::string> renderer(output);
+
+    renderer(OSMNodeID{std::numeric_limits<uint64_t>::min()});
+    BOOST_CHECK_EQUAL(output, "0");
+
+    output.clear();
+    renderer(OSMNodeID{std::numeric_limits<uint64_t>::max()});
+    BOOST_CHECK_EQUAL(output, "18446744073709551615");
 }
 
 BOOST_AUTO_TEST_CASE(test_json_issue_6531)
