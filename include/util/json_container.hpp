@@ -98,8 +98,8 @@ struct Unsigned
 {
     Unsigned() = default;
     explicit Unsigned(unsigned long long value_) : value{value_} {}
-    Unsigned(OSMNodeID value_) : value{from_alias<uint64_t>(value_) } {}
-    Unsigned(OSMWayID value_) : value{from_alias<uint64_t>(value_) } {}
+    Unsigned(OSMNodeID value_) : value{from_alias<uint64_t>(value_)} {}
+    Unsigned(OSMWayID value_) : value{from_alias<uint64_t>(value_)} {}
     unsigned long long value;
 };
 

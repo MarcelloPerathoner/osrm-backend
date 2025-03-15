@@ -45,8 +45,8 @@ struct Comparator
         bool is_same = lhs.value == rhs.value;
         if (!is_same)
         {
-            reason = lhs_path + " (= " + std::to_string(lhs.value) +
-                     ") != " + rhs_path + " (= " + std::to_string(rhs.value) + ")";
+            reason = lhs_path + " (= " + std::to_string(lhs.value) + ") != " + rhs_path +
+                     " (= " + std::to_string(rhs.value) + ")";
         }
         return is_same;
     }
@@ -56,8 +56,8 @@ struct Comparator
         bool is_same = lhs.value == rhs.value;
         if (!is_same)
         {
-            reason = lhs_path + " (= " + std::to_string(lhs.value) +
-                     ") != " + rhs_path + " (= " + std::to_string(rhs.value) + ")";
+            reason = lhs_path + " (= " + std::to_string(lhs.value) + ") != " + rhs_path +
+                     " (= " + std::to_string(rhs.value) + ")";
         }
         return is_same;
     }
