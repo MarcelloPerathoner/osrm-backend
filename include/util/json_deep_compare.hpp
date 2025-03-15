@@ -40,6 +40,28 @@ struct Comparator
         return is_same;
     }
 
+    bool operator()(const Integer &lhs, const Integer &rhs) const
+    {
+        bool is_same = lhs.value == rhs.value;
+        if (!is_same)
+        {
+            reason = lhs_path + " (= " + std::to_string(lhs.value) + ") != " + rhs_path +
+                     " (= " + std::to_string(rhs.value) + ")";
+        }
+        return is_same;
+    }
+
+    bool operator()(const Unsigned &lhs, const Unsigned &rhs) const
+    {
+        bool is_same = lhs.value == rhs.value;
+        if (!is_same)
+        {
+            reason = lhs_path + " (= " + std::to_string(lhs.value) + ") != " + rhs_path +
+                     " (= " + std::to_string(rhs.value) + ")";
+        }
+        return is_same;
+    }
+
     bool operator()(const Object &lhs, const Object &rhs) const
     {
         std::set<std::string_view> lhs_keys;
