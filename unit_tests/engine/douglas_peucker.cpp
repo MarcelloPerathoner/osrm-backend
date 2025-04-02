@@ -33,10 +33,7 @@ BOOST_AUTO_TEST_CASE(removed_middle_test)
         x       x
     */
     std::vector<util::Coordinate> coordinates = {
-        util::Coordinate{util::FloatLongitude{5}, util::FloatLatitude{5}},
-        util::Coordinate{util::FloatLongitude{12.5}, util::FloatLatitude{12.6096298302}},
-        util::Coordinate{util::FloatLongitude{20}, util::FloatLatitude{20}},
-        util::Coordinate{util::FloatLongitude{25}, util::FloatLatitude{5}}};
+        5_lon + 5_lat, 12.5_lon + 12.6096298302_lat, 20_lon + 20_lat, 25_lon + 5_lat};
 
     for (unsigned z = 0; z < detail::DOUGLAS_PEUCKER_THRESHOLDS_SIZE; z++)
     {
@@ -58,10 +55,7 @@ BOOST_AUTO_TEST_CASE(removed_middle_test_zoom_sensitive)
         x       x
     */
     std::vector<util::Coordinate> coordinates = {
-        util::Coordinate{util::FloatLongitude{5}, util::FloatLatitude{5}},
-        util::Coordinate{util::FloatLongitude{6}, util::FloatLatitude{6}},
-        util::Coordinate{util::FloatLongitude{20}, util::FloatLatitude{20}},
-        util::Coordinate{util::FloatLongitude{25}, util::FloatLatitude{5}}};
+        5_lon + 5_lat, 6_lon + 6_lat, 20_lon + 20_lat, 25_lon + 5_lat};
 
     // Coordinate 6,6 should start getting included at Z9 and higher
     // Note that 5,5->6,6->10,10 is *not* a straight line on the surface
@@ -98,15 +92,13 @@ BOOST_AUTO_TEST_CASE(remove_second_node_test)
                 |
                 x
         */
-        std::vector<util::Coordinate> input = {
-            util::Coordinate{util::FloatLongitude{5}, util::FloatLatitude{5}},
-            util::Coordinate{util::FloatLongitude{5 + delta_pixel_to_delta_degree(2, z)},
-                             util::FloatLatitude{5}},
-            util::Coordinate{util::FloatLongitude{10}, util::FloatLatitude{10}},
-            util::Coordinate{util::FloatLongitude{5}, util::FloatLatitude{15}},
-            util::Coordinate{util::FloatLongitude{5},
-                             util::FloatLatitude{15 + delta_pixel_to_delta_degree(2, z)}}};
-        BOOST_TEST_MESSAGE("Delta (" << z << "): " << delta_pixel_to_delta_degree(2, z));
+        double delta = delta_pixel_to_delta_degree(2, z);
+        std::vector<util::Coordinate> input = {5_lon + 5_lat,
+                                               5_lon + 5_lat + 1_lon * delta,
+                                               10_lon + 10_lat,
+                                               5_lon + 15_lat,
+                                               5_lon + 15_lat + 1_lat * delta};
+        BOOST_TEST_MESSAGE("Delta (" << z << "): " << delta);
         auto result = douglasPeucker(input, z);
         BOOST_CHECK_EQUAL(result.size(), 3);
         BOOST_CHECK_EQUAL(input[0], result[0]);

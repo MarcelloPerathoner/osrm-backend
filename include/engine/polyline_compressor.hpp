@@ -68,9 +68,9 @@ std::vector<util::Coordinate> decodePolyline(const std::string &polyline)
         latitude += dlat;
         longitude += dlon;
 
-        coordinates.emplace_back(util::Coordinate{
+        coordinates.emplace_back(
             util::FixedLongitude{static_cast<std::int32_t>(longitude * polyline_to_coordinate)},
-            util::FixedLatitude{static_cast<std::int32_t>(latitude * polyline_to_coordinate)}});
+            util::FixedLatitude{static_cast<std::int32_t>(latitude * polyline_to_coordinate)});
     }
     return coordinates;
 }

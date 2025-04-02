@@ -393,13 +393,13 @@ double computeArea(const std::vector<Coordinate> &polygon)
     // For closed curves it corresponds to the shoelace algorithm for polygon areas
     double area = 0.;
     auto first = polygon.begin();
-    auto previous_base = util::Coordinate{first->lon, ref_latitude};
+    Coordinate previous_base{first->lon, ref_latitude};
     auto previous_y = greatCircleDistance(previous_base, *first);
     for (++first; first != polygon.end(); ++first)
     {
         BOOST_ASSERT(first->lat >= ref_latitude);
 
-        const auto current_base = util::Coordinate{first->lon, ref_latitude};
+        const Coordinate current_base{first->lon, ref_latitude};
         const auto current_y = greatCircleDistance(current_base, *first);
         const auto chunk_area =
             greatCircleDistance(previous_base, current_base) * (previous_y + current_y);

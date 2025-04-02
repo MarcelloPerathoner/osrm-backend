@@ -88,10 +88,10 @@ class GPSTraces
             }
 
             trackIDs.insert(trackID);
-            traces[trackID].emplace_back(osrm::util::Coordinate{
-                osrm::util::FloatLongitude{longitude}, osrm::util::FloatLatitude{latitude}});
-            coordinates.emplace_back(osrm::util::Coordinate{osrm::util::FloatLongitude{longitude},
-                                                            osrm::util::FloatLatitude{latitude}});
+            traces[trackID].emplace_back(osrm::util::FloatLongitude{longitude},
+                                         osrm::util::FloatLatitude{latitude});
+            coordinates.emplace_back(osrm::util::FloatLongitude{longitude},
+                                     osrm::util::FloatLatitude{latitude});
         }
 
         file.close();

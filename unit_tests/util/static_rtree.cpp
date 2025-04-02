@@ -101,7 +101,7 @@ template <unsigned NUM_NODES, unsigned NUM_EDGES> struct RandomGraphFixture
         {
             int lon = lon_udist(g);
             int lat = lat_udist(g);
-            coords.emplace_back(Coordinate(FixedLongitude{lon}, FixedLatitude{lat}));
+            coords.emplace_back(FixedLongitude{lon}, FixedLatitude{lat});
         }
 
         std::uniform_int_distribution<> edge_udist(0, coords.size() - 1);
