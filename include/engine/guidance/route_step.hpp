@@ -43,7 +43,7 @@ struct IntermediateIntersection
 
 inline IntermediateIntersection getInvalidIntersection()
 {
-    return {util::Coordinate{util::FloatLongitude{0.0}, util::FloatLatitude{0.0}},
+    return {{},
             {},
             {},
             IntermediateIntersection::NO_INDEX,

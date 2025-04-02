@@ -15,7 +15,6 @@ env:
   CCACHE_TEMPDIR: /tmp/.ccache-temp
   CCACHE_COMPRESS: 1
   CASHER_TIME_OUT: 599 # one second less than 10m to avoid 10m timeout error: https://github.com/Project-OSRM/osrm-backend/issues/2742
-  CMAKE_VERSION: 3.21.2
   ENABLE_NODE_BINDINGS: "ON"
 
 concurrency:
@@ -31,7 +30,10 @@ jobs:
       BUILD_TYPE: Release
     steps:
     - uses: actions/checkout@v4
-    - run: cmake --version
+    - name: Fix cmake 4.x compatibility issue
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.x'
     - uses: actions/setup-node@v4
       with:
         node-version: 18
@@ -57,7 +59,7 @@ jobs:
 
         cmake -DCMAKE_BUILD_TYPE=Release -DENABLE_CONAN=ON -DENABLE_NODE_BINDINGS=ON ..
         cmake --build . --config Release
-        
+
     # TODO: MSVC goes out of memory when building our tests
     # - name: Run tests
     #   shell: bash
@@ -97,6 +99,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
+    - name: Fix cmake 4.x compatibility issue
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.x'
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
@@ -130,6 +136,10 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+      - name: Fix cmake 4.x compatibility issue
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.x'
       - name: Enable osm.pbf cache
         uses: actions/cache@v4
         with:
@@ -331,7 +341,7 @@ jobs:
             build_node_package: true
             continue-on-error: true
             node: 22
-            runs-on: macos-15 # arm64 
+            runs-on: macos-15 # arm64
             BUILD_TYPE: Release
             CCOMPILER: clang
             CXXCOMPILER: clang++
@@ -362,6 +372,10 @@ jobs:
       ENABLE_LTO: ${{ matrix.ENABLE_LTO }}
     steps:
     - uses: actions/checkout@v4
+    - name: Fix cmake 4.x compatibility issue
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.x'
     - name: Build machine architecture
       run: uname -m
     - name: Use Node.js
@@ -419,7 +433,7 @@ jobs:
         fi
     # See: https://github.com/actions/toolkit/issues/946#issuecomment-1590016041
     # We need it to be able to access system folders while restoring cached Boost below
-    - name: Give tar root ownership 
+    - name: Give tar root ownership
       if: runner.os == 'Linux' && matrix.ENABLE_CONAN != 'ON'
       run: sudo chown root /bin/tar && sudo chmod u+s /bin/tar
 
@@ -429,7 +443,7 @@ jobs:
       id: install-boost
       with:
         boost_version: 1.85.0
-    
+
     - name: Install dev dependencies
       run: |
         # workaround for issue that GitHub Actions seems to not adding it to PATH after https://github.com/actions/runner-images/pull/6499
@@ -498,6 +512,7 @@ jobs:
         fi
 
         ccache --zero-stats
+        cmake --version
         cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                  -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
                  -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
