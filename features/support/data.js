@@ -137,6 +137,16 @@ module.exports = function () {
     return fromNode;
   };
 
+  this.findNodeById = (id) => {
+    return this.idNodeHash[id.toString()];
+  };
+
+  this.nodeNameById = (id) => {
+    const fromNode = this.findNodeById(id) || {};
+    const tags = fromNode.tags || {};
+    return tags.name || '?';
+  };
+
   // find a node based on an array containing lon/lat
   this.findNodeByLocation = (node_location) => {
     var searched_coordinate = new classes.Location(node_location[0],node_location[1]);
@@ -167,6 +177,7 @@ module.exports = function () {
   this.resetOSM = () => {
     this.OSMDB.clear();
     this.nameNodeHash = {};
+    this.idNodeHash = {};
     this.locationHash = {};
     this.shortcutsHash = {};
     this.nameWayHash = {};
