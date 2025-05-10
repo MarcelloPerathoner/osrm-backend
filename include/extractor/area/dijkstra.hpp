@@ -59,12 +59,14 @@ template <class vertex_t> class DijkstraImpl
      */
     size_t add_vertex(const vertex_t &v)
     {
-        if (seen_vertices.contains(v))
-            return seen_vertices.at(v);
         size_t pos = vertices.size();
-        seen_vertices.emplace(v, pos);
-        vertices.push_back(v);
-        return pos;
+        auto [_, inserted] = seen_vertices.emplace(v, pos);
+        if (inserted)
+        {
+            vertices.push_back(v);
+            return pos;
+        }
+        return seen_vertices.at(v);
     };
 
     /**

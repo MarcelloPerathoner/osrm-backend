@@ -4,7 +4,6 @@
 #include "extractor/area/area_manager.hpp"
 #include "extractor/extraction_node.hpp"
 #include "extractor/extraction_way.hpp"
-#include "extractor/internal_extractor_edge.hpp"
 #include "extractor/maneuver_override.hpp"
 #include "extractor/obstacles.hpp"
 #include "extractor/profile_properties.hpp"
@@ -88,6 +87,7 @@ class ScriptingEnvironment
 
     ObstacleMap m_obstacle_map; // The obstacle map shared by all threads.
     area::AreaManager m_area_manager;
+    ExtractionRelationContainer m_extracted_relations;
 };
 } // namespace extractor
 } // namespace osrm

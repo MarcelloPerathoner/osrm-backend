@@ -112,15 +112,19 @@ Argument | Type     | Notes
 ---------|----------|-------------------------------------------
 way      | OSMWay   | The same way as passed into `process_way`.
 
-#### area_manager:get_relations(way)
-Call this function inside `process_way()`.  If this way is a member of a relation that
-was registered for meshing, that relation will be returned. Since the member ways of a
-multipolygon relation are as a rule untagged, you have to copy at least the defining tag
-(and maybe the name) from the relation to the way. OSRM discards untagged ways.
+#### area_manager:get_relations(node), area_manager:get_relations(way)
+Call this functions inside `process_node()` and `process_way()` respectively.  If this
+node or way is a member of a relation that was registered for meshing, those relations
+will be returned.
+
+Since the member ways of a multipolygon relation are as a rule untagged, and since OSRM
+discards untagged ways, you have to copy at least the defining tag (and maybe the name
+tags) from the relation to the way.
 
 Argument | Type     | Notes
----------|----------|-------------------------------------------
-way      | OSMWay   | The same way as passed into `process_way`.
+---------|----------|-----------------------------------------------
+node     | OSMNode  | The same node as passed into `process_node()`.
+way      | OSMWay   | The same way as passed into `process_way()`.
 
 Usage example:
 

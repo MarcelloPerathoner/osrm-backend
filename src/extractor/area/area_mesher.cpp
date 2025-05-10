@@ -21,6 +21,7 @@
 
 #include <algorithm>
 #include <osmium/osm/node_ref.hpp>
+#include <osmium/osm/relation.hpp>
 #include <osmium/osm/types.hpp>
 
 namespace osrm::extractor::area
@@ -117,7 +118,7 @@ void AreaMesher::init(const AreaManager &manager, const extractor::ExtractionCon
     {
         get_all_node_ids(way_id);
     }
-    for (auto way_id : manager.m_ring_of)
+    for (auto way_id : manager.m_way_relation)
     {
         get_all_node_ids(way_id.first);
     }
@@ -255,14 +256,6 @@ NodeRefSet AreaMesher::get_obstacle_vertices(const OsmiumPolygon &poly)
     return obstacle_vertices;
 }
 
-ExtractionRelationContainer::RelationIDList
-AreaMesher::get_relations(const osmium::Area &area, const ExtractionRelationContainer &relations)
-{
-    osmium::object_id_type id = area.id();
-    osmium::item_type type = (id & 1) ? osmium::item_type::relation : osmium::item_type::way;
-    return relations.GetRelations({id / 2, type});
-}
-
 /**
  * Meshes one area into the output buffer.
  */
@@ -270,10 +263,10 @@ void AreaMesher::mesh_area(const osmium::Area &area,
                            osmium::memory::Buffer &out_buffer,
                            ExtractionRelationContainer &relations)
 {
-    const char *name = area.get_value_by_key("name", "noname");
-    util::Log(logINFO) << "Meshing area: " << name << " id: " << area.orig_id();
+    util::Log(logINFO) << "Meshing area: " << area.get_value_by_key("name", "noname")
+                       << " id: " << area.orig_id();
 
-    ExtractionRelationContainer::RelationIDList rel_ids = get_relations(area, relations);
+    auto rel_ids = relations.GetRelationsFor(area);
 
     // add the segments to the output buffer
     auto add_to_buffer =
@@ -294,7 +287,7 @@ void AreaMesher::mesh_area(const osmium::Area &area,
                 // if the original item was part of a relation, the generated ways
                 // should be part of that relation too, eg. a hiking route crossing a
                 // pedestrian area
-                relations.AddRelationMember(rel_id, {next_way_id, osmium::item_type::way});
+                relations.AddRelationMember(rel_id, next_way_id, osmium::item_type::way);
             }
             --next_way_id;
             ++added_ways;
@@ -380,8 +373,8 @@ void AreaMesher::mesh_area(const osmium::Area &area,
 };
 
 /**
- * Penalty added to generated segments. Generated segments are kept only if they are
- * somewhat shorter than following the area perimeter.
+ * Penalty added to generated segments. Virtual ways will be inserted only if they allow
+ * a shorter route than the existing ways.
  */
 const double PENALTY = 1.1;
 

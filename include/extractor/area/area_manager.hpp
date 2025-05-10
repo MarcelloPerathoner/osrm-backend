@@ -37,12 +37,10 @@ class AreaManager
 
     void way(const osmium::Way &way);
     void relation(const osmium::Relation &relation);
-    bool new_member(const osmium::Relation &,
-                    const osmium::RelationMember &member,
-                    std::size_t /*n*/) const noexcept;
     void prepare_for_lookup(extractor::NodeLocationsForWays &node_locations_for_ways);
     bool is_registered_closed_way(osmium::object_id_type way_id) const;
-    ExtractionRelationContainer::RelationIDList get_relations(const osmium::Way &way) const;
+    ExtractionRelationContainer::RelationIDList get_relations_node(const osmium::Node &) const;
+    ExtractionRelationContainer::RelationIDList get_relations_way(const osmium::Way &) const;
 
     void complete_relation(const osmium::Relation &relation);
     void after_way(const osmium::Way &way);
@@ -55,8 +53,10 @@ class AreaManager
      * registered for meshing. They are also used for collecting the intersecting ways.
      */
     tbb::concurrent_vector<osmium::object_id_type> registered_closed_ways;
-    /** way_id -> rel_id: if way is a ring of rel */
-    tbb::concurrent_map<osmium::object_id_type, osmium::object_id_type> m_ring_of;
+    /** Map of way_id -> rel_id: if way is a member of rel */
+    tbb::concurrent_map<osmium::object_id_type, osmium::object_id_type> m_way_relation;
+    /** Map of node_id -> rel_id: if node is a member of rel */
+    tbb::concurrent_map<osmium::object_id_type, osmium::object_id_type> m_node_relation;
 };
 
 } // namespace osrm::extractor::area

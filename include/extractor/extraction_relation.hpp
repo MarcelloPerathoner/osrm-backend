@@ -3,201 +3,141 @@
 
 #include "util/exception.hpp"
 
-#include <osmium/osm/relation.hpp>
-
 #include <boost/assert.hpp>
+#include <boost/flyweight.hpp>
+#include <boost/flyweight/no_tracking.hpp>
 
+#include <osmium/osm/area.hpp>
+#include <osmium/osm/item_type.hpp>
+#include <osmium/osm/node.hpp>
+#include <osmium/osm/object.hpp>
+#include <osmium/osm/relation.hpp>
+#include <osmium/osm/types.hpp>
+#include <osmium/osm/way.hpp>
+
+#include <oneapi/tbb/concurrent_map.h>
+#include <oneapi/tbb/mutex.h>
+
+#include <osmium/storage/item_stash.hpp>
 #include <string>
-#include <unordered_map>
 #include <vector>
 
 namespace osrm::extractor
 {
 
-struct ExtractionRelation
-{
-    class OsmIDTyped
-    {
-      public:
-        OsmIDTyped(osmium::object_id_type _id, osmium::item_type _type) : id(_id), type(_type) {}
-
-        std::uint64_t GetID() const { return std::uint64_t(id); }
-        osmium::item_type GetType() const { return type; }
-
-        std::uint64_t Hash() const { return id ^ (static_cast<std::uint64_t>(type) << 56); }
-
-      private:
-        osmium::object_id_type id;
-        osmium::item_type type;
-    };
-
-    using AttributesList = std::vector<std::pair<std::string, std::string>>;
-    using MembersRolesList = std::vector<std::pair<std::uint64_t, std::string>>;
-
-    explicit ExtractionRelation(const OsmIDTyped &_id) : id(_id) {}
-    ExtractionRelation() : id{-1, osmium::item_type::relation} {};
-
-    void Clear()
-    {
-        attributes.clear();
-        members_role.clear();
-    }
-
-    const char *GetAttr(const std::string &attr) const
-    {
-        auto it = std::lower_bound(
-            attributes.begin(), attributes.end(), std::make_pair(attr, std::string()));
-
-        if (it != attributes.end() && (*it).first == attr)
-            return (*it).second.c_str();
-
-        return nullptr;
-    }
-
-    void Prepare()
-    {
-        std::sort(attributes.begin(), attributes.end());
-        std::sort(members_role.begin(), members_role.end());
-    }
-
-    void AddMember(const OsmIDTyped &member_id, const char *role)
-    {
-        members_role.emplace_back(std::make_pair(member_id.Hash(), std::string(role)));
-    }
-
-    const char *GetRole(const OsmIDTyped &member_id) const
-    {
-        const auto hash = member_id.Hash();
-        auto it = std::lower_bound(
-            members_role.begin(), members_role.end(), std::make_pair(hash, std::string()));
-
-        if (it != members_role.end() && (*it).first == hash)
-            return (*it).second.c_str();
-
-        return nullptr;
-    }
-
-    OsmIDTyped id;
-    AttributesList attributes;
-    MembersRolesList members_role;
-};
-
 // It contains data of all parsed relations for each node/way element
 class ExtractionRelationContainer
 {
   public:
-    using AttributesMap = ExtractionRelation::AttributesList;
-    using OsmIDTyped = ExtractionRelation::OsmIDTyped;
-    using RelationList = std::vector<AttributesMap>;
-    using RelationIDList = std::vector<ExtractionRelation::OsmIDTyped>;
-    using RelationRefMap = std::unordered_map<std::uint64_t, RelationIDList>;
+    using rel_id_type = osmium::object_id_type;
+    using handle_type = osmium::ItemStash::handle_type;
+    using mutex_type = tbb::mutex;
+
+    using RelationIDList = std::vector<rel_id_type>;
+    using id_and_type = std::pair<osmium::object_id_type, osmium::item_type>;
+
+    using RelationHandleMap = tbb::concurrent_map<rel_id_type, handle_type>;
+    using MemberRelationMap = tbb::concurrent_map<id_and_type, RelationIDList>;
 
     ExtractionRelationContainer() = default;
-    ExtractionRelationContainer(ExtractionRelationContainer &&) = default;
+    ExtractionRelationContainer(ExtractionRelationContainer &&) = delete;
     ExtractionRelationContainer(const ExtractionRelationContainer &) = delete;
 
-    void AddRelation(ExtractionRelation &&rel)
+    void AddRelation(const osmium::Relation &rel)
     {
-        rel.Prepare();
-
-        BOOST_ASSERT(relations_data.find(rel.id.GetID()) == relations_data.end());
-        relations_data.insert(std::make_pair(rel.id.GetID(), std::move(rel)));
-    }
-
-    void AddRelationMember(const OsmIDTyped &relation_id, const OsmIDTyped &member_id)
-    {
-        switch (member_id.GetType())
+        BOOST_ASSERT(handles.find(rel.id()) == handles.end());
+        for (auto const &m : rel.members())
         {
-        case osmium::item_type::node:
-            node_refs[member_id.GetID()].push_back(relation_id);
-            break;
-
-        case osmium::item_type::way:
-            way_refs[member_id.GetID()].push_back(relation_id);
-            break;
-
-        case osmium::item_type::relation:
-            rel_refs[member_id.GetID()].push_back(relation_id);
-            break;
-
-        default:
-            break;
-        };
-    }
-
-    void Merge(ExtractionRelationContainer &&other)
-    {
-        for (auto it : other.relations_data)
-        {
-            const auto res = relations_data.insert(std::make_pair(it.first, std::move(it.second)));
-            BOOST_ASSERT(res.second);
-            (void)res; // prevent unused warning in release
+            AddRelationMember(rel.id(), m.ref(), m.type());
         }
 
-        auto MergeRefMap = [&](RelationRefMap &source, RelationRefMap &target)
+        handle_type handle;
         {
-            for (auto it : source)
-            {
-                auto &v = target[it.first];
-                v.insert(v.end(), it.second.begin(), it.second.end());
-            }
-        };
-
-        MergeRefMap(other.way_refs, way_refs);
-        MergeRefMap(other.node_refs, node_refs);
-        MergeRefMap(other.rel_refs, rel_refs);
+            mutex_type::scoped_lock lock(mutex);
+            handle = stash.add_item(rel);
+        }
+        handles.emplace(rel.id(), handle);
     }
 
-    std::size_t GetRelationsNum() const { return relations_data.size(); }
-
-    const RelationIDList &GetRelations(const OsmIDTyped &member_id) const
+    void
+    AddRelationMember(rel_id_type relation_id, osmium::object_id_type id, osmium::item_type type)
     {
-        auto getFromMap = [this](std::uint64_t id,
-                                 const RelationRefMap &map) -> const RelationIDList &
+        parents[id_and_type{id, type}].push_back(relation_id);
+    }
+
+    std::size_t GetRelationsNum() const { return handles.size(); }
+
+    const RelationIDList &_GetRelationsFor(osmium::object_id_type id, osmium::item_type type) const
+    {
+        if (type == osmium::item_type::area)
         {
-            auto it = map.find(id);
-            if (it != map.end())
-                return it->second;
-
-            return empty_rel_list;
-        };
-
-        switch (member_id.GetType())
-        {
-        case osmium::item_type::node:
-            return getFromMap(member_id.GetID(), node_refs);
-
-        case osmium::item_type::way:
-            return getFromMap(member_id.GetID(), way_refs);
-
-        case osmium::item_type::relation:
-            return getFromMap(member_id.GetID(), rel_refs);
-
-        default:
-            break;
+            type = (id & 1) ? osmium::item_type::relation : osmium::item_type::way;
+            id /= 2;
         }
+        auto it = parents.find(id_and_type{id, type});
+        if (it != parents.end())
+            return it->second;
 
         return empty_rel_list;
     }
 
-    const ExtractionRelation &GetRelationData(const ExtractionRelation::OsmIDTyped &rel_id) const
+    const RelationIDList &GetRelationsFor(const osmium::OSMObject &o) const
     {
-        auto it = relations_data.find(rel_id.GetID());
-        if (it == relations_data.end())
-            throw osrm::util::exception("Can't find relation data for " +
-                                        std::to_string(rel_id.GetID()));
-
-        return it->second;
+        return _GetRelationsFor(o.id(), o.type());
     }
 
-  private:
-    RelationIDList empty_rel_list;
-    std::unordered_map<std::uint64_t, ExtractionRelation> relations_data;
+    // Note: non-const because SOL somehow chokes on const.
+    osmium::Relation &GetRelation(rel_id_type rel_id) const
+    {
+        auto it = handles.find(rel_id);
+        if (it == handles.end())
+            throw osrm::util::exception("Can't find relation data for " + std::to_string(rel_id));
 
-    // each map contains list of relation id's, that has keyed id as a member
-    RelationRefMap way_refs;
-    RelationRefMap node_refs;
-    RelationRefMap rel_refs;
+        return stash.get<osmium::Relation>(it->second);
+    }
+
+    void reset() { iter = handles.begin(); }
+
+    osmium::memory::Buffer read()
+    {
+        osmium::memory::Buffer buffer(16 * 1024, osmium::memory::Buffer::auto_grow::yes);
+        auto end = handles.end();
+        if (iter == end)
+            return osmium::memory::Buffer();
+        while (iter != end && buffer.written() < 12 * 1024)
+        {
+            buffer.add_item(stash.get_item(iter->second));
+            buffer.commit();
+            ++iter;
+        }
+        return buffer;
+    };
+
+  private:
+    osmium::ItemStash stash;
+    RelationIDList empty_rel_list;
+    RelationHandleMap handles;
+    RelationHandleMap::const_iterator iter;
+    MemberRelationMap parents;
+
+    mutex_type mutex;
+};
+
+/**
+ * @brief A copiable RelationMember
+ */
+class RelationMember
+{
+    osmium::object_id_type m_ref;
+    osmium::item_type m_type;
+    std::string m_role;
+
+  public:
+    RelationMember(const osmium::RelationMember &o)
+        : m_ref{o.ref()}, m_type{o.type()}, m_role(o.role()){};
+    osmium::object_id_type ref() const noexcept { return m_ref; }
+    osmium::item_type type() const noexcept { return m_type; }
+    const std::string &role() const noexcept { return m_role; }
 };
 
 } // namespace osrm::extractor

@@ -22,9 +22,17 @@
 #include "util/typedefs.hpp"
 
 #include <osmium/osm.hpp>
+#include <osmium/osm/entity.hpp>
+#include <osmium/osm/item_type.hpp>
+#include <osmium/osm/object.hpp>
+#include <osmium/osm/relation.hpp>
+#include <osmium/osm/way.hpp>
 
 namespace sol
 {
+template <> struct is_container<osmium::OSMObject> : std::false_type
+{
+};
 template <> struct is_container<osmium::Node> : std::false_type
 {
 };
@@ -41,32 +49,17 @@ namespace osrm::extractor
 
 namespace
 {
-template <class T>
-auto get_value_by_key(T const &object, const char *key) -> decltype(object.get_value_by_key(key))
+template <class T> const char *get_value_by_key(const T &object, const char *key)
 {
-    auto v = object.get_value_by_key(key);
-    if (v && *v)
-    { // non-empty string?
-        return v;
-    }
-    else
-    {
-        return nullptr;
-    }
+    const char *value = object.get_value_by_key(key);
+    return (value && *value) ? value : nullptr;
 }
 
-template <class T, class D>
-const char *get_value_by_key(T const &object, const char *key, D const default_value)
+template <class T>
+const char *get_value_by_key_default(const T &object, const char *key, const char *default_value)
 {
-    auto v = get_value_by_key(object, key);
-    if (v && *v)
-    {
-        return v;
-    }
-    else
-    {
-        return default_value;
-    }
+    const char *value = object.get_value_by_key(key, default_value);
+    return (value && *value) ? value : nullptr;
 }
 
 template <class T> double latToDouble(T const &object)
@@ -250,10 +243,24 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
                                                  "valid",
                                                  &osmium::Location::valid);
 
-    auto get_location_tag = [](auto &context, const auto &location, const char *key)
+    auto get_location_tag = [&context](const osmium::OSMObject &o, const char *key)
     {
         if (context.location_dependent_data.empty())
             return sol::object(context.state);
+
+        osmium::Location location;
+
+        if (o.type() == osmium::item_type::way)
+        {
+            // HEURISTIC: use a single node (last) of the way to localize the way
+            // For more complicated scenarios a proper merging of multiple tags
+            // at one or many locations must be provided
+            location = static_cast<const osmium::Way &>(o).nodes().back().location();
+        }
+        else
+        {
+            location = static_cast<const osmium::Node &>(o).location();
+        }
 
         const LocationDependentData::point_t point{location.lon(), location.lat()};
         if (!boost::geometry::equals(context.last_location_point, point))
@@ -267,48 +274,82 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         return boost::apply_visitor(to_lua_object(context.state), value);
     };
 
+    auto get_member_role = [](const osmium::Relation &rel,
+                              const osmium::OSMObject &o) -> const char *
+    {
+        for (const auto &member : rel.cmembers())
+        {
+            if (member.ref() == o.id() && member.type() == o.type())
+                return member.role();
+        }
+        return nullptr;
+    };
+
+    // osmium::RelationMember is not copy-constructible. but sol wants just that.
+    auto get_members = [](const osmium::Relation &rel) -> std::vector<RelationMember>
+    {
+        std::vector<RelationMember> result;
+        for (const auto &member : rel.cmembers())
+        {
+            result.push_back(RelationMember(member));
+        }
+        return result;
+    };
+
+    context.state.new_usertype<RelationMember>("RelationMember",
+                                               "ref",
+                                               &RelationMember::ref,
+                                               "type",
+                                               &RelationMember::type,
+                                               "role",
+                                               &RelationMember::role);
+
+    context.state.new_usertype<osmium::OSMObject>(
+        "OSMObject",
+        "id",
+        &osmium::OSMObject::id,
+        "type",
+        &osmium::OSMObject::type,
+        "version",
+        &osmium::OSMObject::version,
+        "deleted",
+        &osmium::OSMObject::deleted,
+        "uid",
+        &osmium::OSMObject::uid,
+        "changeset",
+        &osmium::OSMObject::changeset,
+        "get_value_by_key",
+        sol::overload(&get_value_by_key<osmium::Node>,
+                      &get_value_by_key<osmium::Way>,
+                      &get_value_by_key<osmium::Relation>,
+                      &get_value_by_key_default<osmium::Node>,
+                      &get_value_by_key_default<osmium::Way>,
+                      &get_value_by_key_default<osmium::Relation>));
+
     context.state.new_usertype<osmium::Relation>("Relation",
-                                                 "get_value_by_key",
-                                                 &get_value_by_key<osmium::Relation>,
-                                                 "id",
-                                                 &osmium::Relation::id,
-                                                 "version",
-                                                 &osmium::Relation::version);
+                                                 "get_role",
+                                                 get_member_role,
+                                                 "get_members",
+                                                 get_members,
+                                                 sol::base_classes,
+                                                 sol::bases<osmium::OSMObject>());
 
     context.state.new_usertype<osmium::Way>(
         "Way",
-        "get_value_by_key",
-        &get_value_by_key<osmium::Way>,
-        "id",
-        &osmium::Way::id,
-        "version",
-        &osmium::Way::version,
         "get_nodes",
         [](const osmium::Way &way) { return sol::as_table(&way.nodes()); },
         "get_location_tag",
-        [&context, &get_location_tag](const osmium::Way &way, const char *key)
-        {
-            // HEURISTIC: use a single node (last) of the way to localize the way
-            // For more complicated scenarios a proper merging of multiple tags
-            // at one or many locations must be provided
-            const auto &nodes = way.nodes();
-            const auto &location = nodes.back().location();
-            return get_location_tag(context, location, key);
-        });
+        get_location_tag,
+        sol::base_classes,
+        sol::bases<osmium::OSMObject>());
 
-    context.state.new_usertype<osmium::Node>(
-        "Node",
-        "location",
-        &osmium::Node::location,
-        "get_value_by_key",
-        &get_value_by_key<osmium::Node>,
-        "id",
-        &osmium::Node::id,
-        "version",
-        &osmium::Node::version,
-        "get_location_tag",
-        [&context, &get_location_tag](const osmium::Node &node, const char *key)
-        { return get_location_tag(context, node.location(), key); });
+    context.state.new_usertype<osmium::Node>("Node",
+                                             "location",
+                                             &osmium::Node::location,
+                                             "get_location_tag",
+                                             get_location_tag,
+                                             sol::base_classes,
+                                             sol::bases<osmium::OSMObject>());
 
     context.state.new_enum("traffic_lights",
                            "none",
@@ -361,7 +402,8 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
     context.state.new_usertype<area::AreaManager>(
         "AreaManager",
         "get_relations",
-        &area::AreaManager::get_relations,
+        sol::overload(&area::AreaManager::get_relations_node,
+                      &area::AreaManager::get_relations_way),
         "way",
         [](area::AreaManager &manager, const osmium::Way &way) { manager.way(way); },
         "relation",
@@ -503,56 +545,12 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         sol::property([](const ExtractionWay &way) { return way.access_turn_classification; },
                       [](ExtractionWay &way, int flag) { way.access_turn_classification = flag; }));
 
-    auto getTypedRefBySol = [](const sol::object &obj) -> ExtractionRelation::OsmIDTyped
-    {
-        if (obj.is<osmium::Way>())
-        {
-            osmium::Way *way = obj.as<osmium::Way *>();
-            return {way->id(), osmium::item_type::way};
-        }
-
-        if (obj.is<ExtractionRelation>())
-        {
-            ExtractionRelation *rel = obj.as<ExtractionRelation *>();
-            return rel->id;
-        }
-
-        if (obj.is<osmium::Node>())
-        {
-            osmium::Node *node = obj.as<osmium::Node *>();
-            return {node->id(), osmium::item_type::node};
-        }
-
-        return ExtractionRelation::OsmIDTyped(0, osmium::item_type::undefined);
-    };
-
-    context.state.new_usertype<ExtractionRelation::OsmIDTyped>(
-        "OsmIDTyped",
-        "id",
-        &ExtractionRelation::OsmIDTyped::GetID,
-        "type",
-        &ExtractionRelation::OsmIDTyped::GetType);
-
-    context.state.new_usertype<ExtractionRelation>(
-        "ExtractionRelation",
-        "id",
-        [](ExtractionRelation &rel) { return rel.id.GetID(); },
-        "get_value_by_key",
-        [](ExtractionRelation &rel, const char *key) -> const char * { return rel.GetAttr(key); },
-        "get_role",
-        [&getTypedRefBySol](ExtractionRelation &rel, const sol::object &obj) -> const char *
-        { return rel.GetRole(getTypedRefBySol(obj)); });
-
     context.state.new_usertype<ExtractionRelationContainer>(
         "ExtractionRelationContainer",
         "get_relations",
-        [&getTypedRefBySol](ExtractionRelationContainer &cont, const sol::object &obj)
-            -> const ExtractionRelationContainer::RelationIDList &
-        { return cont.GetRelations(getTypedRefBySol(obj)); },
+        &ExtractionRelationContainer::GetRelationsFor,
         "relation",
-        [](ExtractionRelationContainer &cont,
-           const ExtractionRelation::OsmIDTyped &rel_id) -> const ExtractionRelation &
-        { return cont.GetRelationData(rel_id); });
+        &ExtractionRelationContainer::GetRelation);
 
     context.state.new_usertype<NodeBasedEdgeClassification>(
         "NodeBasedEdgeClassification",
@@ -1058,15 +1056,11 @@ void Sol2ScriptingEnvironment::ProcessRelation(const osmium::memory::Buffer &buf
                                                ScriptingResults &)
 {
     auto &local_context = this->GetSol2Context();
-    for (auto entity = buffer.cbegin(), end = buffer.cend(); entity != end; ++entity)
+    if (local_context.has_relation_function)
     {
-        if (entity->type() == osmium::item_type::relation)
+        for (const osmium::Relation &relation : buffer.select<osmium::Relation>())
         {
-            const auto &relation = static_cast<const osmium::Relation &>(*entity);
-            if (local_context.has_relation_function)
-            {
-                local_context.ProcessRelation(relation, relations);
-            }
+            local_context.ProcessRelation(relation, relations);
         }
     }
 }

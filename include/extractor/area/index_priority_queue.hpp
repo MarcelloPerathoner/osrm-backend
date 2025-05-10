@@ -50,7 +50,7 @@ template <typename comp_t> class IndexPriorityQueue
      *             {@code v}. To construct a priority queue that has the lowest item on
      *             top the function should behave like {@code std::less}.
      */
-    IndexPriorityQueue(size_t size, comp_t comp) : size{size}, comp{comp}
+    IndexPriorityQueue(size_t size, comp_t comp) : vector_size{size}, comp{comp}
     {
         pq.resize(size + 1);
         qp.resize(size + 1);
@@ -171,10 +171,10 @@ template <typename comp_t> class IndexPriorityQueue
     /**
      * @brief Return the number of items in the queue.
      */
-    size_t num_items() { return n; }
+    size_t size() { return n; }
 
   private:
-    const size_t size;
+    const size_t vector_size;
     comp_t comp;
 
     /**
