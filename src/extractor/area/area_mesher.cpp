@@ -267,6 +267,7 @@ void AreaMesher::mesh_area(const osmium::Area &area,
                        << " id: " << area.orig_id();
 
     auto rel_ids = relations.GetRelationsFor(area);
+    util::Log(logINFO) << "  Found " << rel_ids.size() << "parent relations.";
 
     // add the segments to the output buffer
     auto add_to_buffer =

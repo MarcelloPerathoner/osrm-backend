@@ -27,6 +27,7 @@
 #include <osmium/osm/object.hpp>
 #include <osmium/osm/relation.hpp>
 #include <osmium/osm/way.hpp>
+#include <sol/sol.hpp>
 
 namespace sol
 {
@@ -312,12 +313,6 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         &osmium::OSMObject::type,
         "version",
         &osmium::OSMObject::version,
-        "deleted",
-        &osmium::OSMObject::deleted,
-        "uid",
-        &osmium::OSMObject::uid,
-        "changeset",
-        &osmium::OSMObject::changeset,
         "get_value_by_key",
         sol::overload(&get_value_by_key<osmium::Node>,
                       &get_value_by_key<osmium::Way>,
@@ -326,6 +321,30 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
                       &get_value_by_key_default<osmium::Way>,
                       &get_value_by_key_default<osmium::Relation>));
 
+    // This is the type you get from the "relations" container in functions
+    // `process_way` etc.  This is a stored type not backed by an osmium::buffer.  This
+    // type mimics an `osmium::Relation` so as to be indistinguishable from LUA.
+    //
+    // Implementation note: A different type is used because storing an
+    // `osmium::Relation` in an `osmium::stash` consumed too much memory.
+    context.state.new_usertype<Relation>(
+        "ExtractionRelation",
+        "id",
+        &Relation::id,
+        "type",
+        &Relation::type,
+        "version",
+        &Relation::version,
+        "get_value_by_key",
+        sol::overload(&Relation::get_value_by_key, &Relation::get_value_by_key_default),
+        "get_role",
+        sol::overload(&Relation::get_member_role<Relation>,
+                      &Relation::get_member_role<osmium::OSMObject>),
+        "get_members",
+        &Relation::members);
+
+    // This is the type you get as argument in function `process_relation`.
+    // This is backed by an osmium::buffer.
     context.state.new_usertype<osmium::Relation>("Relation",
                                                  "get_role",
                                                  get_member_role,
@@ -402,8 +421,8 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
     context.state.new_usertype<area::AreaManager>(
         "AreaManager",
         "get_relations",
-        sol::overload(&area::AreaManager::get_relations_node,
-                      &area::AreaManager::get_relations_way),
+        sol::overload(&area::AreaManager::get_relations_for_node,
+                      &area::AreaManager::get_relations_for_way),
         "way",
         [](area::AreaManager &manager, const osmium::Way &way) { manager.way(way); },
         "relation",
@@ -548,7 +567,8 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
     context.state.new_usertype<ExtractionRelationContainer>(
         "ExtractionRelationContainer",
         "get_relations",
-        &ExtractionRelationContainer::GetRelationsFor,
+        sol::overload(&ExtractionRelationContainer::GetRelationsFor<osmium::OSMObject>,
+                      &ExtractionRelationContainer::GetRelationsFor<Relation>),
         "relation",
         &ExtractionRelationContainer::GetRelation);
 

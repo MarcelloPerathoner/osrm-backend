@@ -117,6 +117,7 @@ module.exports = function () {
     var node = new OSM.Node(id, this.OSM_USER, this.OSM_TIMESTAMP, this.OSM_UID, lon, lat, {name: name});
     this.OSMDB.addNode(node);
     this.nameNodeHash[name] = node;
+    this.idNodeHash[id] = node;
   };
 
   this.addLocation = (name, lon, lat) => {

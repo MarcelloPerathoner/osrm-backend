@@ -59,8 +59,8 @@ class AreaMesher
                                          std::set<OsmiumSegment> &vis_map,
                                          const NodeRefSet &entry_points);
 
-    ExtractionRelationContainer::RelationIDList
-    get_relations(const osmium::Area &area, const ExtractionRelationContainer &relations);
+    osmium::object_id_type get_relations(const osmium::Area &area,
+                                         const ExtractionRelationContainer &relations);
 
     std::unordered_multimap<OSMNodeID, OSMWayID> node_id2way_index;
     osmium::object_id_type next_way_id{(1ULL << 34) - 1}; // see: packed_osm_ids.hpp

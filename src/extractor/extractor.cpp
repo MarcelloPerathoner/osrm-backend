@@ -574,9 +574,8 @@ Extractor::ParsedOSMData Extractor::ParseOSMData(ScriptingEnvironment &scripting
         // area multipolygon may well be part of a hiking route and we may want to use
         // that knowledge in LUA's process_relation.
         util::Log() << "Parse relations for areas ...";
-        relations_stash.reset();
         osmium::io::Reader reader(input_file, pool, osmium::osm_entity_bits::relation, read_meta);
-        tbb::parallel_pipeline(num_threads, reader_source(relations_stash) & run_relation_script);
+        tbb::parallel_pipeline(num_threads, reader_source(reader) & run_relation_script);
         // At this point we know the relations and the way ids of their members.
         util::Log(logDEBUG) << "  Registered " << manager.number_of_relations << " relations.";
     }

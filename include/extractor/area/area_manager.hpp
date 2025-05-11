@@ -32,6 +32,8 @@ class AreaManager
     /** Mutex to protect relations_manager */
     MutexType mutex;
 
+    using relation_ids = std::vector<osmium::object_id_type>;
+
   public:
     AreaManager() { m_assembler_config.debug_level = 0; };
 
@@ -39,8 +41,8 @@ class AreaManager
     void relation(const osmium::Relation &relation);
     void prepare_for_lookup(extractor::NodeLocationsForWays &node_locations_for_ways);
     bool is_registered_closed_way(osmium::object_id_type way_id) const;
-    ExtractionRelationContainer::RelationIDList get_relations_node(const osmium::Node &) const;
-    ExtractionRelationContainer::RelationIDList get_relations_way(const osmium::Way &) const;
+    relation_ids get_relations_for_node(const osmium::Node &) const;
+    relation_ids get_relations_for_way(const osmium::Way &) const;
 
     void complete_relation(const osmium::Relation &relation);
     void after_way(const osmium::Way &way);

@@ -50,7 +50,7 @@ void AreaManager::way(const osmium::Way &way)
  */
 void AreaManager::relation(const osmium::Relation &relation)
 {
-    const char *type = relation.tags().get_value_by_key("type");
+    const char *type = relation.get_value_by_key("type");
 
     // the relation must be a multipolygon
     if (type == nullptr || std::strcmp(type, "multipolygon") != 0)
@@ -114,10 +114,9 @@ inline bool AreaManager::is_registered_closed_way(osmium::object_id_type osm_id)
  * @param way The given way
  * @return A list of relations
  */
-ExtractionRelationContainer::RelationIDList
-AreaManager::get_relations_way(const osmium::Way &way) const
+AreaManager::relation_ids AreaManager::get_relations_for_way(const osmium::Way &way) const
 {
-    ExtractionRelationContainer::RelationIDList result;
+    relation_ids result;
     auto found = m_way_relation.find(way.id());
     if (found != m_way_relation.end())
         result.push_back(found->second);
@@ -135,10 +134,9 @@ AreaManager::get_relations_way(const osmium::Way &way) const
  * @param node The given node
  * @return A list of relations
  */
-ExtractionRelationContainer::RelationIDList
-AreaManager::get_relations_node(const osmium::Node &way) const
+AreaManager::relation_ids AreaManager::get_relations_for_node(const osmium::Node &way) const
 {
-    ExtractionRelationContainer::RelationIDList result;
+    relation_ids result;
     auto found = m_node_relation.find(way.id());
     if (found != m_node_relation.end())
         result.push_back(found->second);
