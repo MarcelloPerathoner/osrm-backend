@@ -104,7 +104,7 @@ class Relation
         // Nitpick: if somebody searches for "higway", it will be added to the flyweights
         auto found = m_tags.find(string(key));
         if (found != m_tags.end())
-            return found->second->c_str();
+            return found->second.get().c_str();
         return default_value;
     };
 
@@ -128,7 +128,7 @@ class Relation
         auto it = std::lower_bound(m_members.begin(), m_members.end(), m);
         if (it != m_members.end() && *it == m)
         {
-            return it->role()->c_str();
+            return it->role().get().c_str();
         }
         return nullptr;
     }
