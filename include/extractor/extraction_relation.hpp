@@ -10,6 +10,7 @@
 #include <boost/flyweight/no_tracking.hpp>
 
 #include <oneapi/tbb/concurrent_map.h>
+#include <oneapi/tbb/concurrent_vector.h>
 
 #include <osmium/osm/area.hpp>
 #include <osmium/osm/item_type.hpp>
@@ -140,7 +141,7 @@ class ExtractionRelationContainer
     using rel_id_type = osmium::object_id_type;
     using member_id_type = osmium::object_id_type;
 
-    using rel_ids_t = std::vector<rel_id_type>;
+    using rel_ids_t = tbb::concurrent_vector<rel_id_type>;
     using parent_map_t = tbb::concurrent_map<member_id_type, rel_ids_t>;
 
     tbb::concurrent_map<rel_id_type, Relation> relations;
