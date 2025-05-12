@@ -360,6 +360,7 @@ jobs:
       OSRM_CONNECTION_RETRIES: ${{ matrix.OSRM_CONNECTION_RETRIES }}
       OSRM_CONNECTION_EXP_BACKOFF_COEF: ${{ matrix.OSRM_CONNECTION_EXP_BACKOFF_COEF }}
       ENABLE_LTO: ${{ matrix.ENABLE_LTO }}
+      RUNS_ON: ${{ matrix.runs-on }}
     steps:
     - uses: actions/checkout@v4
     - name: Build machine architecture
@@ -417,6 +418,7 @@ jobs:
         elif [[ "${RUNNER_OS}" == "macOS" ]]; then
           echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
         fi
+        echo "BOOST_PLATFORM_VERSION=$(echo ${RUNS_ON} | cut -d "-" -f2)" >> $GITHUB_ENV
     # See: https://github.com/actions/toolkit/issues/946#issuecomment-1590016041
     # We need it to be able to access system folders while restoring cached Boost below
     - name: Give tar root ownership
@@ -429,6 +431,7 @@ jobs:
       id: install-boost
       with:
         boost_version: 1.85.0
+        platform_version: ${{ env.BOOST_PLATFORM_VERSION }}
 
     - name: Install dev dependencies
       run: |
