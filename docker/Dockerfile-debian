@@ -10,7 +10,7 @@ RUN mkdir -p /src /opt && \
         g++ \
         gcc \
         git \
-        libboost1.81-all-dev \
+        libboost1.83-all-dev \
         libbz2-dev \
         liblua5.4-dev \
         libtbb-dev \

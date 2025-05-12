@@ -25,8 +25,6 @@
 #include <string>
 #include <vector>
 
-#include "util/log.hpp"
-
 namespace osrm::extractor
 {
 
@@ -194,8 +192,6 @@ class ExtractionRelationContainer
                type == osmium::item_type::node);
 
         const parent_map_t &parents = p(type);
-
-        util::Log(logINFO) << "size of parents map: " << parents.size();
 
         auto it = parents.find(id);
         if (it != parents.end())
