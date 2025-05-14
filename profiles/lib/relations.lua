@@ -114,7 +114,7 @@ function get_direction_from_superrel(rel, relations)
 
   function set_result(direction, current_rel)
     if (result ~= nil) and (direction ~= nil) then
-      print('WARNING: relation ' .. rel:id() .. ' is a part of more then one supperrelations ' .. result_id .. ' and ' .. current_rel:id())
+      print('WARNING: relation ' .. rel:id() .. ' is a part of more than one superrelation: ' .. result_id .. ' and ' .. current_rel:id())
       result = nil
     else
       result = direction
@@ -195,7 +195,7 @@ function Relations.parse_route_relation(rel, way, relations)
 
     -- check if there are data error
     if (result_direction ~= nil) and (super_dir ~= nil) and (result_direction ~= super_dir) then
-      print('ERROR: conflicting relation directions found for way ' .. way:id() .. 
+      print('ERROR: conflicting relation directions found for way ' .. way:id() ..
             ' relation direction is ' .. result_direction .. ' superrelation direction is ' .. super_dir)
       result_direction = nil
     elseif result_direction == nil then

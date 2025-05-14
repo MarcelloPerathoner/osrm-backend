@@ -255,7 +255,7 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
     set(COLOR_FLAG "")
   endif()
   # using GCC
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 ${COLOR_FLAG} -fPIC -ftemplate-depth=1024")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 ${COLOR_FLAG} -fPIC -ftemplate-depth=1024 -fcompare-debug-second")
 
   if(WIN32) # using mingw
     add_dependency_defines(-DWIN32)
@@ -276,6 +276,9 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   find_library(ws2_32_LIBRARY_PATH ws2_32)
   target_link_libraries(osrm-extract wsock32 ws2_32)
 endif()
+
+message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
 
 if(UNIX AND NOT APPLE)
   find_library(RT_LIB rt)
