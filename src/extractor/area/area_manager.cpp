@@ -134,10 +134,10 @@ AreaManager::relation_ids AreaManager::get_relations_for_way(const osmium::Way &
  * @param node The given node
  * @return A list of relations
  */
-AreaManager::relation_ids AreaManager::get_relations_for_node(const osmium::Node &way) const
+AreaManager::relation_ids AreaManager::get_relations_for_node(const osmium::Node &node) const
 {
     relation_ids result;
-    auto found = m_node_relation.find(way.id());
+    auto found = m_node_relation.find(node.id());
     if (found != m_node_relation.end())
         result.push_back(found->second);
     return result;

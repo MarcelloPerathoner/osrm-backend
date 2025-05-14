@@ -195,7 +195,7 @@ function process_way(profile, way, result, relations)
     public_transport = way:get_value_by_key('public_transport')
   }
 
-  if data.highway == 'pedestrian' and way:get_value_by_key('area') == 'yes' then
+  if data.highway == 'pedestrian' and way:has_true_tag('area') then
     area_manager:way(way)
   end
 
@@ -277,9 +277,7 @@ function process_turn (profile, turn)
 end
 
 function process_relation(profile, relation)
-    type = relation:get_value_by_key('type')
-    highway = relation:get_value_by_key('highway')
-    if type == 'multipolygon' and highway == 'pedestrian' then
+    if relation:has_tag('type', 'multipolygon') and relation:has_tag('highway', 'pedestrian') then
         area_manager:relation(relation)
     end
 end

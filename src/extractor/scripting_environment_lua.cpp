@@ -34,15 +34,6 @@ namespace sol
 template <> struct is_container<osmium::OSMObject> : std::false_type
 {
 };
-template <> struct is_container<osmium::Node> : std::false_type
-{
-};
-template <> struct is_container<osmium::Way> : std::false_type
-{
-};
-template <> struct is_container<osmium::Relation> : std::false_type
-{
-};
 } // namespace sol
 
 namespace osrm::extractor
@@ -61,6 +52,28 @@ const char *get_value_by_key_default(const T &object, const char *key, const cha
 {
     const char *value = object.get_value_by_key(key, default_value);
     return (value && *value) ? value : nullptr;
+}
+
+template <class T> bool has_key(const T &object, const char *key)
+{
+    const char *value = object.get_value_by_key(key);
+    return value && *value;
+}
+
+template <class T> bool has_tag(const T &object, const char *key, const char *val)
+{
+    const char *value = object.get_value_by_key(key);
+    return value && !strcmp(val, value);
+}
+
+template <class T> bool has_true_tag(const T &object, const char *key)
+{
+    return is_true_value(object.get_value_by_key(key));
+}
+
+template <class T> bool has_false_tag(const T &object, const char *key)
+{
+    return is_false_value(object.get_value_by_key(key));
 }
 
 template <class T> double latToDouble(T const &object)
@@ -120,6 +133,8 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
     context.state["trimLaneString"] = trimLaneString;
     context.state["applyAccessTokens"] = applyAccessTokens;
     context.state["canonicalizeStringList"] = canonicalizeStringList;
+    context.state["is_true"] = is_true_value;
+    context.state["is_false"] = is_false_value;
 
     context.state.new_enum("mode",
                            "inaccessible",
@@ -275,28 +290,6 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         return boost::apply_visitor(to_lua_object(context.state), value);
     };
 
-    auto get_member_role = [](const osmium::Relation &rel,
-                              const osmium::OSMObject &o) -> const char *
-    {
-        for (const auto &member : rel.cmembers())
-        {
-            if (member.ref() == o.id() && member.type() == o.type())
-                return member.role();
-        }
-        return nullptr;
-    };
-
-    // osmium::RelationMember is not copy-constructible. but sol wants just that.
-    auto get_members = [](const osmium::Relation &rel) -> std::vector<RelationMember>
-    {
-        std::vector<RelationMember> result;
-        for (const auto &member : rel.cmembers())
-        {
-            result.push_back(RelationMember(member));
-        }
-        return result;
-    };
-
     context.state.new_usertype<RelationMember>("RelationMember",
                                                "ref",
                                                &RelationMember::ref,
@@ -313,13 +306,17 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         &osmium::OSMObject::type,
         "version",
         &osmium::OSMObject::version,
+        "has_key",
+        &has_key<osmium::OSMObject>,
+        "has_tag",
+        &has_tag<osmium::OSMObject>,
+        "has_true_tag",
+        &has_true_tag<osmium::OSMObject>,
+        "has_false_tag",
+        &has_false_tag<osmium::OSMObject>,
         "get_value_by_key",
-        sol::overload(&get_value_by_key<osmium::Node>,
-                      &get_value_by_key<osmium::Way>,
-                      &get_value_by_key<osmium::Relation>,
-                      &get_value_by_key_default<osmium::Node>,
-                      &get_value_by_key_default<osmium::Way>,
-                      &get_value_by_key_default<osmium::Relation>));
+        sol::overload(&get_value_by_key<osmium::OSMObject>,
+                      &get_value_by_key_default<osmium::OSMObject>));
 
     // This is the type you get from the "relations" container in functions
     // `process_way` etc.  This is a stored type not backed by an osmium::buffer.  This
@@ -335,6 +332,14 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         &Relation::type,
         "version",
         &Relation::version,
+        "has_key",
+        &has_key<Relation>,
+        "has_tag",
+        &has_tag<Relation>,
+        "has_true_tag",
+        &has_true_tag<Relation>,
+        "has_false_tag",
+        &has_false_tag<Relation>,
         "get_value_by_key",
         sol::overload(&Relation::get_value_by_key, &Relation::get_value_by_key_default),
         "get_role",
@@ -347,14 +352,16 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
     // This is backed by an osmium::buffer.
     context.state.new_usertype<osmium::Relation>("Relation",
                                                  "get_role",
-                                                 get_member_role,
+                                                 get_osmium_member_role,
                                                  "get_members",
-                                                 get_members,
+                                                 get_osmium_relation_members,
                                                  sol::base_classes,
                                                  sol::bases<osmium::OSMObject>());
 
     context.state.new_usertype<osmium::Way>(
         "Way",
+        "is_closed",
+        &osmium::Way::is_closed,
         "get_nodes",
         [](const osmium::Way &way) { return sol::as_table(&way.nodes()); },
         "get_location_tag",
@@ -424,10 +431,9 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
         sol::overload(&area::AreaManager::get_relations_for_node,
                       &area::AreaManager::get_relations_for_way),
         "way",
-        [](area::AreaManager &manager, const osmium::Way &way) { manager.way(way); },
+        &area::AreaManager::way,
         "relation",
-        [](area::AreaManager &manager, const osmium::Relation &relation)
-        { manager.relation(relation); });
+        &area::AreaManager::relation);
 
     context.state["obstacle_map"] = std::ref(m_obstacle_map);
     context.state["area_manager"] = std::ref(m_area_manager);
@@ -567,10 +573,10 @@ void Sol2ScriptingEnvironment::InitContext(LuaScriptingContext &context)
     context.state.new_usertype<ExtractionRelationContainer>(
         "ExtractionRelationContainer",
         "get_relations",
-        sol::overload(&ExtractionRelationContainer::GetRelationsFor<osmium::OSMObject>,
-                      &ExtractionRelationContainer::GetRelationsFor<Relation>),
+        sol::overload(&ExtractionRelationContainer::get_relations_for<osmium::OSMObject>,
+                      &ExtractionRelationContainer::get_relations_for<Relation>),
         "relation",
-        &ExtractionRelationContainer::GetRelation);
+        &ExtractionRelationContainer::get_relation);
 
     context.state.new_usertype<NodeBasedEdgeClassification>(
         "NodeBasedEdgeClassification",

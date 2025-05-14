@@ -37,7 +37,7 @@ BOOST_AUTO_TEST_CASE(area_dijkstra_test)
     osmium::NodeRef y{4, {3, 1}};
     osmium::NodeRef z{5, {4, 1}};
 
-    DijkstraImpl<osmium::NodeRef> d;
+    Dijkstra<osmium::NodeRef> d;
     auto add = [&](const osmium::NodeRef &a, const osmium::NodeRef &b)
     { d.add_edge(a, b, dist(a, b)); };
 

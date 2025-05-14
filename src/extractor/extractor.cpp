@@ -473,29 +473,30 @@ Extractor::ParsedOSMData Extractor::ParseOSMData(ScriptingEnvironment &scripting
             return buffer;
         });
 
-    auto _run_scripts = [&](const OsmiumBuffer &buffer_ptr) -> ScriptingResults
-    {
-        ScriptingResults results;
-        results.osmium_buffer = buffer_ptr; // keeps the buffer alive until the end of the pipe
-        scripting_environment.ProcessElements(
-            *buffer_ptr, restriction_parser, maneuver_override_parser, relations_stash, results);
-        return results;
-    };
+    // OSM elements Lua parser
+    tbb::filter<OsmiumBuffer, ScriptingResults> run_scripts(
+        tbb::filter_mode::parallel,
+        [&](const OsmiumBuffer &buffer_ptr) -> ScriptingResults
+        {
+            ScriptingResults results;
+            results.osmium_buffer = buffer_ptr; // keeps the buffer alive until the end of the pipe
+            scripting_environment.ProcessElements(*buffer_ptr,
+                                                  restriction_parser,
+                                                  maneuver_override_parser,
+                                                  relations_stash,
+                                                  results);
+            return results;
+        });
 
     // OSM elements Lua parser
-    tbb::filter<OsmiumBuffer, ScriptingResults> run_scripts(tbb::filter_mode::parallel,
-                                                            _run_scripts);
-
-    auto _run_relation_script = [&](const OsmiumBuffer &buffer_ptr) -> void
-    {
-        ScriptingResults results;
-        results.osmium_buffer = buffer_ptr; // keeps the buffer alive until the end of the pipe
-        scripting_environment.ProcessRelation(*buffer_ptr, relations_stash, results);
-    };
-
-    // OSM elements Lua parser
-    tbb::filter<OsmiumBuffer, void> run_relation_script(tbb::filter_mode::parallel,
-                                                        _run_relation_script);
+    tbb::filter<OsmiumBuffer, void> run_relation_script(
+        tbb::filter_mode::parallel,
+        [&](const OsmiumBuffer &buffer_ptr) -> void
+        {
+            ScriptingResults results;
+            results.osmium_buffer = buffer_ptr; // keeps the buffer alive until the end of the pipe
+            scripting_environment.ProcessRelation(*buffer_ptr, relations_stash, results);
+        });
 
     // Parsed nodes and ways handler
     unsigned number_of_nodes = 0;
@@ -544,7 +545,7 @@ Extractor::ParsedOSMData Extractor::ParseOSMData(ScriptingEnvironment &scripting
             {
                 if (osmium::tags::match_any_of(rel.tags(), tags_filter))
                 {
-                    relations_stash.AddRelation(rel);
+                    relations_stash.add_relation(rel);
                 }
             };
         });
@@ -563,7 +564,7 @@ Extractor::ParsedOSMData Extractor::ParseOSMData(ScriptingEnvironment &scripting
         util::Log() << "Parse relations ...";
         osmium::io::Reader reader(input_file, pool, osmium::osm_entity_bits::relation, read_meta);
         tbb::parallel_pipeline(num_threads, reader_source(reader) & stash_relations);
-        util::Log(logDEBUG) << "  Stashed " << relations_stash.GetRelationsNum() << " relations.";
+        util::Log(logDEBUG) << "  Stashed " << relations_stash.get_relations_num() << " relations.";
     }
     auto &manager = scripting_environment.m_area_manager;
     if (scripting_environment.HasRelationFunction())
@@ -610,12 +611,22 @@ Extractor::ParsedOSMData Extractor::ParseOSMData(ScriptingEnvironment &scripting
 
         area::AreaMesher mesher;
         mesher.init(manager, extraction_containers);
-        osmium::memory::Buffer mesh_buffer{1024UL * 1024UL};
-        mesher.mesh_buffer(manager.buffer(), mesh_buffer, relations_stash);
 
-        // ... and feed the resulting virtual ways through the usual pipeline
-        auto mb = std::make_shared<osmium::memory::Buffer>(std::move(mesh_buffer));
-        _run_extractor_callbacks(_run_scripts(mb));
+        tbb::filter<OsmiumBuffer, OsmiumBuffer> mesh_areas(
+            tbb::filter_mode::parallel,
+            [&](const OsmiumBuffer &buffer_ptr) -> OsmiumBuffer
+            {
+                osmium::memory::Buffer out_buffer{16 * 1024,
+                                                  osmium::memory::Buffer::auto_grow::yes};
+                mesher.mesh_buffer(*buffer_ptr, out_buffer, relations_stash);
+                return std::make_shared<osmium::memory::Buffer>(std::move(out_buffer));
+            });
+
+        // Mesh areas and feed the resulting virtual ways through the usual pipeline
+        area::BufferReader areader(manager.buffer());
+        const auto pipeline =
+            reader_source(areader) & mesh_areas & run_scripts & run_extractor_callbacks;
+        tbb::parallel_pipeline(num_threads, pipeline);
 
         util::Log() << "Meshed " << manager.number_of_relations << " area relations and "
                     << manager.number_of_ways << " area ways, yielding " << mesher.added_ways
@@ -626,7 +637,7 @@ Extractor::ParsedOSMData Extractor::ParseOSMData(ScriptingEnvironment &scripting
     util::Log() << "Parsing finished after " << TIMER_SEC(parsing) << " seconds";
 
     util::Log() << "Raw input contains " << number_of_nodes << " nodes, " << number_of_ways
-                << " ways, and " << relations_stash.GetRelationsNum() << " relations, "
+                << " ways, and " << relations_stash.get_relations_num() << " relations, "
                 << number_of_restrictions << " restrictions";
 
     extractor_callbacks.reset();

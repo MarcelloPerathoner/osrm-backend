@@ -16,7 +16,7 @@ namespace osrm::extractor::area
  *
  * @tparam vertex_t The type of a vertex.
  */
-template <class vertex_t> class DijkstraImpl
+template <class vertex_t> class Dijkstra
 {
     struct Edge
     {

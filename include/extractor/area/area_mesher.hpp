@@ -1,6 +1,7 @@
 #ifndef OSRM_EXTRACTOR_AREA_AREA_MESHER_HPP
 #define OSRM_EXTRACTOR_AREA_AREA_MESHER_HPP
 
+#include "extractor/extraction_relation.hpp"
 #include "typedefs.hpp"
 
 #include "extractor/extraction_containers.hpp"
@@ -44,9 +45,11 @@ class AreaMesher
     void mesh_area(const osmium::Area &area,
                    osmium::memory::Buffer &out_buffer,
                    ExtractionRelationContainer &relations);
+
     void mesh_buffer(const osmium::memory::Buffer &in_buffer,
                      osmium::memory::Buffer &out_buffer,
                      ExtractionRelationContainer &relations);
+    osmium::memory::Buffer read();
 
     int added_ways{0};
 
@@ -67,6 +70,32 @@ class AreaMesher
 #ifndef NDEBUG
     osmium::object_id_type next_node_id{(1ULL << 34) - 1}; // see: packed_osm_ids.hpp
 #endif
+};
+
+/**
+ * @brief A Reader for a buffer.
+ *
+ * This class allows you to read() from an `osmium::memory::Buffer` in the same way you
+ * would read an OSM file using an `osmium::io::Reader`.
+ */
+class BufferReader
+{
+    osmium::memory::Buffer::const_iterator iter;
+    const osmium::memory::Buffer::const_iterator end;
+    enum class status
+    {
+        okay = 0,   // normal reading
+        error = 1,  // some error occurred while reading
+        closed = 2, // close() called
+        eof = 3     // eof of file was reached without error
+    };
+    status m_status{status::okay};
+
+  public:
+    BufferReader(const osmium::memory::Buffer &in_buffer)
+        : iter{in_buffer.cbegin()}, end{in_buffer.cend()} {};
+
+    osmium::memory::Buffer read();
 };
 
 } // namespace osrm::extractor::area

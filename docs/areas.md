@@ -1,18 +1,20 @@
-# Areas
+@page pedestrian_areas Pedestrian Areas
 
-This OSRM feature provides routing through areas. The area type is configurable.
+@sa AreaManager
 
-## Routing over pedestrian areas
+This OSRM feature provides routing through areas, where people are free to choose their
+path. The main motivation for this feature are areas tagged with `highway=pedestrian`,
+but any other area is configurable.
 
-Pedestrian areas in OSM are either closed ways or multipolygon relations. Currently OSRM
-routes along the perimeter of a closed way area. It does not route over multipolygon
-areas at all.
+Areas in OSM are either closed ways or multipolygon relations. Currently OSRM routes
+along the perimeter of a closed way area. It does not route over multipolygon areas at
+all.
 
 This feature routes over the inside of the area. It does so by "meshing" the area, ie.
 by creating virtual ways between every two entry points of the area. These new ways
 follow lines of sight, they never go through obstacles in the area.
 
-This feature is opt-in: To enable it you must define a `process_relation` function in
+This feature is opt-in: To enable it you must define a @ref process_relation function in
 your profile and return it like this:
 
 ```lua
@@ -27,8 +29,8 @@ return {
 
 You must also keep multipolygon relations, so that you can use the name on the relation
 for turn directions. (Remember that the ways in the relation are untagged.) In your
-profile's setup function add or edit the `relation_types` sequence to include the type
-"multipolygon":
+profile's setup function add or edit the @ref relation_types sequence to include the
+type `multipolygon`:
 
 ```lua
 function setup()
@@ -45,16 +47,14 @@ end
 
 ### process_relation(profile, relation, relations)
 
-The `process_relation` function is called for every relation in the input file. If you
-want a relation to be meshed, call `area_manager:relation(relation)`.
+The @ref process_relation function is called for every relation in the input file. If
+you want a relation to be meshed, you must call [area_manager:relation()](@ref AreaManager::relation()).
 
-Example of a process_relation function:
+Example:
 
 ```lua
 function process_relation(profile, relation, relations)
-  type = relation:get_value_by_key('type')
-  highway = relation:get_value_by_key('highway')
-  if type == 'multipolygon' and highway == 'pedestrian' then
+  if relation:has_tag('type', 'multipolygon') and relation:has_tag('highway', 'pedestrian') then
     -- register the relation
     area_manager:relation(relation)
   end
@@ -63,20 +63,20 @@ end
 
 ### process_way(profile, way, result, relations)
 
-The `process_way` function is called for every way in the input file. If you want a
-closed way to be meshed, call `area_manager:way(way)`. (Note that open ways cannot be
-meshed and will be ignored.)
+The @ref process_way function is called for every way in the input file. If you want a
+closed way to be meshed, call [area_manager:way()](@ref AreaManager::way()). (Note that
+open ways cannot be meshed and will be ignored.)
 
 Multipolygons need some support too. Since the member ways of a multipolygon relation
 are as a rule untagged, you have to copy at least the defining tag (and maybe the name)
 from the relation to the way. OSRM discards untagged ways.
 
-Example of a process_way function:
+Example:
 
 ```lua
 function process_way(profile, way, result, relations)
   ...
-  if way:get_value_by_key('highway') == 'pedestrian' and way:get_value_by_key('area') == 'yes' then
+  if way:has_tag('highway', 'pedestrian') and way:has_true_tag('area') then
     -- register the way
     area_manager:way(way)
   end
@@ -89,49 +89,5 @@ function process_way(profile, way, result, relations)
     WayHandlers.names(profile, rel, result, data)
   end
   ...
-end
-```
-
-### area_manager
-
-A global user type.
-
-#### area_manager:relation(relation)
-Call this function inside `process_relation()` to register a relation for meshing. The
-relation must be a multipolygon relation.
-
-Argument | Type        | Notes
----------|-------------|-----------------------------------------------------
-relation | OSMRelation | The same relation as passed into `process_relation`.
-
-#### area_manager:way(way)
-Call this function inside `process_way()` to register a way for meshing. The way must be
-closed.
-
-Argument | Type     | Notes
----------|----------|-------------------------------------------
-way      | OSMWay   | The same way as passed into `process_way`.
-
-#### area_manager:get_relations(node), area_manager:get_relations(way)
-Call this functions inside `process_node()` and `process_way()` respectively.  If this
-node or way is a member of a relation that was registered for meshing, those relations
-will be returned.
-
-Since the member ways of a multipolygon relation are as a rule untagged, and since OSRM
-discards untagged ways, you have to copy at least the defining tag (and maybe the name
-tags) from the relation to the way.
-
-Argument | Type     | Notes
----------|----------|-----------------------------------------------
-node     | OSMNode  | The same node as passed into `process_node()`.
-way      | OSMWay   | The same way as passed into `process_way()`.
-
-Usage example:
-
-```lua
-for _, rel_id in pairs(area_manager:get_relations(way)) do
-  local rel = relations:relation(rel_id)
-  data.highway = rel:get_value_by_key('highway')
-  WayHandlers.names(profile, rel, result, data)
 end
 ```

@@ -9,7 +9,6 @@
 #include "util/log.hpp"
 #include "util/typedefs.hpp"
 
-#include <iterator>
 #include <osmium/builder/attr.hpp>
 #include <osmium/builder/osm_object_builder.hpp>
 #include <osmium/io/xml_output.hpp>
@@ -18,11 +17,12 @@
 #include <osmium/osm/entity.hpp>
 #include <osmium/osm/item_type.hpp>
 #include <osmium/osm/location.hpp>
-
-#include <algorithm>
 #include <osmium/osm/node_ref.hpp>
 #include <osmium/osm/relation.hpp>
 #include <osmium/osm/types.hpp>
+
+#include <algorithm>
+#include <iterator>
 
 namespace osrm::extractor::area
 {
@@ -266,8 +266,8 @@ void AreaMesher::mesh_area(const osmium::Area &area,
     util::Log(logINFO) << "Meshing area: " << area.get_value_by_key("name", "noname")
                        << " id: " << area.orig_id();
 
-    auto rel_ids = relations.GetRelationsFor(area);
-    util::Log(logINFO) << "  Found " << rel_ids.size() << "parent relations.";
+    auto rel_ids = relations.get_relations_for(area);
+    util::Log(logINFO) << "  Found " << rel_ids.size() << " parent relations.";
 
     // add the segments to the output buffer
     auto add_to_buffer =
@@ -288,7 +288,7 @@ void AreaMesher::mesh_area(const osmium::Area &area,
                 // if the original item was part of a relation, the generated ways
                 // should be part of that relation too, eg. a hiking route crossing a
                 // pedestrian area
-                relations.AddRelationMember(rel_id, next_way_id, osmium::item_type::way);
+                relations.add_relation_member(rel_id, next_way_id, osmium::item_type::way);
             }
             --next_way_id;
             ++added_ways;
@@ -386,7 +386,7 @@ std::set<OsmiumSegment> AreaMesher::run_dijkstra(const OsmiumPolygon &poly,
                                                  std::set<OsmiumSegment> &vis_map,
                                                  const NodeRefSet &entry_points)
 {
-    DijkstraImpl<osmium::NodeRef> d;
+    Dijkstra<osmium::NodeRef> d;
 
     std::set<OsmiumSegment> poly_segments;
     for_each_ring(poly,
@@ -462,11 +462,49 @@ void AreaMesher::mesh_buffer(const osmium::memory::Buffer &in_buffer,
                              osmium::memory::Buffer &out_buffer,
                              ExtractionRelationContainer &relations)
 {
-    for (const osmium::OSMEntity &entity : in_buffer)
+    for (const auto &area : in_buffer.select<osmium::Area>())
     {
-        if (entity.type() == osmium::item_type::area)
+        mesh_area(area, out_buffer, relations);
+    }
+}
+
+/**
+ * Fills the next buffer with areas.  An invalid buffer signals no more areas.  After
+ * that, calls will throw an osrm::util::exception.
+ *
+ * @returns A buffer
+ * @throws `osrm::util::exception` if there is an error.
+ */
+osmium::memory::Buffer BufferReader::read()
+{
+    if (m_status != status::okay)
+    {
+        throw osrm::util::exception(
+            "extractor::area::BufferReader: cannot read in status 'closed', 'eof', or 'error'");
+    }
+    if (iter == end)
+    {
+        m_status = status::eof;
+        return osmium::memory::Buffer();
+    }
+
+    const size_t no_of_areas_per_buffer = 4;
+
+    osmium::memory::Buffer out_buffer{16 * 1024, osmium::memory::Buffer::auto_grow::yes};
+    size_t i = 0;
+
+    while (true)
+    {
+        if (iter->type() == osmium::item_type::area)
         {
-            mesh_area(static_cast<const osmium::Area &>(entity), out_buffer, relations);
+            out_buffer.add_item(*iter);
+            ++i;
+        }
+        ++iter;
+        if (iter == end || i >= no_of_areas_per_buffer)
+        {
+            out_buffer.commit();
+            return out_buffer;
         }
     }
 }
