@@ -1,4 +1,4 @@
-@page pedestrian_areas Pedestrian Areas
+# Pedestrian Areas {#pedestrian_areas}
 
 @sa AreaManager
 
@@ -45,7 +45,7 @@ function setup()
 end
 ```
 
-### process_relation(profile, relation, relations)
+## process_relation(profile, relation, relations)
 
 The @ref process_relation function is called for every relation in the input file. If
 you want a relation to be meshed, you must call [area_manager:relation()](@ref AreaManager::relation()).
@@ -61,7 +61,7 @@ function process_relation(profile, relation, relations)
 end
 ```
 
-### process_way(profile, way, result, relations)
+## process_way(profile, way, result, relations)
 
 The @ref process_way function is called for every way in the input file. If you want a
 closed way to be meshed, call [area_manager:way()](@ref AreaManager::way()). (Note that
