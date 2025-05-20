@@ -16,6 +16,8 @@
 #include <boost/test/test_tools.hpp>
 #include <boost/test/unit_test.hpp>
 
+using namespace osrm::util::literals;
+
 #define CHECK_EQUAL_RANGE(R1, R2)                                                                  \
     BOOST_CHECK_EQUAL_COLLECTIONS((R1).begin(), (R1).end(), (R2).begin(), (R2).end());
 
@@ -139,8 +141,7 @@ BOOST_AUTO_TEST_CASE(invalid_table_urls)
 BOOST_AUTO_TEST_CASE(valid_route_segment_hint)
 {
     engine::PhantomNode reference_node;
-    reference_node.input_location =
-        util::Coordinate(util::FloatLongitude{7.432251}, util::FloatLatitude{43.745995});
+    reference_node.input_location = 7.432251_lon + 43.745995_lat;
     engine::SegmentHint reference_segment_hint{reference_node, 0x1337};
     auto encoded_hint = reference_segment_hint.ToBase64();
     auto seg_hint = engine::SegmentHint::FromBase64(encoded_hint);
@@ -150,8 +151,7 @@ BOOST_AUTO_TEST_CASE(valid_route_segment_hint)
 
 BOOST_AUTO_TEST_CASE(valid_route_urls)
 {
-    std::vector<util::Coordinate> coords_1 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}}};
+    std::vector<util::Coordinate> coords_1 = {1_lon + 2_lat, 3_lon + 4_lat};
 
     RouteParameters reference_1{};
     reference_1.coordinates = coords_1;
@@ -278,9 +278,7 @@ BOOST_AUTO_TEST_CASE(valid_route_urls)
     CHECK_EQUAL_RANGE(reference_5.coordinates, result_5->coordinates);
     CHECK_EQUAL_RANGE_OF_HINTS(reference_5.hints, result_5->hints);
 
-    std::vector<util::Coordinate> coords_2 = {{util::FloatLongitude{0}, util::FloatLatitude{1}},
-                                              {util::FloatLongitude{2}, util::FloatLatitude{3}},
-                                              {util::FloatLongitude{4}, util::FloatLatitude{5}}};
+    std::vector<util::Coordinate> coords_2 = {0_lon + 1_lat, 2_lon + 3_lat, 4_lon + 5_lat};
 
     RouteParameters reference_6{};
     reference_6.coordinates = coords_2;
@@ -331,10 +329,8 @@ BOOST_AUTO_TEST_CASE(valid_route_urls)
     CHECK_EQUAL_RANGE(reference_9.radiuses, result_9->radiuses);
 
     // Some Hint's are empty
-    std::vector<util::Coordinate> coords_3 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}},
-                                              {util::FloatLongitude{5}, util::FloatLatitude{6}},
-                                              {util::FloatLongitude{7}, util::FloatLatitude{8}}};
+    std::vector<util::Coordinate> coords_3 = {
+        1_lon + 2_lat, 3_lon + 4_lat, 5_lon + 6_lat, 7_lon + 8_lat};
 
     engine::PhantomNode phantom_3;
     phantom_3.input_location = coords_3[0];
@@ -546,8 +542,7 @@ BOOST_AUTO_TEST_CASE(valid_route_urls)
 
 BOOST_AUTO_TEST_CASE(valid_table_urls)
 {
-    std::vector<util::Coordinate> coords_1 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}}};
+    std::vector<util::Coordinate> coords_1 = {1_lon + 2_lat, 3_lon + 4_lat};
 
     TableParameters reference_1{};
     reference_1.coordinates = coords_1;
@@ -660,8 +655,7 @@ BOOST_AUTO_TEST_CASE(valid_table_urls)
 
 BOOST_AUTO_TEST_CASE(valid_match_urls)
 {
-    std::vector<util::Coordinate> coords_1 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}}};
+    std::vector<util::Coordinate> coords_1 = {1_lon + 2_lat, 3_lon + 4_lat};
 
     MatchParameters reference_1{};
     reference_1.coordinates = coords_1;
@@ -684,9 +678,7 @@ BOOST_AUTO_TEST_CASE(valid_match_urls)
     CHECK_EQUAL_RANGE(reference_2.approaches, result_2->approaches);
     CHECK_EQUAL_RANGE(reference_2.coordinates, result_2->coordinates);
 
-    std::vector<util::Coordinate> coords_2 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}},
-                                              {util::FloatLongitude{5}, util::FloatLatitude{6}}};
+    std::vector<util::Coordinate> coords_2 = {1_lon + 2_lat, 3_lon + 4_lat, 5_lon + 6_lat};
 
     MatchParameters reference_3{};
     reference_3.coordinates = coords_2;
@@ -703,8 +695,7 @@ BOOST_AUTO_TEST_CASE(valid_match_urls)
 
 BOOST_AUTO_TEST_CASE(invalid_match_urls)
 {
-    std::vector<util::Coordinate> coords_1 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}}};
+    std::vector<util::Coordinate> coords_1 = {1_lon + 2_lat, 3_lon + 4_lat};
 
     MatchParameters reference_1{};
     reference_1.coordinates = coords_1;
@@ -716,8 +707,7 @@ BOOST_AUTO_TEST_CASE(invalid_match_urls)
     CHECK_EQUAL_RANGE(reference_1.approaches, result_1->approaches);
     CHECK_EQUAL_RANGE(reference_1.coordinates, result_1->coordinates);
 
-    std::vector<util::Coordinate> coords_2 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}}};
+    std::vector<util::Coordinate> coords_2 = {1_lon + 2_lat, 3_lon + 4_lat};
 
     MatchParameters reference_2{};
     reference_2.coordinates = coords_2;
@@ -728,7 +718,7 @@ BOOST_AUTO_TEST_CASE(invalid_match_urls)
 
 BOOST_AUTO_TEST_CASE(valid_nearest_urls)
 {
-    std::vector<util::Coordinate> coords_1 = {{util::FloatLongitude{1}, util::FloatLatitude{2}}};
+    std::vector<util::Coordinate> coords_1 = {1_lon + 2_lat};
 
     NearestParameters reference_1{};
     reference_1.coordinates = coords_1;
@@ -776,8 +766,7 @@ BOOST_AUTO_TEST_CASE(valid_tile_urls)
 
 BOOST_AUTO_TEST_CASE(valid_trip_urls)
 {
-    std::vector<util::Coordinate> coords_1 = {{util::FloatLongitude{1}, util::FloatLatitude{2}},
-                                              {util::FloatLongitude{3}, util::FloatLatitude{4}}};
+    std::vector<util::Coordinate> coords_1 = {1_lon + 2_lat, 3_lon + 4_lat};
 
     TripParameters reference_1{};
     reference_1.coordinates = coords_1;
