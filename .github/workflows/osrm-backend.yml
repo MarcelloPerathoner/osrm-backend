@@ -478,7 +478,7 @@ jobs:
         fi
 
         # Update package list
-        if [[ "${RUNNER_OS}" == "Linux" || "${ENABLE_CONAN}" != "ON" ]; then
+        if [[ "${RUNNER_OS}" == "Linux" || "${ENABLE_CONAN}" != "ON" ]]; then
           sudo apt-get update -y
         fi
 
