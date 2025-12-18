@@ -278,6 +278,10 @@ elseif(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
   target_link_libraries(osrm-extract wsock32 ws2_32)
 endif()
 
+message(STATUS "CMAKE_CXX_COMPILER_ID: ${CMAKE_CXX_COMPILER_ID}")
+message(STATUS "CMAKE_CXX_COMPILER: ${CMAKE_CXX_COMPILER}")
+message(STATUS "CMAKE_CXX_FLAGS: ${CMAKE_CXX_FLAGS}")
+
 if(UNIX AND NOT APPLE)
   find_library(RT_LIB rt)
   if (RT_LIB)

@@ -97,6 +97,8 @@ json::Object load(const char *filename)
 
 } // namespace
 
+const int ITERATIONS = 20;
+
 int main(int argc, char **argv)
 {
     if (argc < 2)
@@ -107,26 +109,45 @@ int main(int argc, char **argv)
 
     const auto obj = load(argv[1]);
 
-    TIMER_START(string);
-    std::string out_str;
-    json::render(out_str, obj);
-    TIMER_STOP(string);
-    std::cout << "String: " << TIMER_MSEC(string) << "ms" << std::endl;
-
     TIMER_START(stringstream);
-    std::stringstream ss;
-    json::render(ss, obj);
-    std::string out_ss_str{ss.str()};
+    for (int i = 0; i < ITERATIONS; ++i)
+    {
+        std::ostringstream oss;
+        json::render(oss, obj);
+        (void)oss;
+    }
     TIMER_STOP(stringstream);
 
-    std::cout << "Stringstream: " << TIMER_MSEC(stringstream) << "ms" << std::endl;
-    TIMER_START(vector);
-    std::vector<char> out_vec;
-    json::render(out_vec, obj);
-    TIMER_STOP(vector);
-    std::cout << "Vector: " << TIMER_MSEC(vector) << "ms" << std::endl;
+    TIMER_START(string);
+    for (int i = 0; i < ITERATIONS; ++i)
+    {
+        std::string s;
+        json::render(s, obj);
+        (void)s;
+    }
+    TIMER_STOP(string);
 
-    if (std::string{out_vec.begin(), out_vec.end()} != out_str || out_str != out_ss_str)
+    TIMER_START(vector);
+    for (int i = 0; i < ITERATIONS; ++i)
+    {
+        std::vector<char> vec;
+        json::render(vec, obj);
+        (void)vec;
+    }
+    TIMER_STOP(vector);
+
+    std::cout << "String: " << TIMER_MSEC(string) / ITERATIONS << "ms" << std::endl;
+    std::cout << "Stringstream: " << TIMER_MSEC(stringstream) / ITERATIONS << "ms" << std::endl;
+    std::cout << "Vector: " << TIMER_MSEC(vector) / ITERATIONS << "ms" << std::endl;
+
+    std::ostringstream oss;
+    json::render(oss, obj);
+    std::string s;
+    json::render(s, obj);
+    std::vector<char> vec;
+    json::render(vec, obj);
+
+    if (std::string{vec.begin(), vec.end()} != s || oss.str() != s)
     {
         std::cerr << "Vector/string results are not equal\n";
         throw std::logic_error("Vector/stringstream/string results are not equal");
