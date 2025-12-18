@@ -170,16 +170,6 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: clang-21-release
-            continue-on-error: false
-            node: 22
-            runs-on: ubuntu-24.04
-            BUILD_TYPE: Release
-            CCOMPILER: clang-21
-            CXXCOMPILER: clang++-21
-            CUCUMBER_TIMEOUT: 60000
-            ENABLE_LTO: OFF
-
           - name: clang-20-release
             continue-on-error: false
             node: 22
@@ -264,15 +254,6 @@ jobs:
             CXXCOMPILER: clang++-16
             CUCUMBER_TIMEOUT: 60000
             ENABLE_LTO: OFF
-
-          - name: gcc-15-release
-            continue-on-error: false
-            node: 22
-            runs-on: ubuntu-24.04
-            BUILD_TYPE: Release
-            CCOMPILER: gcc-15
-            CXXCOMPILER: g++-15
-            CXXFLAGS: '-Wno-array-bounds -Wno-uninitialized'
 
           - name: gcc-14-release
             continue-on-error: false
