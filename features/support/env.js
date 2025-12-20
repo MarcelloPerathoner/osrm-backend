@@ -59,10 +59,6 @@ export default class Env {
 
     this.OSRM_PORT = parseInt(process.env.OSRM_PORT) || 5000;
     this.OSRM_IP = process.env.OSRM_IP || '127.0.0.1';
-    this.OSRM_CONNECTION_RETRIES =
-      parseInt(process.env.OSRM_CONNECTION_RETRIES) || 10;
-    this.OSRM_CONNECTION_EXP_BACKOFF_COEF =
-      parseFloat(process.env.OSRM_CONNECTION_EXP_BACKOFF_COEF) || 1.1;
 
     this.HOST = `http://${this.OSRM_IP}:${this.OSRM_PORT}`;
 

@@ -1,8 +1,8 @@
 // OSRM binary process management and data loading strategies (datastore, mmap, direct)
 import fs from 'fs';
+import waitOn from 'wait-on';
 import util from 'util';
 import { Timeout, errorReason } from './utils.js';
-import tryConnect from './try_connect.js';
 
 // Base class for managing OSRM routing server process lifecycle
 class OSRMBaseLoader {
@@ -13,22 +13,9 @@ class OSRMBaseLoader {
 
   // Starts OSRM server and waits for it to accept connections
   launch(callback) {
-    const limit = Timeout(this.scope.TIMEOUT, {
-      err: new Error('*** Launching osrm-routed timed out.'),
+    this.osrmUp(() => {
+      this.waitForConnection(callback);
     });
-
-    const runLaunch = (cb) => {
-      this.osrmUp(() => {
-        this.waitForConnection(cb);
-      });
-    };
-
-    runLaunch(
-      limit((e) => {
-        if (e) callback(e);
-        else callback();
-      }),
-    );
   }
 
   // Terminates OSRM server process gracefully
@@ -56,30 +43,15 @@ class OSRMBaseLoader {
   }
 
   waitForConnection(callback) {
-    let retryCount = 0;
-    const retry = (err) => {
-      if (err) {
-        if (retryCount < this.scope.OSRM_CONNECTION_RETRIES) {
-          const timeoutMs =
-            10 *
-            Math.pow(this.scope.OSRM_CONNECTION_EXP_BACKOFF_COEF, retryCount);
-          retryCount++;
-          setTimeout(() => {
-            tryConnect(this.scope.OSRM_IP, this.scope.OSRM_PORT, retry);
-          }, timeoutMs);
-        } else {
-          callback(
-            new Error(
-              `Could not connect to osrm-routed after ${this.scope.OSRM_CONNECTION_RETRIES} retries.`,
-            ),
-          );
-        }
-      } else {
-        callback();
-      }
+    const waitOptions = {
+      resources: [`tcp:${this.scope.OSRM_IP}:${this.scope.OSRM_PORT}`],
+      delay:    10, // initial delay in ms
+      interval: 10, // poll interval in ms
+      timeout:  this.scope.TIMEOUT, // timeout in ms
     };
-
-    tryConnect(this.scope.OSRM_IP, this.scope.OSRM_PORT, retry);
+    waitOn(waitOptions).then(callback, () => callback(new Error(
+      `Could not connect to osrm-routed after ${waitOptions.timeout} ms.`
+    )));
   }
 }
 
@@ -122,14 +94,7 @@ class OSRMDirectLoader extends OSRMBaseLoader {
         }
       },
     );
-
-    this.child.readyFunc = (data) => {
-      if (/running and waiting for requests/.test(data)) {
-        this.child.stdout.removeListener('data', this.child.readyFunc);
-        callback();
-      }
-    };
-    this.child.stdout.on('data', this.child.readyFunc);
+    callback();
   }
 }
 
@@ -172,14 +137,7 @@ class OSRMmmapLoader extends OSRMBaseLoader {
         }
       },
     );
-
-    this.child.readyFunc = (data) => {
-      if (/running and waiting for requests/.test(data)) {
-        this.child.stdout.removeListener('data', this.child.readyFunc);
-        callback();
-      }
-    };
-    this.child.stdout.on('data', this.child.readyFunc);
+    callback();
   }
 }
 
