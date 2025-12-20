@@ -110,7 +110,6 @@ jobs:
           ${{ runner.os }}-node-
     - name: Prepare environment
       run: |
-        npm install
         npm ci --ignore-scripts
         clang-format-15 --version
     - name: Run checks
@@ -529,7 +528,6 @@ jobs:
       run: |
         mkdir ${OSRM_BUILD_DIR}
         ccache --max-size=256M
-        npm install
         npm ci --ignore-scripts
         if [[ "${ENABLE_COVERAGE}" == "ON" ]]; then
           lcov --directory . --zerocounters # clean cached files
