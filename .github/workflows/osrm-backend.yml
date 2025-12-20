@@ -187,7 +187,7 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
-            CUCUMBER_TIMEOUT: 60000
+            CUCUMBER_TIMEOUT: 20000
             ENABLE_LTO: OFF
 
           - name: clang-18-release
@@ -217,7 +217,6 @@ jobs:
             BUILD_TYPE: Debug
             CCOMPILER: clang-18
             CXXCOMPILER: clang++-18
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_CLANG_TIDY: ON
             NODE_PACKAGE_TESTS_ONLY: ON
             ENABLE_LTO: OFF
@@ -377,8 +376,6 @@ jobs:
       ENABLE_SANITIZER: ${{ matrix.ENABLE_SANITIZER }}
       NODE_PACKAGE_TESTS_ONLY: ${{ matrix.NODE_PACKAGE_TESTS_ONLY }}
       TARGET_ARCH: ${{ matrix.TARGET_ARCH }}
-      OSRM_CONNECTION_RETRIES: ${{ matrix.OSRM_CONNECTION_RETRIES }}
-      OSRM_CONNECTION_EXP_BACKOFF_COEF: ${{ matrix.OSRM_CONNECTION_EXP_BACKOFF_COEF }}
       ENABLE_LTO: ${{ matrix.ENABLE_LTO }}
     steps:
     - uses: actions/checkout@v4
@@ -493,6 +490,7 @@ jobs:
       run: |
         mkdir ${OSRM_BUILD_DIR}
         ccache --max-size=256M
+        npm install
         npm ci --ignore-scripts
         if [[ "${ENABLE_COVERAGE}" == "ON" ]]; then
           lcov --directory . --zerocounters # clean cached files
