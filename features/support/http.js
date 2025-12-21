@@ -1,5 +1,6 @@
 // HTTP client utilities for making API requests to OSRM routing server
 import { Timeout } from '../lib/utils.js';
+import { env } from './world.js';
 import http from 'http';
 import https from 'https';
 
@@ -54,7 +55,7 @@ export default class Http {
 
   // FIXME this needs to be simplified!
   sendRequest(baseUri, parameters, callback) {
-    const limit = Timeout(this.TIMEOUT, { err: { statusCode: 408 } });
+    const limit = Timeout(env.TIMEOUT, { err: { statusCode: 408 } });
     const runRequest = (cb) => {
       const params = this.paramsToString(parameters);
       this.query = baseUri + (params.length ? `/${params}` : '');

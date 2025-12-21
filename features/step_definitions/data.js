@@ -1,4 +1,5 @@
 // Step definitions for setting up test data, profiles, and OSM scenarios
+import { env } from '../support/world.js';
 import util from 'util';
 import path from 'path';
 import fs from 'fs';
@@ -7,8 +8,8 @@ import * as OSM from '../lib/osm.js';
 import { Given } from '@cucumber/cucumber';
 
 Given(/^the profile "([^"]*)"$/, function (profile, callback) {
-  this.profile = this.OSRM_PROFILE || profile;
-  this.profileFile = path.join(this.PROFILES_PATH, `${this.profile}.lua`);
+  this.profile = env.OSRM_PROFILE || profile;
+  this.profileFile = path.join(env.PROFILES_PATH, `${this.profile}.lua`);
   callback();
 });
 
@@ -152,9 +153,9 @@ Given(
     const addWay = (row, cb) => {
       const way = new OSM.Way(
         this.makeOSMId(),
-        this.OSM_USER,
-        this.OSM_TIMESTAMP,
-        this.OSM_UID,
+        env.OSM_USER,
+        env.OSM_TIMESTAMP,
+        env.OSM_UID,
         !!add_locations,
       );
 
@@ -218,9 +219,9 @@ Given(/^the relations$/, function (table, callback) {
   const addRelation = (headers, row, cb) => {
     const relation = new OSM.Relation(
       this.makeOSMId(),
-      this.OSM_USER,
-      this.OSM_TIMESTAMP,
-      this.OSM_UID,
+      env.OSM_USER,
+      env.OSM_TIMESTAMP,
+      env.OSM_UID,
     );
 
     let name = null;
@@ -298,7 +299,7 @@ Given(/^the relations$/, function (table, callback) {
         if (key.match(/name/)) name = value;
       }
     }
-    relation.uid = this.OSM_UID;
+    relation.uid = env.OSM_UID;
 
     if (name) {
       this.nameRelationHash[name] = relation;
@@ -328,10 +329,7 @@ Given(/^the raster source$/, function (data, callback) {
   // TODO: Don't overwrite if it exists
   fs.writeFile(this.rasterCacheFile, data, callback);
   // we need this to pass it to the profiles
-  this.environment = Object.assign(
-    { OSRM_RASTER_SOURCE: this.rasterCacheFile },
-    this.environment,
-  );
+  Object.assign(this.environment, { 'OSRM_RASTER_SOURCE' : this.rasterCacheFile });
 });
 
 Given(/^the speed file$/, function (data, callback) {
@@ -347,7 +345,7 @@ Given(/^the turn penalty file$/, function (data, callback) {
 Given(
   /^the profile file(?: "([^"]*)" initialized with)?$/,
   function (profile, data, callback) {
-    const lua_profiles_path = this.PROFILES_PATH.split(path.sep).join('/');
+    const lua_profiles_path = env.PROFILES_PATH.split(path.sep).join('/');
     let text = `package.path = "${lua_profiles_path}/?.lua;" .. package.path\n`;
     if (profile == null) {
       text += `${data}\n`;

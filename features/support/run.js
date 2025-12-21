@@ -3,6 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import util from 'util';
 import child_process from 'child_process';
+import { env } from '../support/world.js';
 
 export default class Run {
   constructor(world) {
@@ -19,7 +20,7 @@ export default class Run {
       '{rastersource_file}': this.rasterCacheFile,
       '{speeds_file}': this.speedsCacheFile,
       '{penalties_file}': this.penaltiesCacheFile,
-      '{timezone_names}': this.TIMEZONE_NAMES,
+      '{timezone_names}': env.TIMEZONE_NAMES,
     };
 
     for (const k in table) {
@@ -42,9 +43,9 @@ export default class Run {
     process.stderr.on('data', process.logFunc);
   }
 
-  runBin(bin, options, env, callback) {
+  runBin(bin, options, environment, callback) {
     const cmd = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, bin, this.EXE),
+      util.format('%s/%s%s', env.BIN_PATH, bin, env.EXE),
     );
     const opts = options.split(' ').filter((x) => {
       return x && x.length > 0;
@@ -57,7 +58,7 @@ export default class Run {
     const child = child_process.execFile(
       cmd,
       opts,
-      { maxBuffer: 1024 * 1024 * 1000, env },
+      { maxBuffer: 1024 * 1024 * 1000, env: environment },
       (err, stdout, stderr) => {
         log.end();
         callback(err, stdout, stderr);

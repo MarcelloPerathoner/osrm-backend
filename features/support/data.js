@@ -8,6 +8,7 @@ import classes from './data_classes.js';
 import tableDiff from '../lib/table_diff.js';
 import { ensureDecimal, errorReason } from '../lib/utils.js';
 import CheapRuler from 'cheap-ruler';
+import { env } from './world.js';
 
 export default class Data {
   constructor(world) {
@@ -58,12 +59,12 @@ export default class Data {
 
       // Creates synthetic OSM node with calculated coordinates
       const makeFakeNode = (namePrefix, offset) => {
-        const coord = this.offsetOriginBy(offset + this.WAY_SPACING * ri, 0);
+        const coord = this.offsetOriginBy(offset + env.WAY_SPACING * ri, 0);
         return new OSM.Node(
           this.makeOSMId(),
-          this.OSM_USER,
-          this.OSM_TIMESTAMP,
-          this.OSM_UID,
+          env.OSM_USER,
+          env.OSM_TIMESTAMP,
+          env.OSM_UID,
           coord[0],
           coord[1],
           { name: util.format('%s%d', namePrefix, ri) },
@@ -79,9 +80,9 @@ export default class Data {
       // ...with a way between them
       const way = new OSM.Way(
         this.makeOSMId(),
-        this.OSM_USER,
-        this.OSM_TIMESTAMP,
-        this.OSM_UID,
+        env.OSM_USER,
+        env.OSM_TIMESTAMP,
+        env.OSM_UID,
       );
 
       nodes.forEach((node) => {
@@ -148,9 +149,9 @@ export default class Data {
     id = id || this.makeOSMId();
     const node = new OSM.Node(
       id,
-      this.OSM_USER,
-      this.OSM_TIMESTAMP,
-      this.OSM_UID,
+      env.OSM_USER,
+      env.OSM_TIMESTAMP,
+      env.OSM_UID,
       lon,
       lat,
       { name },

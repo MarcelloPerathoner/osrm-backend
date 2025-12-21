@@ -3,6 +3,7 @@ import util from 'util';
 import d3 from 'd3-queue';
 import classes from '../support/data_classes.js';
 import { Then } from '@cucumber/cucumber';
+import { env } from '../support/world.js';
 
 Then(/^routability should be$/, function (table, callback) {
   this.buildWaysFromTable(table, () => {
@@ -140,8 +141,8 @@ const testRoutabilityRow = function (i, cb) {
   const result = {};
 
   const testDirection = function (dir, callback) {
-    const coordA = this.offsetOriginBy(1 + this.WAY_SPACING * i, 0);
-    const coordB = this.offsetOriginBy(3 + this.WAY_SPACING * i, 0);
+    const coordA = this.offsetOriginBy(1 + env.WAY_SPACING * i, 0);
+    const coordB = this.offsetOriginBy(3 + env.WAY_SPACING * i, 0);
 
     const a = new classes.Location(coordA[0], coordA[1]),
       b = new classes.Location(coordB[0], coordB[1]),

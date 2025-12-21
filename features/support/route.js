@@ -1,5 +1,6 @@
 // Route response validation and geometry processing utilities
 import { ensureDecimal } from '../lib/utils.js';
+import { env } from './world.js';
 
 export default class Route {
   constructor(world) {
@@ -9,16 +10,16 @@ export default class Route {
   requestPath(service, params, callback) {
     let uri;
     if (service == 'timestamp') {
-      uri = [this.HOST, service].join('/');
+      uri = [env.HOST, service].join('/');
     } else {
-      uri = [this.HOST, service, 'v1', this.profile].join('/');
+      uri = [env.HOST, service, 'v1', this.profile].join('/');
     }
 
     return this.sendRequest(uri, params, callback);
   }
 
   requestUrl(path, callback) {
-    const uri = (this.query = [this.HOST, path].join('/'));
+    const uri = (this.query = [env.HOST, path].join('/'));
     this.sendRequest(uri, '', callback);
   }
 

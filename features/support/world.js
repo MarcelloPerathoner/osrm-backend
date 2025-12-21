@@ -1,10 +1,9 @@
 // Custom World class for OSRM test environment using modern Cucumber.js v13 patterns
-import d3 from 'd3-queue';
 import path from 'path';
 import fs from 'fs';
 import * as OSM from '../lib/osm.js';
 import OSRMLoader from '../lib/osrm_loader.js';
-import { createDir } from '../lib/utils.js';
+import { mkdir } from 'fs/promises';
 import { World, setWorldConstructor } from '@cucumber/cucumber';
 
 import Env from './env.js';
@@ -17,13 +16,11 @@ import Options from './options.js';
 import Fuzzy from './fuzzy.js';
 import SharedSteps from './shared_steps.js';
 
-// Global flags for initialization
-const collectedFeatures = new Set(); // Collect unique features from testCases
+export let env = null;
+export let cache = null;
 
 class OSRMWorld extends World {
   // Private instances of support classes for clean composition
-  #env;
-  #cache;
   #data;
   #http;
   #route;
@@ -37,11 +34,9 @@ class OSRMWorld extends World {
     super(options);
 
     // Initialize Env constants directly in constructor first
-    this.#initializeEnvConstants();
+    // this.#initializeEnvConstants();
 
     // Initialize service instances with access to world
-    this.#env = new Env(this);
-    this.#cache = new Cache(this);
     this.#data = new Data(this);
     this.#http = new Http(this);
     this.#route = new Route(this);
@@ -64,8 +59,6 @@ class OSRMWorld extends World {
   // Copy methods from service classes
   #copyMethodsFromServices() {
     [
-      this.#env,
-      this.#cache,
       this.#data,
       this.#http,
       this.#route,
@@ -83,30 +76,12 @@ class OSRMWorld extends World {
     });
   }
 
-  // Initialize environment constants (extracted from Env class)
-  #initializeEnvConstants() {
-    this.TIMEOUT =
-      (process.env.CUCUMBER_TIMEOUT &&
-        parseInt(process.env.CUCUMBER_TIMEOUT)) ||
-      5000;
-    this.ROOT_PATH = process.cwd();
-    this.TEST_PATH = path.resolve(this.ROOT_PATH, 'test');
-    this.CACHE_PATH = path.resolve(this.TEST_PATH, 'cache');
-    this.LOGS_PATH = path.resolve(this.TEST_PATH, 'logs');
-    this.PROFILES_PATH = path.resolve(this.ROOT_PATH, 'profiles');
-    this.FIXTURES_PATH = path.resolve(this.ROOT_PATH, 'unit_tests/fixtures');
-    this.BIN_PATH =
-      (process.env.OSRM_BUILD_DIR && process.env.OSRM_BUILD_DIR) ||
-      path.resolve(this.ROOT_PATH, 'build');
-    this.DATASET_NAME = 'cucumber';
-  }
-
   // Clean getter access to services
   get env() {
-    return this.#env;
+    return env;
   }
   get cache() {
-    return this.#cache;
+    return cache;
   }
   get data() {
     return this.#data;
@@ -133,58 +108,59 @@ class OSRMWorld extends World {
   // Initialize the world for a specific test case
   // This method is called from Before hook since constructors can't be async
   init(testCase, callback) {
-    // Collect features from testCases
-    collectedFeatures.add(testCase.pickle.uri);
-
-    const queue = d3.queue(1);
-    queue.defer(this.initializeEnv);
-    queue.defer(this.verifyOSRMIsNotRunning);
-    queue.defer(this.verifyExistenceOfBinaries);
-    queue.defer(this.initializeCache);
-
-    // Create mock features array from collected URIs
-    const mockFeatures = Array.from(collectedFeatures).map((uri) => ({
-      getUri: () => uri,
-    }));
-    queue.defer(this.setupFeatures, mockFeatures);
-
-    queue.awaitAll((err) => {
-      if (err) return callback(err);
-      this.setupCurrentScenario(testCase, callback);
-    });
+    if (!env) {
+      env = new Env();
+      env.initializeEnv(callback);
+      env.verifyOSRMIsNotRunning(callback);
+      env.verifyExistenceOfBinaries(callback);
+    }
+    if (!cache) {
+      cache = new Cache(env);
+      cache.initializeCache();
+      cache.initializeFeatures();
+    }
+    cache.initializeFeature(testCase.pickle.uri, callback);
+    this.setupCurrentScenario(testCase);
+    callback();
   }
 
-  setupCurrentScenario(testCase, callback) {
-    this.profile = this.OSRM_PROFILE || this.DEFAULT_PROFILE;
-    this.profileFile = path.join(this.PROFILES_PATH, `${this.profile}.lua`);
-    this.osrmLoader.setLoadMethod(this.DEFAULT_LOAD_METHOD);
-    this.setGridSize(this.DEFAULT_GRID_SIZE);
-    this.setOrigin(this.DEFAULT_ORIGIN);
+  setupCurrentScenario(testCase) {
+    this.profile = env.OSRM_PROFILE || env.DEFAULT_PROFILE;
+    this.profileFile = path.join(env.PROFILES_PATH, `${this.profile}.lua`);
+    this.osrmLoader.setLoadMethod(env.DEFAULT_LOAD_METHOD);
+    this.setGridSize(env.DEFAULT_GRID_SIZE);
+    this.setOrigin(env.DEFAULT_ORIGIN);
     this.queryParams = {};
     this.extractArgs = '';
     this.contractArgs = '';
     this.partitionArgs = '';
     this.customizeArgs = '';
     this.loaderArgs = '';
-    this.environment = Object.assign({}, this.DEFAULT_ENVIRONMENT);
+    this.environment = Object.assign({}, env.DEFAULT_ENVIRONMENT);
     this.resetOSM();
 
     // Set up feature cache
     const mockFeature = { getUri: () => testCase.pickle.uri };
-    this.setupFeatureCache(mockFeature);
+    cache.setupFeatureCache(mockFeature);
 
-    this.scenarioID = this.getScenarioID(testCase);
+    this.scenarioID = cache.getScenarioID(testCase);
     this.setupScenarioCache(this.scenarioID);
 
     // Setup output logging
-    const logDir = path.join(this.LOGS_PATH, this.featureID || 'default');
+    const logDir = path.join(env.LOGS_PATH, this.featureID || 'default');
     this.scenarioLogFile = `${path.join(logDir, this.scenarioID)}.log`;
-    d3.queue(1)
-      .defer(createDir, logDir)
-      .defer((callback) =>
-        fs.rm(this.scenarioLogFile, { force: true }, callback),
-      )
-      .awaitAll(callback);
+    mkdir(logDir, { recursive: true });
+    fs.rmSync(this.scenarioLogFile, { force: true });
+  }
+
+  setupScenarioCache(scenarioID) {
+    this.scenarioCacheFile  = cache.getScenarioCacheFile(scenarioID);
+    this.processedCacheFile = cache.getProcessedCacheFile(scenarioID);
+    this.inputCacheFile     = cache.getInputCacheFile(scenarioID);
+    this.rasterCacheFile    = cache.getRasterCacheFile(scenarioID);
+    this.speedsCacheFile    = cache.getSpeedsCacheFile(scenarioID);
+    this.penaltiesCacheFile = cache.getPenaltiesCacheFile(scenarioID);
+    this.profileCacheFile   = cache.getProfileCacheFile(scenarioID);
   }
 
   // Cleanup method called from After hook

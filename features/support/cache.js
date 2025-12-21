@@ -1,108 +1,79 @@
 // Manages test data caching system with hashing for performance optimization
-import d3 from 'd3-queue';
+import crypto from 'crypto';
 import fs from 'fs';
+import { mkdir } from 'fs/promises';
 import util from 'util';
 import path from 'path';
-import * as hash from '../lib/hash.js';
 import { rm } from 'fs/promises';
-import { createDir } from '../lib/utils.js';
 import { formatterHelpers } from '@cucumber/cucumber';
 
 export default class Cache {
-  constructor(world) {
-    this.world = world;
+  constructor(env) {
+    this.env = env;
   }
 
   // Initializes caching system with OSRM binary hash
-  initializeCache(callback) {
-    this.getOSRMHash((err, osrmHash) => {
-      if (err) return callback(err);
-      this.osrmHash = osrmHash;
-      callback();
-    });
+  initializeCache() {
+    this.osrmHash = this.getOSRMHash();
   }
+
+  initializeFeature(uri, callback) {
+    // setup cache for feature data
+    // if OSRM_PROFILE is set to force a specific profile, then
+    // include the profile name in the hash of the profile file
+
+    const content = fs.readFileSync(uri);
+    const checksum = crypto.createHash('md5');
+    checksum.update(content + (this.env.OSRM_PROFILE || ''));
+    const hash = checksum.digest('hex');
+
+    // shorten uri to be realtive to 'features/'
+    const featurePath = path.relative(path.resolve('./features'), uri);
+    // bicycle/bollards/{HASH}/
+    const featureID = path.join(featurePath, hash);
+    const featureCacheDirectory = this.getFeatureCacheDirectory(featureID);
+    const featureProcessedCacheDirectory =
+      this.getFeatureProcessedCacheDirectory(
+        featureCacheDirectory,
+        this.osrmHash,
+      );
+    this.featureIDs[uri] = featureID;
+    this.featureCacheDirectories[uri] = featureCacheDirectory;
+    this.featureProcessedCacheDirectories[uri] =
+      featureProcessedCacheDirectory;
+    mkdir(featureProcessedCacheDirectory, { recursive: true });
+    this.cleanupFeatureCache(featureCacheDirectory, hash);
+    this.cleanupProcessedFeatureCache(featureProcessedCacheDirectory, this.osrmHash, callback);
+  };
 
   // computes all paths for every feature
   // Sets up cache directories and hashes for all test features
-  setupFeatures(features, callback) {
+  initializeFeatures() {
     this.featureIDs = {};
     this.featureCacheDirectories = {};
     this.featureProcessedCacheDirectories = {};
-    const queue = d3.queue();
-
-    const initializeFeature = (feature, callback) => {
-      const uri = feature.getUri();
-
-      // setup cache for feature data
-      // if OSRM_PROFILE is set to force a specific profile, then
-      // include the profile name in the hash of the profile file
-      hash.hashOfFile(uri, this.OSRM_PROFILE, (err, hash) => {
-        if (err) return callback(err);
-
-        // shorten uri to be realtive to 'features/'
-        const featurePath = path.relative(path.resolve('./features'), uri);
-        // bicycle/bollards/{HASH}/
-        const featureID = path.join(featurePath, hash);
-
-        const featureCacheDirectory = this.getFeatureCacheDirectory(featureID);
-        const featureProcessedCacheDirectory =
-          this.getFeatureProcessedCacheDirectory(
-            featureCacheDirectory,
-            this.osrmHash,
-          );
-        this.featureIDs[uri] = featureID;
-        this.featureCacheDirectories[uri] = featureCacheDirectory;
-        this.featureProcessedCacheDirectories[uri] =
-          featureProcessedCacheDirectory;
-
-        d3.queue(1)
-          .defer(createDir, featureProcessedCacheDirectory)
-          .defer(this.cleanupFeatureCache, featureCacheDirectory, hash)
-          .defer(
-            this.cleanupProcessedFeatureCache,
-            featureProcessedCacheDirectory,
-            this.osrmHash,
-          )
-          .awaitAll(callback);
-      });
-    };
-
-    for (let i = 0; i < features.length; ++i) {
-      queue.defer(initializeFeature, features[i]);
-    }
-    queue.awaitAll(callback);
   }
 
   cleanupProcessedFeatureCache(directory, osrmHash, callback) {
     const parentPath = path.resolve(path.join(directory, '..'));
-    fs.readdir(parentPath, (err, files) => {
-      if (err) return callback(err);
-      const q = d3.queue();
-      files.forEach((f) => {
-        const filePath = path.join(parentPath, f);
-        fs.stat(filePath, (err, stat) => {
-          if (err) return callback(err);
-          if (stat.isDirectory() && filePath.search(osrmHash) < 0) {
-            rm(filePath, { recursive: true, force: true });
-          }
-        });
+    fs.readdirSync(parentPath).forEach((f) => {
+      const filePath = path.join(parentPath, f);
+      fs.stat(filePath, (err, stat) => {
+        if (err) return callback(err);
+        if (stat.isDirectory() && filePath.search(osrmHash) < 0) {
+          rm(filePath, { recursive: true, force: true });
+        }
       });
-      q.awaitAll(callback);
     });
   }
 
-  cleanupFeatureCache(directory, featureHash, callback) {
+  cleanupFeatureCache(directory, featureHash) {
     const parentPath = path.resolve(path.join(directory, '..'));
-    fs.readdir(parentPath, (err, files) => {
-      if (err) return callback(err);
-      const q = d3.queue();
-      files
-        .filter((name) => name !== featureHash)
-        .forEach((f) => {
-          rm(path.join(parentPath, f), { recursive: true, force: true });
-        });
-      q.awaitAll(callback);
-    });
+    fs.readdirSync(parentPath)
+      .filter((name) => name !== featureHash)
+      .forEach((f) => {
+        rm(path.join(parentPath, f), { recursive: true, force: true });
+      });
   }
 
   setupFeatureCache(feature) {
@@ -113,74 +84,36 @@ export default class Cache {
       this.featureProcessedCacheDirectories[uri];
   }
 
-  setupScenarioCache(scenarioID) {
-    this.scenarioCacheFile = this.getScenarioCacheFile(
-      this.featureCacheDirectory,
-      scenarioID,
-    );
-    this.processedCacheFile = this.getProcessedCacheFile(
-      this.featureProcessedCacheDirectory,
-      scenarioID,
-    );
-    this.inputCacheFile = this.getInputCacheFile(
-      this.featureProcessedCacheDirectory,
-      scenarioID,
-    );
-    this.rasterCacheFile = this.getRasterCacheFile(
-      this.featureProcessedCacheDirectory,
-      scenarioID,
-    );
-    this.speedsCacheFile = this.getSpeedsCacheFile(
-      this.featureProcessedCacheDirectory,
-      scenarioID,
-    );
-    this.penaltiesCacheFile = this.getPenaltiesCacheFile(
-      this.featureProcessedCacheDirectory,
-      scenarioID,
-    );
-    this.profileCacheFile = this.getProfileCacheFile(
-      this.featureProcessedCacheDirectory,
-      scenarioID,
-    );
-  }
-
   // returns a hash of all OSRM code side dependencies
-  getOSRMHash(callback) {
+  // that is: all osrm binaries and all lua profiles
+  getOSRMHash() {
+    const env = this.env;
     const dependencies = [
-      this.OSRM_EXTRACT_PATH,
-      this.OSRM_CONTRACT_PATH,
-      this.OSRM_CUSTOMIZE_PATH,
-      this.OSRM_PARTITION_PATH,
-      this.LIB_OSRM_EXTRACT_PATH,
-      this.LIB_OSRM_CONTRACT_PATH,
-      this.LIB_OSRM_CUSTOMIZE_PATH,
-      this.LIB_OSRM_PARTITION_PATH,
+      env.OSRM_EXTRACT_PATH,
+      env.OSRM_CONTRACT_PATH,
+      env.OSRM_CUSTOMIZE_PATH,
+      env.OSRM_PARTITION_PATH,
+      env.LIB_OSRM_EXTRACT_PATH,
+      env.LIB_OSRM_CONTRACT_PATH,
+      env.LIB_OSRM_CUSTOMIZE_PATH,
+      env.LIB_OSRM_PARTITION_PATH,
     ];
 
-    const addLuaFiles = function (directory, callback) {
-      fs.readdir(path.normalize(directory), (err, files) => {
-        if (err) return callback(err);
-
-        const luaFiles = files
-          .filter((f) => !!f.match(/\.lua$/))
-          .map((f) => path.normalize(`${directory}/${f}`));
-        Array.prototype.push.apply(dependencies, luaFiles);
-
-        callback();
-      });
+    const addLuaFiles = function (directory) {
+      const luaFiles = fs.readdirSync(path.normalize(directory))
+        .filter((f) => !!f.match(/\.lua$/))
+        .map((f) => path.normalize(`${directory}/${f}`));
+      Array.prototype.push.apply(dependencies, luaFiles);
     };
 
-    // Note: we need a serialized queue here to ensure that the order of the files
-    // passed is stable. Otherwise the hash will not be stable
-    d3.queue(1)
-      .defer(addLuaFiles, this.PROFILES_PATH)
-      .defer(addLuaFiles, `${this.PROFILES_PATH}/lib`)
-      .awaitAll(hash.hashOfFiles.bind(hash, dependencies, callback));
-  }
+    addLuaFiles(env.PROFILES_PATH);
+    addLuaFiles(`${env.PROFILES_PATH}/lib`);
 
-  // test/cache/bicycle/bollards/{HASH}/
-  getFeatureCacheDirectory(featureID) {
-    return path.join(this.CACHE_PATH, featureID);
+    const checksum = crypto.createHash('md5');
+    for (const file of dependencies) {
+      checksum.update(fs.readFileSync(file));
+    }
+    return checksum.digest('hex');
   }
 
   // converts the scenario titles in file prefixes
@@ -205,29 +138,9 @@ export default class Cache {
     return util.format('%d_%s', line, name);
   }
 
-  // test/cache/{feature_path}/{feature_hash}/{scenario}_raster.asc
-  getRasterCacheFile(featureCacheDirectory, scenarioID) {
-    return `${path.join(featureCacheDirectory, scenarioID)}_raster.asc`;
-  }
-
-  // test/cache/{feature_path}/{feature_hash}/{scenario}_speeds.csv
-  getSpeedsCacheFile(featureCacheDirectory, scenarioID) {
-    return `${path.join(featureCacheDirectory, scenarioID)}_speeds.csv`;
-  }
-
-  // test/cache/{feature_path}/{feature_hash}/{scenario}_penalties.csv
-  getPenaltiesCacheFile(featureCacheDirectory, scenarioID) {
-    return `${path.join(featureCacheDirectory, scenarioID)}_penalties.csv`;
-  }
-
-  // test/cache/{feature_path}/{feature_hash}/{scenario}_profile.lua
-  getProfileCacheFile(featureCacheDirectory, scenarioID) {
-    return `${path.join(featureCacheDirectory, scenarioID)}_profile.lua`;
-  }
-
-  // test/cache/{feature_path}/{feature_hash}/{scenario}.osm
-  getScenarioCacheFile(featureCacheDirectory, scenarioID) {
-    return `${path.join(featureCacheDirectory, scenarioID)}.osm`;
+  // test/cache/bicycle/bollards/{HASH}/
+  getFeatureCacheDirectory(featureID) {
+    return path.join(this.env.CACHE_PATH, featureID);
   }
 
   // test/cache/{feature_path}/{feature_hash}/{osrm_hash}/
@@ -235,13 +148,38 @@ export default class Cache {
     return path.join(featureCacheDirectory, osrmHash);
   }
 
+  // test/cache/{feature_path}/{feature_hash}/{scenario}_raster.asc
+  getRasterCacheFile(scenarioID) {
+    return `${path.join(this.featureProcessedCacheDirectory, scenarioID)}_raster.asc`;
+  }
+
+  // test/cache/{feature_path}/{feature_hash}/{scenario}_speeds.csv
+  getSpeedsCacheFile(scenarioID) {
+    return `${path.join(this.featureProcessedCacheDirectory, scenarioID)}_speeds.csv`;
+  }
+
+  // test/cache/{feature_path}/{feature_hash}/{scenario}_penalties.csv
+  getPenaltiesCacheFile(scenarioID) {
+    return `${path.join(this.featureProcessedCacheDirectory, scenarioID)}_penalties.csv`;
+  }
+
+  // test/cache/{feature_path}/{feature_hash}/{scenario}_profile.lua
+  getProfileCacheFile(scenarioID) {
+    return `${path.join(this.featureProcessedCacheDirectory, scenarioID)}_profile.lua`;
+  }
+
+  // test/cache/{feature_path}/{feature_hash}/{scenario}.osm
+  getScenarioCacheFile(scenarioID) {
+    return `${path.join(this.featureCacheDirectory, scenarioID)}.osm`;
+  }
+
   // test/cache/{feature_path}/{feature_hash}/{osrm_hash}/{scenario}.osrm
-  getProcessedCacheFile(featureProcessedCacheDirectory, scenarioID) {
-    return `${path.join(featureProcessedCacheDirectory, scenarioID)}.osrm`;
+  getProcessedCacheFile(scenarioID) {
+    return `${path.join(this.featureProcessedCacheDirectory, scenarioID)}.osrm`;
   }
 
   // test/cache/{feature_path}/{feature_hash}/{osrm_hash}/{scenario}.osm
-  getInputCacheFile(featureProcessedCacheDirectory, scenarioID) {
-    return `${path.join(featureProcessedCacheDirectory, scenarioID)}.osm`;
+  getInputCacheFile(scenarioID) {
+    return `${path.join(this.featureProcessedCacheDirectory, scenarioID)}.osm`;
   }
 }

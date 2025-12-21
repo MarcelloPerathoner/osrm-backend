@@ -3,6 +3,7 @@ import fs from 'fs';
 import waitOn from 'wait-on';
 import util from 'util';
 import { Timeout, errorReason } from './utils.js';
+import { env } from '../support/world.js';
 
 // Base class for managing OSRM routing server process lifecycle
 class OSRMBaseLoader {
@@ -22,7 +23,7 @@ class OSRMBaseLoader {
   shutdown(callback) {
     if (!this.osrmIsRunning()) return callback();
 
-    const limit = Timeout(this.scope.TIMEOUT, {
+    const limit = Timeout(env.TIMEOUT, {
       err: new Error('*** Shutting down osrm-routed timed out.'),
     });
 
@@ -44,10 +45,10 @@ class OSRMBaseLoader {
 
   waitForConnection(callback) {
     const waitOptions = {
-      resources: [`tcp:${this.scope.OSRM_IP}:${this.scope.OSRM_PORT}`],
+      resources: [`tcp:${env.OSRM_IP}:${env.OSRM_PORT}`],
       delay:    10, // initial delay in ms
       interval: 10, // poll interval in ms
-      timeout:  this.scope.TIMEOUT, // timeout in ms
+      timeout:  env.TIMEOUT, // timeout in ms
     };
     waitOn(waitOptions).then(callback, () => callback(new Error(
       `Could not connect to osrm-routed after ${waitOptions.timeout} ms.`
@@ -76,9 +77,9 @@ class OSRMDirectLoader extends OSRMBaseLoader {
     const command_arguments = util.format(
       '%s -p %d -i %s -a %s %s',
       this.inputFile,
-      this.scope.OSRM_PORT,
-      this.scope.OSRM_IP,
-      this.scope.ROUTING_ALGORITHM,
+      env.OSRM_PORT,
+      env.OSRM_IP,
+      env.ROUTING_ALGORITHM,
       this.loaderArgs,
     );
     this.child = this.scope.runBin(
@@ -119,9 +120,9 @@ class OSRMmmapLoader extends OSRMBaseLoader {
     const command_arguments = util.format(
       '%s -p %d -i %s -a %s --mmap %s',
       this.inputFile,
-      this.scope.OSRM_PORT,
-      this.scope.OSRM_IP,
-      this.scope.ROUTING_ALGORITHM,
+      env.OSRM_PORT,
+      env.OSRM_IP,
+      env.ROUTING_ALGORITHM,
       this.loaderArgs,
     );
     this.child = this.scope.runBin(
@@ -167,7 +168,7 @@ class OSRMDatastoreLoader extends OSRMBaseLoader {
   loadData(callback) {
     const command_arguments = util.format(
       '--dataset-name=%s %s %s',
-      this.scope.DATASET_NAME,
+      env.DATASET_NAME,
       this.inputFile,
       this.loaderArgs,
     );
@@ -190,10 +191,10 @@ class OSRMDatastoreLoader extends OSRMBaseLoader {
 
     const command_arguments = util.format(
       '--dataset-name=%s -s -i %s -p %d -a %s',
-      this.scope.DATASET_NAME,
-      this.scope.OSRM_IP,
-      this.scope.OSRM_PORT,
-      this.scope.ROUTING_ALGORITHM,
+      env.DATASET_NAME,
+      env.OSRM_IP,
+      env.OSRM_PORT,
+      env.ROUTING_ALGORITHM,
     );
     this.child = this.scope.runBin(
       'osrm-routed',
