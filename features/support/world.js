@@ -117,9 +117,9 @@ class OSRMWorld extends World {
     if (!cache) {
       cache = new Cache(env);
       cache.initializeCache();
-      cache.initializeFeatures();
     }
     cache.initializeFeature(testCase.pickle.uri, callback);
+
     this.setupCurrentScenario(testCase);
     callback();
   }
@@ -138,10 +138,6 @@ class OSRMWorld extends World {
     this.loaderArgs = '';
     this.environment = Object.assign({}, env.DEFAULT_ENVIRONMENT);
     this.resetOSM();
-
-    // Set up feature cache
-    const mockFeature = { getUri: () => testCase.pickle.uri };
-    cache.setupFeatureCache(mockFeature);
 
     this.scenarioID = cache.getScenarioID(testCase);
     this.setupScenarioCache(this.scenarioID);

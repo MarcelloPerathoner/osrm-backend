@@ -1,10 +1,8 @@
 // Manages test data caching system with hashing for performance optimization
 import crypto from 'crypto';
-import fs from 'fs';
-import { mkdir } from 'fs/promises';
+import fs, { mkdirSync, rmSync } from 'fs';
 import util from 'util';
 import path from 'path';
-import { rm } from 'fs/promises';
 import { formatterHelpers } from '@cucumber/cucumber';
 
 export default class Cache {
@@ -17,11 +15,18 @@ export default class Cache {
     this.osrmHash = this.getOSRMHash();
   }
 
-  initializeFeature(uri, callback) {
+  initializeFeature(uri, _callback) {
     // setup cache for feature data
+    //
+    // The feature cache contains the .osm files cucumber generated for: "Given the node
+    // map ... and the ways ..." eg. test/cache/car/access.feature/<hash>/
+    //
+    // The processed feature cache contains the files osrm-extract generated from the
+    // files in the feature cache. It is a subdirectory of the feature cache directory
+    // named after the osrmHash. eg. test/cache/car/access.feature/<hash>/<osrmHash>/
+
     // if OSRM_PROFILE is set to force a specific profile, then
     // include the profile name in the hash of the profile file
-
     const content = fs.readFileSync(uri);
     const checksum = crypto.createHash('md5');
     checksum.update(content + (this.env.OSRM_PROFILE || ''));
@@ -29,59 +34,39 @@ export default class Cache {
 
     // shorten uri to be realtive to 'features/'
     const featurePath = path.relative(path.resolve('./features'), uri);
-    // bicycle/bollards/{HASH}/
-    const featureID = path.join(featurePath, hash);
-    const featureCacheDirectory = this.getFeatureCacheDirectory(featureID);
-    const featureProcessedCacheDirectory =
+    // bicycle/bollards/{hash}/
+    this.featureID = path.join(featurePath, hash);
+    this.featureCacheDirectory = this.getFeatureCacheDirectory(this.featureID);
+    this.featureProcessedCacheDirectory =
       this.getFeatureProcessedCacheDirectory(
-        featureCacheDirectory,
+        this.featureCacheDirectory,
         this.osrmHash,
       );
-    this.featureIDs[uri] = featureID;
-    this.featureCacheDirectories[uri] = featureCacheDirectory;
-    this.featureProcessedCacheDirectories[uri] =
-      featureProcessedCacheDirectory;
-    mkdir(featureProcessedCacheDirectory, { recursive: true });
-    this.cleanupFeatureCache(featureCacheDirectory, hash);
-    this.cleanupProcessedFeatureCache(featureProcessedCacheDirectory, this.osrmHash, callback);
+
+    mkdirSync(this.featureProcessedCacheDirectory, { recursive: true });
+
+    this.removeOldFeatureCaches(path.join(this.env.CACHE_PATH, featurePath), hash, this.osrmHash);
   };
 
-  // computes all paths for every feature
-  // Sets up cache directories and hashes for all test features
-  initializeFeatures() {
-    this.featureIDs = {};
-    this.featureCacheDirectories = {};
-    this.featureProcessedCacheDirectories = {};
+  removeOldFeatureCaches(parent, hash, osrmHash) {
+    for (const file of fs.readdirSync(parent)) {
+      const fn = path.join(parent, file);
+      if (file === hash) {
+        this.removeOldProcessedFeatureCaches(fn, osrmHash);
+      } else {
+        rmSync(fn, { recursive: true, force: true });
+      }
+    };
   }
 
-  cleanupProcessedFeatureCache(directory, osrmHash, callback) {
-    const parentPath = path.resolve(path.join(directory, '..'));
-    fs.readdirSync(parentPath).forEach((f) => {
-      const filePath = path.join(parentPath, f);
-      fs.stat(filePath, (err, stat) => {
-        if (err) return callback(err);
-        if (stat.isDirectory() && filePath.search(osrmHash) < 0) {
-          rm(filePath, { recursive: true, force: true });
-        }
-      });
-    });
-  }
-
-  cleanupFeatureCache(directory, featureHash) {
-    const parentPath = path.resolve(path.join(directory, '..'));
-    fs.readdirSync(parentPath)
-      .filter((name) => name !== featureHash)
-      .forEach((f) => {
-        rm(path.join(parentPath, f), { recursive: true, force: true });
-      });
-  }
-
-  setupFeatureCache(feature) {
-    const uri = feature.getUri();
-    this.featureID = this.featureIDs[uri];
-    this.featureCacheDirectory = this.featureCacheDirectories[uri];
-    this.featureProcessedCacheDirectory =
-      this.featureProcessedCacheDirectories[uri];
+  removeOldProcessedFeatureCaches(parent, osrmHash) {
+    for (const file of fs.readdirSync(parent)) {
+      const fn = path.join(parent, file);
+      const stat = fs.statSync(fn);
+      if (stat.isDirectory() && file !== osrmHash) {
+        rmSync(fn, { recursive: true, force: true });
+      }
+    };
   }
 
   // returns a hash of all OSRM code side dependencies
