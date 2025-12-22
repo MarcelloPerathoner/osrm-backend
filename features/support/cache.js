@@ -6,17 +6,9 @@ import path from 'path';
 import { formatterHelpers } from '@cucumber/cucumber';
 
 export default class Cache {
-  constructor(env) {
+  constructor(env, uri, _callback) {
     this.env = env;
-  }
-
-  // Initializes caching system with OSRM binary hash
-  initializeCache() {
-    this.osrmHash = this.getOSRMHash();
-  }
-
-  initializeFeature(uri, _callback) {
-    // setup cache for feature data
+    // There is one cache per feature.
     //
     // The feature cache contains the .osm files cucumber generated for: "Given the node
     // map ... and the ways ..." eg. test/cache/car/access.feature/<hash>/
@@ -34,18 +26,16 @@ export default class Cache {
 
     // shorten uri to be realtive to 'features/'
     const featurePath = path.relative(path.resolve('./features'), uri);
-    // bicycle/bollards/{hash}/
+    /** eg. bicycle/bollards/{hash}/ */
     this.featureID = path.join(featurePath, hash);
-    this.featureCacheDirectory = this.getFeatureCacheDirectory(this.featureID);
-    this.featureProcessedCacheDirectory =
-      this.getFeatureProcessedCacheDirectory(
-        this.featureCacheDirectory,
-        this.osrmHash,
-      );
+    /** eg. test/cache/bicycle/bollards/{hash}/ */
+    this.featureCacheDirectory = path.join(this.env.CACHE_PATH, this.featureID);
+    /** eg. test/cache/bicycle/bollards/{hash}/{osrm_hash}/ */
+    this.featureProcessedCacheDirectory = path.join(this.featureCacheDirectory, this.env.osrmHash);
 
+    // make a new or clean the old cache directory
     mkdirSync(this.featureProcessedCacheDirectory, { recursive: true });
-
-    this.removeOldFeatureCaches(path.join(this.env.CACHE_PATH, featurePath), hash, this.osrmHash);
+    this.removeOldFeatureCaches(path.join(this.env.CACHE_PATH, featurePath), hash, this.env.osrmHash);
   };
 
   removeOldFeatureCaches(parent, hash, osrmHash) {
@@ -67,38 +57,6 @@ export default class Cache {
         rmSync(fn, { recursive: true, force: true });
       }
     };
-  }
-
-  // returns a hash of all OSRM code side dependencies
-  // that is: all osrm binaries and all lua profiles
-  getOSRMHash() {
-    const env = this.env;
-    const dependencies = [
-      env.OSRM_EXTRACT_PATH,
-      env.OSRM_CONTRACT_PATH,
-      env.OSRM_CUSTOMIZE_PATH,
-      env.OSRM_PARTITION_PATH,
-      env.LIB_OSRM_EXTRACT_PATH,
-      env.LIB_OSRM_CONTRACT_PATH,
-      env.LIB_OSRM_CUSTOMIZE_PATH,
-      env.LIB_OSRM_PARTITION_PATH,
-    ];
-
-    const addLuaFiles = function (directory) {
-      const luaFiles = fs.readdirSync(path.normalize(directory))
-        .filter((f) => !!f.match(/\.lua$/))
-        .map((f) => path.normalize(`${directory}/${f}`));
-      Array.prototype.push.apply(dependencies, luaFiles);
-    };
-
-    addLuaFiles(env.PROFILES_PATH);
-    addLuaFiles(`${env.PROFILES_PATH}/lib`);
-
-    const checksum = crypto.createHash('md5');
-    for (const file of dependencies) {
-      checksum.update(fs.readFileSync(file));
-    }
-    return checksum.digest('hex');
   }
 
   // converts the scenario titles in file prefixes
@@ -123,14 +81,14 @@ export default class Cache {
     return util.format('%d_%s', line, name);
   }
 
-  // test/cache/bicycle/bollards/{HASH}/
-  getFeatureCacheDirectory(featureID) {
-    return path.join(this.env.CACHE_PATH, featureID);
-  }
-
-  // test/cache/{feature_path}/{feature_hash}/{osrm_hash}/
-  getFeatureProcessedCacheDirectory(featureCacheDirectory, osrmHash) {
-    return path.join(featureCacheDirectory, osrmHash);
+  // test/cache/bicycle/bollards/{feature_hash}/{scenario}.log
+  /** Ensures the logfile directory and removes an old logfile. */
+  setupLogFile(scenarioID) {
+    const logDir = path.join(this.env.LOGS_PATH, this.featureID || 'default');
+    mkdirSync(logDir, { recursive: true });
+    const logFile = `${path.join(logDir, scenarioID)}.log`;
+    rmSync(logFile, { force: true });
+    return logFile;
   }
 
   // test/cache/{feature_path}/{feature_hash}/{scenario}_raster.asc

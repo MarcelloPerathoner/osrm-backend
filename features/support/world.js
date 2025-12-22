@@ -1,12 +1,11 @@
 // Custom World class for OSRM test environment using modern Cucumber.js v13 patterns
 import path from 'path';
-import fs from 'fs';
-import * as OSM from '../lib/osm.js';
-import OSRMLoader from '../lib/osrm_loader.js';
-import { mkdir } from 'fs/promises';
 import { World, setWorldConstructor } from '@cucumber/cucumber';
 
-import Env from './env.js';
+import * as OSM from '../lib/osm.js';
+import OSRMLoader from '../lib/osrm_loader.js';
+import { env } from '../support/env.js';
+
 import Cache from './cache.js';
 import Data from './data.js';
 import Http from './http.js';
@@ -15,9 +14,6 @@ import Run from './run.js';
 import Options from './options.js';
 import Fuzzy from './fuzzy.js';
 import SharedSteps from './shared_steps.js';
-
-export let env = null;
-export let cache = null;
 
 class OSRMWorld extends World {
   // Private instances of support classes for clean composition
@@ -32,9 +28,6 @@ class OSRMWorld extends World {
   constructor(options) {
     // Get built-in Cucumber helpers: this.attach, this.log, this.parameters
     super(options);
-
-    // Initialize Env constants directly in constructor first
-    // this.#initializeEnvConstants();
 
     // Initialize service instances with access to world
     this.#data = new Data(this);
@@ -77,12 +70,6 @@ class OSRMWorld extends World {
   }
 
   // Clean getter access to services
-  get env() {
-    return env;
-  }
-  get cache() {
-    return cache;
-  }
   get data() {
     return this.#data;
   }
@@ -108,23 +95,13 @@ class OSRMWorld extends World {
   // Initialize the world for a specific test case
   // This method is called from Before hook since constructors can't be async
   init(testCase, callback) {
-    if (!env) {
-      env = new Env();
-      env.initializeEnv(callback);
-      env.verifyOSRMIsNotRunning(callback);
-      env.verifyExistenceOfBinaries(callback);
-    }
-    if (!cache) {
-      cache = new Cache(env);
-      cache.initializeCache();
-    }
-    cache.initializeFeature(testCase.pickle.uri, callback);
+    this.cache = new Cache(env, testCase.pickle.uri, callback);
+    this.setupCurrentScenario(this.cache, testCase);
 
-    this.setupCurrentScenario(testCase);
     callback();
   }
 
-  setupCurrentScenario(testCase) {
+  setupCurrentScenario(cache, testCase) {
     this.profile = env.OSRM_PROFILE || env.DEFAULT_PROFILE;
     this.profileFile = path.join(env.PROFILES_PATH, `${this.profile}.lua`);
     this.osrmLoader.setLoadMethod(env.DEFAULT_LOAD_METHOD);
@@ -139,17 +116,8 @@ class OSRMWorld extends World {
     this.environment = Object.assign({}, env.DEFAULT_ENVIRONMENT);
     this.resetOSM();
 
-    this.scenarioID = cache.getScenarioID(testCase);
-    this.setupScenarioCache(this.scenarioID);
+    const scenarioID = cache.getScenarioID(testCase);
 
-    // Setup output logging
-    const logDir = path.join(env.LOGS_PATH, this.featureID || 'default');
-    this.scenarioLogFile = `${path.join(logDir, this.scenarioID)}.log`;
-    mkdir(logDir, { recursive: true });
-    fs.rmSync(this.scenarioLogFile, { force: true });
-  }
-
-  setupScenarioCache(scenarioID) {
     this.scenarioCacheFile  = cache.getScenarioCacheFile(scenarioID);
     this.processedCacheFile = cache.getProcessedCacheFile(scenarioID);
     this.inputCacheFile     = cache.getInputCacheFile(scenarioID);
@@ -157,6 +125,7 @@ class OSRMWorld extends World {
     this.speedsCacheFile    = cache.getSpeedsCacheFile(scenarioID);
     this.penaltiesCacheFile = cache.getPenaltiesCacheFile(scenarioID);
     this.profileCacheFile   = cache.getProfileCacheFile(scenarioID);
+    this.scenarioLogFile    = cache.setupLogFile(scenarioID);
   }
 
   // Cleanup method called from After hook

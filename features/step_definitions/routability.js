@@ -3,7 +3,7 @@ import util from 'util';
 import d3 from 'd3-queue';
 import classes from '../support/data_classes.js';
 import { Then } from '@cucumber/cucumber';
-import { env } from '../support/world.js';
+import { env } from '../support/env.js';
 
 Then(/^routability should be$/, function (table, callback) {
   this.buildWaysFromTable(table, () => {

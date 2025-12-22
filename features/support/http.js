@@ -1,6 +1,6 @@
 // HTTP client utilities for making API requests to OSRM routing server
 import { Timeout } from '../lib/utils.js';
-import { env } from './world.js';
+import { env } from './env.js';
 import http from 'http';
 import https from 'https';
 

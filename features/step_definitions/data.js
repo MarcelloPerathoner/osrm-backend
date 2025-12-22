@@ -1,11 +1,11 @@
 // Step definitions for setting up test data, profiles, and OSM scenarios
-import { env } from '../support/world.js';
 import util from 'util';
 import path from 'path';
 import fs from 'fs';
 import d3 from 'd3-queue';
 import * as OSM from '../lib/osm.js';
 import { Given } from '@cucumber/cucumber';
+import { env } from '../support/env.js';
 
 Given(/^the profile "([^"]*)"$/, function (profile, callback) {
   this.profile = env.OSRM_PROFILE || profile;

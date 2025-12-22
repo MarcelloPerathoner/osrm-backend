@@ -8,7 +8,7 @@ import classes from './data_classes.js';
 import tableDiff from '../lib/table_diff.js';
 import { ensureDecimal, errorReason } from '../lib/utils.js';
 import CheapRuler from 'cheap-ruler';
-import { env } from './world.js';
+import { env } from './env.js';
 
 export default class Data {
   constructor(world) {

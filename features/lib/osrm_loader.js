@@ -3,7 +3,7 @@ import fs from 'fs';
 import waitOn from 'wait-on';
 import util from 'util';
 import { Timeout, errorReason } from './utils.js';
-import { env } from '../support/world.js';
+import { env } from '../support/env.js';
 
 // Base class for managing OSRM routing server process lifecycle
 class OSRMBaseLoader {
@@ -54,6 +54,20 @@ class OSRMBaseLoader {
       `Could not connect to osrm-routed after ${waitOptions.timeout} ms.`
     )));
   }
+}
+
+/** calls callback with error if osrm-routed is up */
+export async function testOsrmDown(callback) {
+  const waitOptions = {
+    resources: [`tcp:${env.OSRM_IP}:${env.OSRM_PORT}`],
+    delay:    0, // initial delay in ms
+    interval: 10, // poll interval in ms
+    timeout:  env.TIMEOUT, // timeout in ms
+    reverse: true,
+  };
+  await waitOn(waitOptions).catch(() => callback(new Error(
+    `*** osrm-routed is already running on ${env.HOST}.`
+  )));
 }
 
 // Loads data directly from .osrm files into memory

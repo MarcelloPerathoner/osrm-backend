@@ -1,6 +1,6 @@
 // Route response validation and geometry processing utilities
 import { ensureDecimal } from '../lib/utils.js';
-import { env } from './world.js';
+import { env } from './env.js';
 
 export default class Route {
   constructor(world) {

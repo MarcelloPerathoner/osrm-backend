@@ -3,7 +3,7 @@ import path from 'path';
 import fs from 'fs';
 import util from 'util';
 import child_process from 'child_process';
-import { env } from '../support/world.js';
+import { env } from '../support/env.js';
 
 export default class Run {
   constructor(world) {
