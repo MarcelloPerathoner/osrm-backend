@@ -79,65 +79,29 @@ class Env {
       );
     }
 
-    this.OSRM_EXTRACT_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-extract', this.EXE),
-    );
-    this.OSRM_CONTRACT_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-contract', this.EXE),
-    );
-    this.OSRM_CUSTOMIZE_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-customize', this.EXE),
-    );
-    this.OSRM_PARTITION_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-partition', this.EXE),
-    );
-    this.OSRM_ROUTED_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-routed', this.EXE),
-    );
-    ((this.LIB_OSRM_EXTRACT_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_extract',
-    )),
-    (this.LIB_OSRM_CONTRACT_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_contract',
-    )),
-    (this.LIB_OSRM_CUSTOMIZE_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_customize',
-    )),
-    (this.LIB_OSRM_PARTITION_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_partition',
-    )),
-    (this.LIB_OSRM_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm',
-    )));
+    /** binaries responsible for the cached files */
+    this.extraction_binaries = [];
+    /** libraries responsible for the cached files */
+    this.libraries = [];
+    /** binaries that must be present */
+    this.all_binaries = [];
+
+    for (const i of ['extract', 'contract', 'customize', 'partition']) {
+      const bin = path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`);
+      this.extraction_binaries.push(bin);
+      this.all_binaries.push(bin);
+    }
+    for (const i of 'routed'.split()) {
+      this.all_binaries.push(path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`));
+    }
+    for (const i of ['_extract', '_contract', '_customize', '_partition', '']) {
+      const lib = path.join(this.BIN_PATH, util.format(this.LIB, `osrm${i}`));
+      this.libraries.push(lib);
+    }
 
     if (!fs.existsSync(this.TEST_PATH)) {
-      callback(new Error('*** Test folder doesn\'t exist.'));
+      callback(new Error(`*** Test folder doesn't exist: ${this.TEST_PATH}`));
     };
-
-    this.binaries = [
-      this.OSRM_EXTRACT_PATH,
-      this.OSRM_CONTRACT_PATH,
-      this.OSRM_CUSTOMIZE_PATH,
-      this.OSRM_PARTITION_PATH,
-      this.OSRM_ROUTED_PATH,
-    ];
-
-    this.libraries = [
-      this.LIB_OSRM_EXTRACT_PATH,
-      this.LIB_OSRM_CONTRACT_PATH,
-      this.LIB_OSRM_CUSTOMIZE_PATH,
-      this.LIB_OSRM_PARTITION_PATH,
-    ];
 
     /** A hash of all osrm binaries and lua profiles */
     this.osrmHash = this.getOSRMHash();
@@ -156,7 +120,7 @@ class Env {
   // returns a hash of all OSRM code side dependencies
   // that is: all osrm binaries and all lua profiles
   getOSRMHash() {
-    const dependencies = this.binaries.concat(this.libraries);
+    const dependencies = this.extraction_binaries.concat(this.libraries);
 
     const addLuaFiles = function (directory) {
       const luaFiles = fs.readdirSync(path.normalize(directory))
@@ -176,22 +140,16 @@ class Env {
   }
 
   verifyExistenceOfBinaries(callback) {
-    for (const binPath of this.binaries) {
+    for (const binPath of this.all_binaries) {
       if (!fs.existsSync(binPath)) {
         return callback(
-          new Error(util.format('*** %s is missing. Build failed?', binPath)),
+          new Error(`*** ${binPath} is missing. Build failed?`)
         );
       }
-      const helpPath = util.format('%s --help', binPath);
-      child_process.exec(helpPath, (err) => {
-        if (err) {
-          return callback(
-            new Error(
-              util.format('*** %s exited with code %d', helpPath, err.code),
-            ),
-          );
-        }
-      });
+      const res = child_process.spawnSync(binPath, ['--help']);
+      if (res.error) {
+        return callback(res.error);
+      };
     };
   }
 }
