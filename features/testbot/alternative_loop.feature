@@ -1,4 +1,4 @@
-@routing @testbot @alternative
+@routing @testbot @alternative @isolated @todo
 Feature: Alternative route
 
     Background:

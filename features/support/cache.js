@@ -6,7 +6,7 @@ import path from 'path';
 import { formatterHelpers } from '@cucumber/cucumber';
 
 export default class Cache {
-  constructor(env, uri, _callback) {
+  constructor(env, uri) {
     this.env = env;
     // There is one cache per feature.
     //

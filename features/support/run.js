@@ -1,8 +1,8 @@
 // Process execution utilities for running OSRM binaries and managing subprocesses
 import path from 'path';
 import fs from 'fs';
-import util from 'util';
 import child_process from 'child_process';
+
 import { env } from '../support/env.js';
 
 export default class Run {
@@ -12,7 +12,6 @@ export default class Run {
 
   // replaces placeholders for in user supplied commands
   expandOptions(options) {
-    let opts = options.slice();
     const table = {
       '{osm_file}': this.inputCacheFile,
       '{processed_file}': this.processedCacheFile,
@@ -23,8 +22,9 @@ export default class Run {
       '{timezone_names}': env.TIMEZONE_NAMES,
     };
 
-    for (const k in table) {
-      opts = opts.replace(k, table[k]);
+    const opts = [];
+    for (const option of options.split(/\s+/)) {
+      opts.push(table[option] || option);
     }
 
     return opts;
@@ -43,34 +43,50 @@ export default class Run {
     process.stderr.on('data', process.logFunc);
   }
 
-  runBin(bin, options, environment, callback) {
-    const cmd = path.resolve(
-      util.format('%s/%s%s', env.BIN_PATH, bin, env.EXE),
-    );
-    const opts = options.split(' ').filter((x) => {
-      return x && x.length > 0;
-    });
+  mkPath(bin) {
+    return path.resolve(path.join(env.BIN_PATH, `${bin}${env.EXE}`));
+  }
+
+  runBin(bin, args, environment) {
+    const cmd = this.mkPath(bin);
+    const argsAsString = args.join(' ');
     const log = fs.createWriteStream(this.scenarioLogFile, { flags: 'a' });
-    log.write(util.format('*** running %s %s\n', cmd, options));
+    log.write(`*** running ${cmd} ${argsAsString}\n`);
 
     // we need to set a large maxbuffer here because we have long running processes like osrm-routed
     // with lots of log output
-    const child = child_process.execFile(
+    const child = child_process.spawn(
       cmd,
-      opts,
-      { maxBuffer: 1024 * 1024 * 1000, env: environment },
-      (err, stdout, stderr) => {
-        log.end();
-        callback(err, stdout, stderr);
-      },
+      args,
+      { env: environment, maxBuffer: 1024 * 1024 * 1000 }
     );
 
     child.on('exit', (code) => {
-      log.write(util.format('*** %s exited with code %d\n', bin, code));
+      log.write(`*** ${bin} exited with code ${code}\n`);
+      log.end();
     });
 
     // Don't setup output logging as it interferes with execFile's output capture
     // this.setupOutputLog(child, log);
+    return child;
+  }
+
+  runBinSync(bin, args, options) {
+    const cmd = this.mkPath(bin);
+    const argsAsString = args.join(' ');
+    const log = fs.createWriteStream(this.scenarioLogFile, { flags: 'a' });
+    log.write(`*** running ${cmd} ${argsAsString}\n`);
+
+    options.timeout = options.timeout || this.environment.TIMEOUT;
+
+    const child = child_process.spawnSync(
+      cmd,
+      args,
+      options
+    );
+
+    log.write(`*** ${bin} exited with code ${child.status}\n`);
+    log.end();
     return child;
   }
 }

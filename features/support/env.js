@@ -22,7 +22,6 @@ class Env {
     this.FIXTURES_PATH = path.resolve(this.ROOT_PATH, 'unit_tests/fixtures');
     this.BIN_PATH =
       process.env.OSRM_BUILD_DIR || path.resolve(this.ROOT_PATH, 'build');
-    this.DATASET_NAME = 'cucumber';
     this.PLATFORM_WINDOWS = process.platform.match(/^win.*/);
     this.DEFAULT_ENVIRONMENT = process.env;
     this.DEFAULT_PROFILE = 'bicycle';
@@ -47,12 +46,14 @@ class Env {
       : 'CH';
     this.TIMEZONE_NAMES = this.PLATFORM_WINDOWS ? 'win' : 'iana';
 
-    this.OSRM_PORT = parseInt(process.env.OSRM_PORT) || 5000;
+    this.CUCUMBER_WORKER_ID = parseInt(process.env.CUCUMBER_WORKER_ID || '0');
+    this.OSRM_PORT = (parseInt(process.env.OSRM_PORT || '5000') + this.CUCUMBER_WORKER_ID).toString();
     this.OSRM_IP = process.env.OSRM_IP || '127.0.0.1';
 
     this.HOST = `http://${this.OSRM_IP}:${this.OSRM_PORT}`;
 
     this.OSRM_PROFILE = process.env.OSRM_PROFILE;
+    this.DATASET_NAME = `cucumber${this.CUCUMBER_WORKER_ID}`;
 
     if (this.PLATFORM_WINDOWS) {
       this.TERMSIGNAL = 9;

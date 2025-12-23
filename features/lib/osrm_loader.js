@@ -1,283 +1,148 @@
-// OSRM binary process management and data loading strategies (datastore, mmap, direct)
+// osrm-routed process management and data loading strategies (datastore, mmap, direct)
 import fs from 'fs';
 import waitOn from 'wait-on';
-import util from 'util';
-import { Timeout, errorReason } from './utils.js';
 import { env } from '../support/env.js';
+import { errorReason } from '../lib/utils.js';
 
 // Base class for managing OSRM routing server process lifecycle
 class OSRMBaseLoader {
-  constructor(scope) {
-    this.scope = scope;
+  constructor(world) {
+    this.world = world;
     this.child = null;
+    this.args = [];
   }
 
   // Starts OSRM server and waits for it to accept connections
-  launch(callback) {
-    this.osrmUp(() => {
-      this.waitForConnection(callback);
+  launch() {
+    if (this.osrmIsRunning())
+      throw new Error('osrm-routed already running!');
+
+    this.child = this.world.runBin(
+      'osrm-routed',
+      this.args,
+      this.world.environment
+    );
+    this.child.on('exit', (code) => {
+      if (code < 0 && this.child.signal != 'SIGINT') {
+        throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
+      }
     });
+    return this.waitForConnection();
   }
 
   // Terminates OSRM server process gracefully
-  shutdown(callback) {
-    if (!this.osrmIsRunning()) return callback();
-
-    const limit = Timeout(env.TIMEOUT, {
-      err: new Error('*** Shutting down osrm-routed timed out.'),
-    });
-
-    this.osrmDown(limit(callback));
+  shutdown() {
+    if (this.osrmIsRunning()) {
+      const child = this.child;
+      const p = new Promise((resolve) => {
+        child.on('exit', resolve);
+      });
+      child.kill('SIGINT');
+      return p;
+    }
+    return Promise.resolve();
   }
 
   osrmIsRunning() {
     return this.child && !this.child.killed;
   }
 
-  osrmDown(callback) {
-    if (this.osrmIsRunning()) {
-      this.child.on('exit', (_code, _signal) => {
-        callback();
-      });
-      this.child.kill('SIGINT');
-    } else callback();
-  }
+  async load(_ctx) {}
 
-  waitForConnection(callback) {
+  /** Returns a promise resolved when the server is up. */
+  waitForConnection() {
     const waitOptions = {
       resources: [`tcp:${env.OSRM_IP}:${env.OSRM_PORT}`],
       delay:    10, // initial delay in ms
       interval: 10, // poll interval in ms
       timeout:  env.TIMEOUT, // timeout in ms
     };
-    waitOn(waitOptions).then(callback, () => callback(new Error(
+    const p = waitOn(waitOptions);
+    p.catch(() => { throw new Error(
       `Could not connect to osrm-routed after ${waitOptions.timeout} ms.`
-    )));
+    ); });
+    return p;
   }
 }
 
-/** calls callback with error if osrm-routed is up */
-export async function testOsrmDown(callback) {
+// Loads data directly from .osrm files into memory
+export class OSRMDirectLoader extends OSRMBaseLoader {
+  async load(ctx) {
+    this.args = [
+      ctx.inputFile,
+      '-p',
+      env.OSRM_PORT,
+      '-i',
+      env.OSRM_IP,
+      '-a',
+      env.ROUTING_ALGORITHM,
+    ].concat(ctx.loaderArgs);
+    await this.shutdown();
+    await this.launch();
+  }
+}
+
+// Uses memory-mapped files for efficient data access
+export class OSRMmmapLoader extends OSRMBaseLoader {
+  async load(ctx) {
+    this.args = [
+      ctx.inputFile,
+      '-p',
+      env.OSRM_PORT,
+      '-i',
+      env.OSRM_IP,
+      '-a',
+      env.ROUTING_ALGORITHM,
+      '--mmap',
+    ].concat(ctx.loaderArgs);
+    await this.shutdown();
+    await this.launch();
+  }
+}
+
+// Loads data into shared memory for multiple processes to access
+export class OSRMDatastoreLoader extends OSRMBaseLoader {
+  async load(ctx) {
+    this.world.runBinSync(
+      'osrm-datastore',
+      [
+        '--dataset-name',
+        env.DATASET_NAME,
+        ctx.inputFile,
+      ].concat(ctx.loaderArgs),
+      { env: this.world.environment }
+    );
+    this.args = [
+      '--shared-memory',
+      '--dataset-name',
+      env.DATASET_NAME,
+      '-p',
+      env.OSRM_PORT,
+      '-i',
+      env.OSRM_IP,
+      '-a',
+      env.ROUTING_ALGORITHM,
+    ]; // FIXME ???? .concat(ctx.loaderArgs);
+    await this.shutdown();
+    await this.launch();
+    this.world.setupOutputLog(
+      this.child,
+      fs.createWriteStream(this.world.scenarioLogFile, { flags: 'a' }),
+    );
+  }
+}
+
+/** throws error if osrm-routed is up */
+export async function testOsrmDown() {
+  const host = `${env.OSRM_IP}:${env.OSRM_PORT}`;
   const waitOptions = {
-    resources: [`tcp:${env.OSRM_IP}:${env.OSRM_PORT}`],
+    resources: [`tcp:${host}`],
     delay:    0, // initial delay in ms
     interval: 10, // poll interval in ms
     timeout:  env.TIMEOUT, // timeout in ms
     reverse: true,
   };
-  await waitOn(waitOptions).catch(() => callback(new Error(
-    `*** osrm-routed is already running on ${env.HOST}.`
-  )));
+  await waitOn(waitOptions).catch(() => { throw new Error(
+    `*** osrm-routed is already running on ${host}.`
+  );});
 }
-
-// Loads data directly from .osrm files into memory
-class OSRMDirectLoader extends OSRMBaseLoader {
-  constructor(scope) {
-    super(scope);
-  }
-
-  load(ctx, callback) {
-    this.inputFile = ctx.inputFile;
-    this.loaderArgs = ctx.loaderArgs;
-    this.shutdown(() => {
-      this.launch(callback);
-    });
-  }
-
-  osrmUp(callback) {
-    if (this.osrmIsRunning())
-      return callback(new Error('osrm-routed already running!'));
-
-    const command_arguments = util.format(
-      '%s -p %d -i %s -a %s %s',
-      this.inputFile,
-      env.OSRM_PORT,
-      env.OSRM_IP,
-      env.ROUTING_ALGORITHM,
-      this.loaderArgs,
-    );
-    this.child = this.scope.runBin(
-      'osrm-routed',
-      command_arguments,
-      this.scope.environment,
-      (err) => {
-        if (err && err.signal !== 'SIGINT') {
-          this.child = null;
-          throw new Error(
-            util.format('osrm-routed %s: %s', errorReason(err), err.cmd),
-          );
-        }
-      },
-    );
-    callback();
-  }
-}
-
-// Uses memory-mapped files for efficient data access
-class OSRMmmapLoader extends OSRMBaseLoader {
-  constructor(scope) {
-    super(scope);
-  }
-
-  load(ctx, callback) {
-    this.inputFile = ctx.inputFile;
-    this.loaderArgs = ctx.loaderArgs;
-    this.shutdown(() => {
-      this.launch(callback);
-    });
-  }
-
-  osrmUp(callback) {
-    if (this.osrmIsRunning())
-      return callback(new Error('osrm-routed already running!'));
-
-    const command_arguments = util.format(
-      '%s -p %d -i %s -a %s --mmap %s',
-      this.inputFile,
-      env.OSRM_PORT,
-      env.OSRM_IP,
-      env.ROUTING_ALGORITHM,
-      this.loaderArgs,
-    );
-    this.child = this.scope.runBin(
-      'osrm-routed',
-      command_arguments,
-      this.scope.environment,
-      (err) => {
-        if (err && err.signal !== 'SIGINT') {
-          this.child = null;
-          throw new Error(
-            util.format('osrm-routed %s: %s', errorReason(err), err.cmd),
-          );
-        }
-      },
-    );
-    callback();
-  }
-}
-
-// Loads data into shared memory for multiple processes to access
-class OSRMDatastoreLoader extends OSRMBaseLoader {
-  constructor(scope) {
-    super(scope);
-  }
-
-  load(ctx, callback) {
-    this.inputFile = ctx.inputFile;
-    this.loaderArgs = ctx.loaderArgs;
-
-    this.loadData((err) => {
-      if (err) return callback(err);
-      if (!this.osrmIsRunning()) this.launch(callback);
-      else {
-        this.scope.setupOutputLog(
-          this.child,
-          fs.createWriteStream(this.scope.scenarioLogFile, { flags: 'a' }),
-        );
-        callback();
-      }
-    });
-  }
-
-  loadData(callback) {
-    const command_arguments = util.format(
-      '--dataset-name=%s %s %s',
-      env.DATASET_NAME,
-      this.inputFile,
-      this.loaderArgs,
-    );
-    this.scope.runBin(
-      'osrm-datastore',
-      command_arguments,
-      this.scope.environment,
-      (err) => {
-        if (err)
-          return callback(
-            new Error(`*** osrm-datastore exited with ${err.code}: ${err}`),
-          );
-        callback();
-      },
-    );
-  }
-
-  osrmUp(callback) {
-    if (this.osrmIsRunning()) return callback();
-
-    const command_arguments = util.format(
-      '--dataset-name=%s -s -i %s -p %d -a %s',
-      env.DATASET_NAME,
-      env.OSRM_IP,
-      env.OSRM_PORT,
-      env.ROUTING_ALGORITHM,
-    );
-    this.child = this.scope.runBin(
-      'osrm-routed',
-      command_arguments,
-      this.scope.environment,
-      (err) => {
-        if (err && err.signal !== 'SIGINT') {
-          this.child = null;
-          throw new Error(
-            util.format('osrm-routed %s: %s', errorReason(err), err.cmd),
-          );
-        }
-      },
-    );
-
-    // we call the callback here, becuase we don't want to wait for the child process to finish
-    callback();
-  }
-}
-
-class OSRMLoader {
-  constructor(scope) {
-    this.scope = scope;
-    this.sharedLoader = new OSRMDatastoreLoader(this.scope);
-    this.directLoader = new OSRMDirectLoader(this.scope);
-    this.mmapLoader = new OSRMmmapLoader(this.scope);
-    this.method = scope.DEFAULT_LOAD_METHOD;
-  }
-
-  load(inputFile, callback) {
-    if (!this.loader) {
-      this.loader = { shutdown: (cb) => cb() };
-    }
-    if (this.method === 'datastore') {
-      this.loader.shutdown((err) => {
-        if (err) return callback(err);
-        this.loader = this.sharedLoader;
-        this.sharedLoader.load(inputFile, callback);
-      });
-    } else if (this.method === 'directly') {
-      this.loader.shutdown((err) => {
-        if (err) return callback(err);
-        this.loader = this.directLoader;
-        this.directLoader.load(inputFile, callback);
-      });
-    } else if (this.method === 'mmap') {
-      this.loader.shutdown((err) => {
-        if (err) return callback(err);
-        this.loader = this.mmapLoader;
-        this.mmapLoader.load(inputFile, callback);
-      });
-    } else {
-      callback(new Error(`*** Unknown load method ${method}`));
-    }
-  }
-
-  setLoadMethod(method) {
-    this.method = method;
-  }
-
-  shutdown(callback) {
-    if (!this.loader) return callback();
-
-    this.loader.shutdown(callback);
-  }
-
-  up() {
-    return this.loader ? this.loader.osrmIsRunning() : false;
-  }
-}
-
-export default OSRMLoader;

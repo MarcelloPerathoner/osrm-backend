@@ -5,40 +5,47 @@ import fs from 'fs';
 import { When, Then, Given } from '@cucumber/cucumber';
 
 When(/^I run "osrm-routed\s?(.*?)"$/, function (options, callback) {
-  this.runAndSafeOutput('osrm-routed', options, callback);
+  const child = this.runBinSync('osrm-routed', this.expandOptions(options), { env: this.environment });
+  this.saveChildOutput(child);
+  callback();
 });
 
 When(
   /^I run "osrm-(extract|contract|partition|customize)\s?(.*?)"$/,
   function (binary, options, callback) {
+    const child = this.runBinSync(`osrm-${binary}`, this.expandOptions(options), { env: this.environment });
+    this.saveChildOutput(child);
+    if (child.error != null)
+      return callback(child.error);
     const stamp = `${this.processedCacheFile}.stamp_${binary}`;
-    this.runAndSafeOutput(`osrm-${binary}`, options, (err) => {
-      if (err) return callback(err);
-      fs.writeFile(stamp, 'ok', callback);
-    });
-  },
+    fs.writeFile(stamp, 'ok', callback);
+  }
 );
 
 When(
   /^I try to run "(osrm-[a-z]+)\s?(.*?)"$/,
   function (binary, options, callback) {
-    this.runAndSafeOutput(binary, options, () => {
-      callback();
-    });
+    const child = this.runBinSync(binary, this.expandOptions(options), { env: this.environment });
+    this.saveChildOutput(child);
+    callback();
   },
 );
 
 When(
   /^I run "osrm-datastore\s?(.*?)"(?: with input "([^"]*)")?$/,
-  function (options, input, callback) {
-    const child = this.runAndSafeOutput('osrm-datastore', options, callback);
-    if (input != null) child.stdin.write(input); // Check for both null and undefined
+  function (args, input, callback) {
+    const options = { env: this.environment };
+    if (input != null) // Check for both null and undefined
+      options.input = input;
+    const child = this.runBinSync('osrm-datastore', this.expandOptions(args), options);
+    this.saveChildOutput(child);
+    callback();
   },
 );
 
 Then(/^it should exit successfully$/, function () {
   assert.equal(this.exitCode, 0);
-  assert.equal(this.termSignal, '');
+  assert.equal(this.termSignal, null);
 });
 
 Then(/^it should exit with an error$/, function () {

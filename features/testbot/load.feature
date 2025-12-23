@@ -1,4 +1,4 @@
-@routing @load @testbot
+@routing @load @testbot @isolated
 Feature: Ways of loading data
 # Several scenarios that change between direct/datastore makes
 # it easier to check that the test framework behaves as expected.

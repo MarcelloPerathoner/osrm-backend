@@ -366,7 +366,9 @@ Given(
 );
 
 Given(/^the data has been saved to disk$/, function (callback) {
-  this.writeAndLinkOSM(callback);
+  this.writeOSM();
+  this.linkOSM();
+  callback();
 });
 
 Given(
@@ -381,12 +383,12 @@ Given(/^osrm-routed is stopped$/, function (callback) {
 });
 
 Given(/^data is loaded directly/, function (callback) {
-  this.osrmLoader.setLoadMethod('directly');
+  this.setLoadMethod('directly');
   callback();
 });
 
 Given(/^data is loaded with datastore$/, function (callback) {
-  this.osrmLoader.setLoadMethod('datastore');
+  this.setLoadMethod('datastore');
   callback();
 });
 
