@@ -13,21 +13,21 @@ export default class Run {
   // replaces placeholders for in user supplied commands
   expandOptions(options) {
     const table = {
-      '{osm_file}': this.inputCacheFile,
-      '{processed_file}': this.processedCacheFile,
-      '{profile_file}': this.profileFile,
-      '{rastersource_file}': this.rasterCacheFile,
-      '{speeds_file}': this.speedsCacheFile,
-      '{penalties_file}': this.penaltiesCacheFile,
-      '{timezone_names}': env.TIMEZONE_NAMES,
+      'osm_file'          : this.inputCacheFile,
+      'processed_file'    : this.processedCacheFile,
+      'profile_file'      : this.profileFile,
+      'rastersource_file' : this.rasterCacheFile,
+      'speeds_file'       : this.speedsCacheFile,
+      'penalties_file'    : this.penaltiesCacheFile,
+      'timezone_names'    : env.TIMEZONE_NAMES,
     };
 
-    const opts = [];
-    for (const option of options.split(/\s+/)) {
-      opts.push(table[option] || option);
+    function replacer(_match, p1) {
+      return table[p1] || p1;
     }
 
-    return opts;
+    options = options.replaceAll(/\{(\w+)\}/g, replacer);
+    return options.split(/\s+/);
   }
 
   setupOutputLog(process, log) {
