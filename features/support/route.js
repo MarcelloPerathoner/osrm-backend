@@ -1,6 +1,7 @@
 // Route response validation and geometry processing utilities
 import { ensureDecimal } from '../lib/utils.js';
 import { env } from './env.js';
+import Http from './http.js';
 
 export default class Route {
   constructor(world) {
@@ -15,12 +16,12 @@ export default class Route {
       uri = [env.HOST, service, 'v1', this.profile].join('/');
     }
 
-    return this.sendRequest(uri, params, callback);
+    return new Http().sendRequest(uri, params, callback);
   }
 
   requestUrl(path, callback) {
     const uri = (this.query = [env.HOST, path].join('/'));
-    this.sendRequest(uri, '', callback);
+    new Http().sendRequest(uri, '', callback);
   }
 
   // Overwrites the default values in defaults

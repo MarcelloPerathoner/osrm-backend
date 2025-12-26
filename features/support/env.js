@@ -1,16 +1,17 @@
 // Sets up global environment constants and configuration for test execution
 import crypto from 'crypto';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import path from 'path';
 import util from 'util';
-import fs from 'fs';
-import child_process from 'child_process';
 
-import { testOsrmDown } from '../lib/osrm_loader.js';
+import { OSRMDatastoreLoader, OSRMDirectLoader, OSRMmmapLoader } from '../lib/osrm_loader.js';
 
-// Sets up all constants that are valid for all features
+/** Global environment for all scenarios. */
 class Env {
   // Initializes all environment constants and paths for test execution
-  initializeEnv(callback) {
+  beforeAll() {
     this.TIMEOUT = parseInt(process.env.CUCUMBER_TIMEOUT) || 5000;
     this.ROOT_PATH = process.cwd();
 
@@ -44,13 +45,26 @@ class Env {
     )
       ? 'MLD'
       : 'CH';
-    this.TIMEZONE_NAMES = this.PLATFORM_WINDOWS ? 'win' : 'iana';
 
     this.CUCUMBER_WORKER_ID = parseInt(process.env.CUCUMBER_WORKER_ID || '0');
     this.OSRM_PORT = (parseInt(process.env.OSRM_PORT || '5000') + this.CUCUMBER_WORKER_ID).toString();
     this.OSRM_IP = process.env.OSRM_IP || '127.0.0.1';
 
     this.HOST = `http://${this.OSRM_IP}:${this.OSRM_PORT}`;
+
+    if (this.HOST.startsWith('https')) {
+      this.client = https;
+      this.agent = new https.Agent ({
+        timeout: this.TIMEOUT,
+        defaultPort: this.OSRM_PORT,
+      });
+    } else {
+      this.client = http;
+      this.agent = new http.Agent ({
+        timeout: this.TIMEOUT,
+        defaultPort: this.OSRM_PORT,
+      });
+    }
 
     this.OSRM_PROFILE = process.env.OSRM_PROFILE;
     this.DATASET_NAME = `cucumber${this.CUCUMBER_WORKER_ID}`;
@@ -62,6 +76,11 @@ class Env {
       this.TERMSIGNAL = 'SIGTERM';
       this.EXE = '';
     }
+
+    // a log file for the long running process osrm-routed
+    this.globalLogfile = fs.openSync(
+      path.resolve(this.LOGS_PATH, `cucumber-global-${this.CUCUMBER_WORKER_ID}.log`),
+      'a');
 
     // heuristically detect .so/.a/.dll/.lib suffix
     this.LIB = ['lib%s.a', 'lib%s.so', '%s.dll', '%s.lib'].find((format) => {
@@ -81,19 +100,19 @@ class Env {
     }
 
     /** binaries responsible for the cached files */
-    this.extraction_binaries = [];
+    this.extractionBinaries = [];
     /** libraries responsible for the cached files */
     this.libraries = [];
     /** binaries that must be present */
-    this.all_binaries = [];
+    this.requiredBinaries = [];
 
     for (const i of ['extract', 'contract', 'customize', 'partition']) {
       const bin = path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`);
-      this.extraction_binaries.push(bin);
-      this.all_binaries.push(bin);
+      this.extractionBinaries.push(bin);
+      this.requiredBinaries.push(bin);
     }
     for (const i of 'routed'.split()) {
-      this.all_binaries.push(path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`));
+      this.requiredBinaries.push(path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`));
     }
     for (const i of ['_extract', '_contract', '_customize', '_partition', '']) {
       const lib = path.join(this.BIN_PATH, util.format(this.LIB, `osrm${i}`));
@@ -107,11 +126,30 @@ class Env {
     /** A hash of all osrm binaries and lua profiles */
     this.osrmHash = this.getOSRMHash();
 
-    // we need this port to spawn our own osrm-routed
-    testOsrmDown(callback);
-    this.verifyExistenceOfBinaries(callback);
+    this.setLoadMethod(this.DEFAULT_LOAD_METHOD);
+  }
 
-    callback(); // success
+  async afterAll() {
+    await this.osrmLoader.afterAll();
+    fs.closeSync(this.globalLogfile);
+    this.globalLogfile = null;
+  }
+
+  globalLog(msg) {
+    fs.writeSync(this.globalLogfile, msg);
+  }
+
+  setLoadMethod(method) {
+    if (method === 'datastore') {
+      this.osrmLoader = new OSRMDatastoreLoader(this);
+    } else if (method === 'directly') {
+      this.osrmLoader = new OSRMDirectLoader(this);
+    } else if (method === 'mmap') {
+      this.osrmLoader = new OSRMmmapLoader(this);
+    } else {
+      this.osrmLoader = null;
+      throw new Error(`No such data load method: ${method}`);
+    }
   }
 
   getProfilePath(profile) {
@@ -121,7 +159,7 @@ class Env {
   // returns a hash of all OSRM code side dependencies
   // that is: all osrm binaries and all lua profiles
   getOSRMHash() {
-    const dependencies = this.extraction_binaries.concat(this.libraries);
+    const dependencies = this.extractionBinaries.concat(this.libraries);
 
     const addLuaFiles = function (directory) {
       const luaFiles = fs.readdirSync(path.normalize(directory))
@@ -138,20 +176,6 @@ class Env {
       checksum.update(fs.readFileSync(file));
     }
     return checksum.digest('hex');
-  }
-
-  verifyExistenceOfBinaries(callback) {
-    for (const binPath of this.all_binaries) {
-      if (!fs.existsSync(binPath)) {
-        return callback(
-          new Error(`*** ${binPath} is missing. Build failed?`)
-        );
-      }
-      const res = child_process.spawnSync(binPath, ['--help']);
-      if (res.error) {
-        return callback(res.error);
-      };
-    };
   }
 }
 

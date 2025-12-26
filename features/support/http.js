@@ -1,32 +1,5 @@
 // HTTP client utilities for making API requests to OSRM routing server
-import { Timeout } from '../lib/utils.js';
 import { env } from './env.js';
-import http from 'http';
-import https from 'https';
-
-function httpRequest(url, callback) {
-  const client = url.startsWith('https') ? https : http;
-  const req = client.get(url, (res) => {
-    let data = '';
-
-    // Collect data chunks
-    res.on('data', (chunk) => {
-      data += chunk;
-    });
-
-    // Handle end of response
-    res.on('end', () => {
-      callback(null, res, data);
-    });
-  });
-
-  // Handle errors
-  req.on('error', (err) => {
-    callback(err);
-  });
-
-  req.end();
-}
 
 export default class Http {
   constructor(world) {
@@ -53,33 +26,28 @@ export default class Http {
     return paramString;
   }
 
-  // FIXME this needs to be simplified!
   sendRequest(baseUri, parameters, callback) {
-    const limit = Timeout(env.TIMEOUT, { err: { statusCode: 408 } });
-    const runRequest = (cb) => {
-      const params = this.paramsToString(parameters);
-      this.query = baseUri + (params.length ? `/${params}` : '');
+    const params = this.paramsToString(parameters);
+    const query = baseUri + (params.length ? `/${params}` : '');
+    const req = env.client.get (query, { agent: env.agent }, (res) => {
+      let data = '';
 
-      httpRequest(this.query, (err, res, body) => {
-        if (err && err.code === 'ECONNREFUSED') {
-          return cb(new Error('*** osrm-routed is not running.'));
-        } else if (err && err.statusCode === 408) {
-          return cb(new Error());
-        }
-        return cb(err, res, body);
+      // Collect data chunks
+      res.on('data', (chunk) => {
+        data += chunk;
       });
-    };
 
-    runRequest(
-      limit((err, res, body) => {
-        if (err) {
-          if (err.statusCode === 408)
-            return callback(new Error('*** osrm-routed did not respond'));
-          else if (err.code === 'ECONNREFUSED')
-            return callback(new Error('*** osrm-routed is not running'));
-        }
-        return callback(err, res, body);
-      }),
-    );
+      // Handle end of response
+      res.on('end', () => {
+        callback(null, res, data);
+      });
+    });
+
+    // Handle errors
+    req.on('error', (err) => {
+      callback(err);
+    });
+
+    req.end();
   }
 }

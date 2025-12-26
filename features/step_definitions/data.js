@@ -67,9 +67,7 @@ Given(/^the shortcuts$/, function (table, callback) {
 });
 
 Given(/^the node map$/, function (docstring, callback) {
-  const q = d3.queue();
-
-  const addNode = (name, ri, ci, cb) => {
+  const addNode = (name, ri, ci) => {
     const lonLat = this.tableCoordToLonLat(ci, ri);
     if (name.match(/[a-z]/)) {
       if (this.nameNodeHash[name])
@@ -80,24 +78,21 @@ Given(/^the node map$/, function (docstring, callback) {
         throw new Error(util.format('*** duplicate node %s', name));
       this.addLocation(name, lonLat[0], lonLat[1], null);
     }
-    cb();
   };
 
   docstring.split(/\n/).forEach((row, ri) => {
     row.split('').forEach((cell, ci) => {
       if (cell.match(/[a-z0-9]/)) {
-        q.defer(addNode, cell, ri, ci * 0.5);
+        addNode (cell, ri, ci * 0.5);
       }
     });
   });
 
-  q.awaitAll(callback);
+  callback();
 });
 
 Given(/^the node locations$/, function (table, callback) {
-  const q = d3.queue();
-
-  const addNodeLocations = (row, cb) => {
+  const addNodeLocations = (row) => {
     const name = row.node;
     if (this.findNodeByName(name))
       throw new Error(util.format('*** duplicate node %s', name));
@@ -108,19 +103,15 @@ Given(/^the node locations$/, function (table, callback) {
     } else {
       this.addLocation(name, row.lon, row.lat);
     }
-
-    cb();
   };
 
-  table.hashes().forEach((row) => q.defer(addNodeLocations, row));
+  table.hashes().forEach(addNodeLocations);
 
-  q.awaitAll(callback);
+  callback();
 });
 
 Given(/^the nodes$/, function (table, callback) {
-  const q = d3.queue();
-
-  const addNode = (row, cb) => {
+  const addNode = (row) => {
     const name = row.node,
       node = this.findNodeByName(name);
     delete row.node;
@@ -132,12 +123,11 @@ Given(/^the nodes$/, function (table, callback) {
         node.addTag(key, row[key]);
       }
     }
-    cb();
   };
 
-  table.hashes().forEach((row) => q.defer(addNode, row));
+  table.hashes().forEach(addNode);
 
-  q.awaitAll(callback);
+  callback();
 });
 
 Given(
@@ -378,18 +368,8 @@ Given(
   },
 );
 
-Given(/^osrm-routed is stopped$/, function (callback) {
-  this.OSRMLoader.shutdown(callback);
-});
-
-Given(/^data is loaded directly/, function (callback) {
-  this.setLoadMethod('directly');
-  callback();
-});
-
-Given(/^data is loaded with datastore$/, function (callback) {
-  this.setLoadMethod('datastore');
-  callback();
+Given(/^osrm-routed is stopped$/, (callback) => {
+  env.osrmLoader.cleanup(callback);
 });
 
 Given(/^the HTTP method "([^"]*)"$/, function (method, callback) {

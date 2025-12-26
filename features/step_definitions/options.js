@@ -4,8 +4,15 @@ import assert from 'assert';
 import fs from 'fs';
 import { When, Then, Given } from '@cucumber/cucumber';
 
+import { runBinSync } from '../support/run.js';
+
 When(/^I run "osrm-routed\s?(.*?)"$/, function (options, callback) {
-  const child = this.runBinSync('osrm-routed', this.expandOptions(options), { env: this.environment });
+  const child = runBinSync(
+    'osrm-routed',
+    this.expandOptions(options),
+    { env : this.environment },
+    this.log
+  );
   this.saveChildOutput(child);
   callback();
 });
@@ -13,7 +20,12 @@ When(/^I run "osrm-routed\s?(.*?)"$/, function (options, callback) {
 When(
   /^I run "osrm-(extract|contract|partition|customize)\s?(.*?)"$/,
   function (binary, options, callback) {
-    const child = this.runBinSync(`osrm-${binary}`, this.expandOptions(options), { env: this.environment });
+    const child = runBinSync(
+      `osrm-${binary}`,
+      this.expandOptions(options),
+      { env : this.environment },
+      this.log
+    );
     this.saveChildOutput(child);
     if (child.error != null)
       return callback(child.error);
@@ -25,7 +37,12 @@ When(
 When(
   /^I try to run "(osrm-[a-z]+)\s?(.*?)"$/,
   function (binary, options, callback) {
-    const child = this.runBinSync(binary, this.expandOptions(options), { env: this.environment });
+    const child = runBinSync(
+      binary,
+      this.expandOptions(options),
+      { env : this.environment },
+      this.log
+    );
     this.saveChildOutput(child);
     callback();
   },
@@ -34,10 +51,15 @@ When(
 When(
   /^I run "osrm-datastore\s?(.*?)"(?: with input "([^"]*)")?$/,
   function (args, input, callback) {
-    const options = { env: this.environment };
+    const options = { env : this.environment };
     if (input != null) // Check for both null and undefined
       options.input = input;
-    const child = this.runBinSync('osrm-datastore', this.expandOptions(args), options);
+    const child = runBinSync(
+      'osrm-datastore',
+      this.expandOptions(args),
+      options,
+      this.log
+    );
     this.saveChildOutput(child);
     callback();
   },

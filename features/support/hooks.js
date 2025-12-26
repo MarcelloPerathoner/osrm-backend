@@ -1,10 +1,12 @@
 // Cucumber before/after hooks for test setup, teardown, and environment initialization
-import { BeforeAll, Before, After, AfterAll, setDefaultTimeout } from '@cucumber/cucumber';
-import { setParallelCanAssign } from '@cucumber/cucumber';
+import { BeforeAll, Before, After, AfterAll } from '@cucumber/cucumber';
+import { setParallelCanAssign, setDefaultTimeout } from '@cucumber/cucumber';
 
 // Import the custom World constructor (registers itself via setWorldConstructor)
 import './world.js';
 import { env } from './env.js';
+import { verifyExistenceOfBinaries } from '../lib/utils.js';
+import { testOsrmDown } from '../lib/osrm_loader.js';
 
 // Set global timeout for all steps and hooks
 setDefaultTimeout(
@@ -12,8 +14,11 @@ setDefaultTimeout(
     5000,
 );
 
-// Do not run @isolated scenarios in parallel
-const myCustomRule = function (pickleInQuestion, picklesInProgress) {
+/**
+ * A function that assures that an \@isolated scenario will not run while any other
+ * scenario is running in parallel.
+ */
+function isolated (pickleInQuestion, picklesInProgress) {
   for (const tag of pickleInQuestion.tags) {
     if (tag.name === '@isolated')
       return picklesInProgress.length == 0;
@@ -22,24 +27,39 @@ const myCustomRule = function (pickleInQuestion, picklesInProgress) {
   return true;
 };
 
-setParallelCanAssign((pickleInQuestion, picklesInProgress) => {
-  return myCustomRule(pickleInQuestion, picklesInProgress);
+setParallelCanAssign(isolated);
+
+BeforeAll(() => {
+  env.beforeAll();
+  return Promise.all([
+    verifyExistenceOfBinaries(env),
+    testOsrmDown()
+  ]);
 });
 
-BeforeAll({timeout: 4999}, (callback) => {
-  env.initializeEnv(callback);
+Before(function (scenario) {
+  const tags = ['datastore', 'mmap', 'directly'];
+  for (const t of scenario.pickle.tags) {
+    if (t.name.startsWith('@no_')) {
+      const tag = t.name.substring(4);
+      if (tags.includes(tag) && env.DEFAULT_LOAD_METHOD === tag) {
+        return 'skipped';
+      }
+    }
+    if (t.name.startsWith('@with_')) {
+      const tag = t.name.substring(6);
+      if (tags.includes(tag) && env.DEFAULT_LOAD_METHOD !== tag) {
+        return 'skipped';
+      }
+    }
+  }
+  return this.before(scenario);
 });
 
-Before({timeout: 4998}, async function (scenario) {
-  // Initialize the World instance for this test case
-  await this.init(scenario);
+After(function (scenario) {
+  return this.after(scenario);
 });
 
-After({timeout: 4997}, async function (scenario) {
-  // Cleanup the World instance after this test case
-  await this.cleanup(scenario);
-});
-
-AfterAll({timeout: 4996}, (callback) => {
-  callback();
+AfterAll(() => {
+  return env.afterAll();
 });

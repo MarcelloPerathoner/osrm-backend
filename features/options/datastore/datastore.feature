@@ -1,4 +1,4 @@
-@datastore @options @help
+@datastore @options @help @no_datastore
 Feature: osrm-datastore command line options
 
     Background:

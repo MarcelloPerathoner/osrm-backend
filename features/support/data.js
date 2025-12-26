@@ -9,6 +9,7 @@ import tableDiff from '../lib/table_diff.js';
 import { ensureDecimal } from '../lib/utils.js';
 import classes from './data_classes.js';
 import { env } from './env.js';
+import { runBinSync } from './run.js';
 
 export default class Data {
   constructor(world) {
@@ -258,14 +259,18 @@ export default class Data {
     if (fs.existsSync(stampFile))
       return;
 
-    this.runBinSync(
+    runBinSync(
       `osrm-${what}`,
       extra_params.concat(params),
-      { env : this.environment }
+      { env : this.environment },
+      this.log
     );
     fs.writeFileSync(stampFile, 'ok');
   }
 
+  /**
+   * Runs the complete extraction chain with one .osm file.
+   */
   runExtractionChain() {
     this.runAndStamp('extract', this.extractArgs, [
       '-p',
@@ -291,13 +296,12 @@ export default class Data {
   }
 
   async reprocessAndLoadData(callback) {
-    this.writeOSM();
-    this.linkOSM();
-    this.runExtractionChain();
-    await this.osrmLoader.load({
-      inputFile: this.processedCacheFile,
-      loaderArgs: this.loaderArgs,
-    });
+    if (env.DEFAULT_LOAD_METHOD === 'datastore' || !env.osrmLoader.osrmIsRunning()) {
+      this.writeOSM();
+      this.linkOSM();
+      this.runExtractionChain();
+      await env.osrmLoader.before(this);
+    }
     callback();
   }
 

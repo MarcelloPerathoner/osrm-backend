@@ -1,32 +1,38 @@
+// See: https://github.com/cucumber/cucumber-js/blob/main/docs/profiles.md
+
+const common = {
+  strict: true,
+  import: [
+    'features/support/',
+    'features/step_definitions/',
+    'features/lib/'
+  ],
+}
+
 // Default profile
 export default {
-  strict: true,
+  ...common,
   tags: 'not @stress and not @todo and not @mld',
-  import: ['features/support', 'features/step_definitions'],
 };
 
-// Additional profiles  
+// Additional profiles
+export const all = {
+  ...common,
+};
+
 export const ch = {
-  strict: true,
+  ...common,
   tags: 'not @stress and not @todo and not @mld',
-  format: ['progress'],
-  import: ['features/support', 'features/step_definitions'],
+  format: ['progress', 'json:test/logs/cucumber.log.json'],
 };
 
 export const todo = {
-  strict: true,
+  ...common,
   tags: '@todo',
-  import: ['features/support', 'features/step_definitions'],
-};
-
-export const all = {
-  strict: true,
-  import: ['features/support', 'features/step_definitions'],
 };
 
 export const mld = {
-  strict: true,
+  ...common,
   tags: 'not @stress and not @todo and not @ch',
-  format: ['progress'],
-  import: ['features/support', 'features/step_definitions'],
+  format: ['progress', 'json:test/logs/cucumber.log.json'],
 };

@@ -6,7 +6,7 @@ import path from 'path';
 import { formatterHelpers } from '@cucumber/cucumber';
 
 export default class Cache {
-  constructor(env, uri) {
+  constructor(env, scenario) {
     this.env = env;
     // There is one cache per feature.
     //
@@ -17,6 +17,7 @@ export default class Cache {
     // files in the feature cache. It is a subdirectory of the feature cache directory
     // named after the osrmHash. eg. test/cache/car/access.feature/<hash>/<osrmHash>/
 
+    const uri = scenario.pickle.uri;
     // if OSRM_PROFILE is set to force a specific profile, then
     // include the profile name in the hash of the profile file
     const content = fs.readFileSync(uri);
@@ -24,7 +25,7 @@ export default class Cache {
     checksum.update(content + (this.env.OSRM_PROFILE || ''));
     const hash = checksum.digest('hex');
 
-    // shorten uri to be realtive to 'features/'
+    // shorten uri to be relative to 'features/'
     const featurePath = path.relative(path.resolve('./features'), uri);
     /** eg. bicycle/bollards/{hash}/ */
     this.featureID = path.join(featurePath, hash);
@@ -79,16 +80,6 @@ export default class Cache {
     });
 
     return util.format('%d_%s', line, name);
-  }
-
-  // test/cache/bicycle/bollards/{feature_hash}/{scenario}.log
-  /** Ensures the logfile directory and removes an old logfile. */
-  setupLogFile(scenarioID) {
-    const logDir = path.join(this.env.LOGS_PATH, this.featureID || 'default');
-    mkdirSync(logDir, { recursive: true });
-    const logFile = `${path.join(logDir, scenarioID)}.log`;
-    rmSync(logFile, { force: true });
-    return logFile;
   }
 
   // test/cache/{feature_path}/{feature_hash}/{scenario}_raster.asc

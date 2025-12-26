@@ -3,38 +3,29 @@ import path from 'path';
 import { World, setWorldConstructor } from '@cucumber/cucumber';
 
 import * as OSM from '../lib/osm.js';
-import { OSRMDatastoreLoader, OSRMDirectLoader, OSRMmmapLoader } from '../lib/osrm_loader.js';
 import { env } from '../support/env.js';
 
 import Cache from './cache.js';
 import Data from './data.js';
-import Http from './http.js';
 import Route from './route.js';
-import Run from './run.js';
 import Fuzzy from './fuzzy.js';
 import SharedSteps from './shared_steps.js';
 
 class OSRMWorld extends World {
   // Private instances of support classes for clean composition
   #data;
-  #http;
   #route;
-  #run;
   #sharedSteps;
   #fuzzy;
 
   constructor(options) {
     // Get built-in Cucumber helpers: this.attach, this.log, this.parameters
     super(options);
-
-    this.osrmLoader = null;
     this.loadMethod = null;
 
     // Initialize service instances with access to world
     this.#data = new Data(this);
-    this.#http = new Http(this);
     this.#route = new Route(this);
-    this.#run = new Run(this);
     this.#sharedSteps = new SharedSteps(this);
     this.#fuzzy = new Fuzzy(this);
 
@@ -52,9 +43,7 @@ class OSRMWorld extends World {
   #copyMethodsFromServices() {
     [
       this.#data,
-      this.#http,
       this.#route,
-      this.#run,
       this.#sharedSteps,
     ].forEach((service) => {
       Object.getOwnPropertyNames(Object.getPrototypeOf(service)).forEach(
@@ -71,14 +60,8 @@ class OSRMWorld extends World {
   get data() {
     return this.#data;
   }
-  get http() {
-    return this.#http;
-  }
   get route() {
     return this.#route;
-  }
-  get run() {
-    return this.#run;
   }
   get sharedSteps() {
     return this.#sharedSteps;
@@ -87,13 +70,15 @@ class OSRMWorld extends World {
     return this.#fuzzy;
   }
 
-  // Initialize the world for a specific test case
-  // This method is called from Before hook since constructors can't be async
-  async init(scenario) {
-    this.setLoadMethod(env.DEFAULT_LOAD_METHOD);
-    this.cache = new Cache(env, scenario.pickle.uri);
+  before(scenario) {
+    this.cache = new Cache(env, scenario);
     this.setupCurrentScenario(this.cache, scenario);
     this.resetChildOutput();
+    return Promise.resolve();
+  }
+
+  after(scenario) {
+    return env.osrmLoader.after(scenario);
   }
 
   setupCurrentScenario(cache, scenario) {
@@ -107,7 +92,8 @@ class OSRMWorld extends World {
     this.partitionArgs = [];
     this.customizeArgs = [];
     this.loaderArgs    = [];
-    this.environment = Object.assign({}, env.DEFAULT_ENVIRONMENT);
+    // will be expanded eg. for OSRM_RASTER_SOURCE
+    this.environment   = Object.assign({}, env.DEFAULT_ENVIRONMENT);
     this.resetOSM();
 
     const scenarioID = cache.getScenarioID(scenario);
@@ -119,30 +105,16 @@ class OSRMWorld extends World {
     this.speedsCacheFile    = cache.getSpeedsCacheFile(scenarioID);
     this.penaltiesCacheFile = cache.getPenaltiesCacheFile(scenarioID);
     this.profileCacheFile   = cache.getProfileCacheFile(scenarioID);
-    this.scenarioLogFile    = cache.setupLogFile(scenarioID);
   }
 
-  setLoadMethod(method) {
-    if (method === this.method)
-      return;
-    if (this.osrmLoader && this.osrmLoader.osrmIsRunning())
-      throw new Error(`Cannot switch data load method while server is running: ${method}`);
-    this.loadMethod = method;
-    if (method === 'datastore') {
-      this.osrmLoader = new OSRMDatastoreLoader(this);
-    } else if (method === 'directly') {
-      this.osrmLoader = new OSRMDirectLoader(this);
-    } else if (method === 'mmap') {
-      this.osrmLoader = new OSRMmmapLoader(this);
-    } else {
-      this.osrmLoader = null;
-      throw new Error(`No such data load method: ${method}`);
-    }
-  }
-
+  /**
+   * Saves the output from a completed child process for testing against.
+   *
+   * @param {child_process} child The child process
+   */
   saveChildOutput(child) {
-    this.stdout = child.stdout.toString();
     this.stderr = child.stderr.toString();
+    this.stdout = child.stdout.toString();
     this.exitCode = child.status;
     this.termSignal = child.signal;
   }
@@ -154,10 +126,28 @@ class OSRMWorld extends World {
     this.termSignal = null;
   }
 
-  // Cleanup method called from After hook
-  async cleanup(_scenario) {
-    if (this.osrmLoader)
-      await this.osrmLoader.shutdown();
+  /**
+   * Replaces placeholders in gherkin commands
+   *
+   * eg. it replaces {osm_file} with the input file path.
+   */
+  expandOptions(options) {
+    const table = {
+      'osm_file'          : this.inputCacheFile,
+      'processed_file'    : this.processedCacheFile,
+      'profile_file'      : this.profileFile,
+      'rastersource_file' : this.rasterCacheFile,
+      'speeds_file'       : this.speedsCacheFile,
+      'penalties_file'    : this.penaltiesCacheFile,
+      'timezone_names'    : env.PLATFORM_WINDOWS ? 'win' : 'iana'
+    };
+
+    function replacer(_match, p1) {
+      return table[p1] || p1;
+    }
+
+    options = options.replaceAll(/\{(\w+)\}/g, replacer);
+    return options.split(/\s+/);
   }
 }
 
