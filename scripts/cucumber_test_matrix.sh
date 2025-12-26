@@ -12,7 +12,7 @@ do
   for loadmethod in "${loadmethods[@]}"
   do
     set -x
-    OSRM_LOAD_METHOD=$loadmethod npx cucumber-js features/ -p $profile --parallel $JOBS
+    OSRM_LOAD_METHOD=$loadmethod ROUTING_ALGORITHM=$profile npx cucumber-js features/ -p $profile --parallel ${JOBS:=8}
     { set +x; } 2>/dev/null
   done
 done

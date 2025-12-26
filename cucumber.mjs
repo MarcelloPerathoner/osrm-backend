@@ -1,38 +1,48 @@
 // See: https://github.com/cucumber/cucumber-js/blob/main/docs/profiles.md
 
-const common = {
-  strict: true,
-  import: [
-    'features/support/',
-    'features/step_definitions/',
-    'features/lib/'
-  ],
-}
+export default function() {
 
-// Default profile
-export default {
-  ...common,
-  tags: 'not @stress and not @todo and not @mld',
-};
+  const loadMethod = process.env.OSRM_LOAD_METHOD || 'datastore';
+  const algorithm = process.env.ROUTING_ALGORITHM || 'mld';
+  const baseFormat = process.env.GITHUB_ACTIONS ? 'summary' : 'progress';
+  const jsonFormat = `json:test/logs/cucumber.${algorithm}.${loadMethod}.log.json`;
+  const htmlFormat = `html:test/logs/cucumber.${algorithm}.${loadMethod}.log.html`;
 
-// Additional profiles
-export const all = {
-  ...common,
-};
+  const common = {
+    strict: true,
+    import: [
+      'features/support/',
+      'features/step_definitions/',
+      'features/lib/'
+    ],
+    format: [baseFormat, htmlFormat, jsonFormat]
+  }
 
-export const ch = {
-  ...common,
-  tags: 'not @stress and not @todo and not @mld',
-  format: ['progress', 'json:test/logs/cucumber.log.json'],
-};
+  return {
+    // Default profile
+    default: {
+      ...common,
+      tags: 'not @stress and not @todo and not @mld',
+    },
 
-export const todo = {
-  ...common,
-  tags: '@todo',
-};
+    // Additional profiles
+    all: {
+      ...common,
+    },
 
-export const mld = {
-  ...common,
-  tags: 'not @stress and not @todo and not @ch',
-  format: ['progress', 'json:test/logs/cucumber.log.json'],
+    ch: {
+      ...common,
+      tags: 'not @stress and not @todo and not @mld',
+    },
+
+    todo: {
+      ...common,
+      tags: '@todo',
+    },
+
+    mld: {
+      ...common,
+      tags: 'not @stress and not @todo and not @ch',
+    }
+  }
 };

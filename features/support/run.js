@@ -22,7 +22,7 @@ export function mkBinPath(bin) {
 export function runBin(bin, args, options, log) {
   const cmd = mkBinPath(bin);
   const argsAsString = args.join(' ');
-  log(`*** running ${cmd} ${argsAsString}\n`);
+  log(`running ${bin} as:\n${cmd} ${argsAsString}\n`);
 
   const child = child_process.spawn(
     cmd,
@@ -54,7 +54,7 @@ export function runBin(bin, args, options, log) {
 export function runBinSync(bin, args, options, log) {
   const cmd = mkBinPath(bin);
   const argsAsString = args.join(' ');
-  log(`running ${bin} as\n${cmd} ${argsAsString}\n`);
+  log(`running ${bin} as:\n${cmd} ${argsAsString}\n`);
 
   options.timeout = options.timeout || env.TIMEOUT - 100;
 

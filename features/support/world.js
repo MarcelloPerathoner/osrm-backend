@@ -1,5 +1,6 @@
 // Custom World class for OSRM test environment using modern Cucumber.js v13 patterns
-import path from 'path';
+import fs from 'node:fs';
+import path from 'node:path';
 import { World, setWorldConstructor } from '@cucumber/cucumber';
 
 import * as OSM from '../lib/osm.js';
@@ -77,7 +78,10 @@ class OSRMWorld extends World {
     return Promise.resolve();
   }
 
-  after(scenario) {
+  async after(scenario) {
+    if (this.inputCacheFile && fs.existsSync(this.inputCacheFile))
+      await this.attach(fs.createReadStream(this.inputCacheFile),
+        { mediaType: 'application/osm+xml', fileName: path.basename(this.inputCacheFile) });
     return env.osrmLoader.after(scenario);
   }
 

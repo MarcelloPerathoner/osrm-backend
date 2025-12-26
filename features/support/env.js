@@ -27,24 +27,14 @@ class Env {
     this.DEFAULT_ENVIRONMENT = process.env;
     this.DEFAULT_PROFILE = 'bicycle';
     this.DEFAULT_INPUT_FORMAT = 'osm';
-    const loadMethod = process.env.OSRM_LOAD_METHOD || 'datastore';
-    this.DEFAULT_LOAD_METHOD = loadMethod.match('mmap')
-      ? 'mmap'
-      : loadMethod.match('directly')
-        ? 'directly'
-        : 'datastore';
+    this.DEFAULT_LOAD_METHOD = (process.env.OSRM_LOAD_METHOD || 'datastore');
+    this.ROUTING_ALGORITHM = (process.env.ROUTING_ALGORITHM || 'mld').toUpperCase();
     this.DEFAULT_ORIGIN = [1, 1];
     this.OSM_USER = 'osrm';
     this.OSM_UID = 1;
     this.OSM_TIMESTAMP = '2000-01-01T00:00:00Z';
     this.WAY_SPACING = 100;
     this.DEFAULT_GRID_SIZE = 100; // meters
-    // get algorithm name from the command line profile argument
-    this.ROUTING_ALGORITHM = process.argv[process.argv.indexOf('-p') + 1].match(
-      'mld',
-    )
-      ? 'MLD'
-      : 'CH';
 
     this.CUCUMBER_WORKER_ID = parseInt(process.env.CUCUMBER_WORKER_ID || '0');
     this.OSRM_PORT = (parseInt(process.env.OSRM_PORT || '5000') + this.CUCUMBER_WORKER_ID).toString();
