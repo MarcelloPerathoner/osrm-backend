@@ -5,14 +5,17 @@ set -o pipefail
 set -o nounset
 
 loadmethods=(datastore mmap directly)
-profiles=(ch mld)
+algorithms=(ch mld)
 
-for profile in "${profiles[@]}"
+for algorithm in "${algorithms[@]}"
 do
   for loadmethod in "${loadmethods[@]}"
   do
     set -x
-    OSRM_LOAD_METHOD=$loadmethod ROUTING_ALGORITHM=$profile npx cucumber-js features/ -p $profile --parallel ${JOBS:=8}
+    npx cucumber-js features/ -p $loadmethod -p $algorithm \
+        --format "html":"test/logs/cucumber-$algorithm-$loadmethod.report.html" \
+        --format "message":"test/logs/cucumber-$algorithm-$loadmethod.report.json" \
+        $@
     { set +x; } 2>/dev/null
   done
 done

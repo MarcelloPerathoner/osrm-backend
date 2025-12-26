@@ -29,8 +29,8 @@ function isolated (pickleInQuestion, picklesInProgress) {
 
 setParallelCanAssign(isolated);
 
-BeforeAll(() => {
-  env.beforeAll();
+BeforeAll(function () {
+  env.beforeAll(this.parameters);
   return Promise.all([
     verifyExistenceOfBinaries(env),
     testOsrmDown()

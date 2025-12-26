@@ -1,5 +1,6 @@
 // Table comparison utility for displaying colorized differences between expected and actual test results
 import chalk from 'chalk';
+import supportsColor from 'supports-color';
 
 const unescapeStr = (str) => str.replace(/\\\|/g, '|').replace(/\\\\/g, '\\');
 
@@ -52,6 +53,8 @@ export default function (expected, actual) {
   });
 
   // format
+  chalk.level = supportsColor.stdout.level;
+
   const lines = [chalk.red('Tables were not identical:')];
   let cells = [];
 

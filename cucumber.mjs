@@ -2,12 +2,6 @@
 
 export default function() {
 
-  const loadMethod = process.env.OSRM_LOAD_METHOD || 'datastore';
-  const algorithm = process.env.ROUTING_ALGORITHM || 'mld';
-  const baseFormat = process.env.GITHUB_ACTIONS ? 'summary' : 'progress';
-  const jsonFormat = `json:test/logs/cucumber.${algorithm}.${loadMethod}.log.json`;
-  const htmlFormat = `html:test/logs/cucumber.${algorithm}.${loadMethod}.log.html`;
-
   const common = {
     strict: true,
     import: [
@@ -15,7 +9,11 @@ export default function() {
       'features/step_definitions/',
       'features/lib/'
     ],
-    format: [baseFormat, htmlFormat, jsonFormat]
+    worldParameters: {
+      loadMethod: 'datastore',
+      algorithm:  'ch',
+    },
+    format: ['progress'],
   }
 
   return {
@@ -30,19 +28,35 @@ export default function() {
       ...common,
     },
 
-    ch: {
-      ...common,
-      tags: 'not @stress and not @todo and not @mld',
-    },
-
     todo: {
       ...common,
       tags: '@todo',
     },
 
+    // algorithms
+    ch: {
+      ...common,
+      tags: 'not @stress and not @todo and not @mld',
+      worldParameters: {'algorithm': 'ch'},
+    },
+
     mld: {
       ...common,
       tags: 'not @stress and not @todo and not @ch',
-    }
+      worldParameters: {'algorithm': 'mld'},
+    },
+
+    // data load methods
+    datastore: {
+      worldParameters: {'loadMethod': 'datastore'},
+    },
+
+    directly: {
+      worldParameters: {'loadMethod': 'directly'},
+    },
+
+    mmap: {
+      worldParameters: {'loadMethod': 'mmap'},
+    },
   }
 };

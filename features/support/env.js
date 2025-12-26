@@ -11,8 +11,9 @@ import { OSRMDatastoreLoader, OSRMDirectLoader, OSRMmmapLoader } from '../lib/os
 /** Global environment for all scenarios. */
 class Env {
   // Initializes all environment constants and paths for test execution
-  beforeAll() {
+  beforeAll(worldParameters) {
     this.TIMEOUT = parseInt(process.env.CUCUMBER_TIMEOUT) || 5000;
+    this.HTTP_TIMEOUT = parseInt(process.env.CUCUMBER_HTTP_TIMEOUT) || 3000;
     this.ROOT_PATH = process.cwd();
 
     this.TEST_PATH = path.resolve(this.ROOT_PATH, 'test');
@@ -27,8 +28,8 @@ class Env {
     this.DEFAULT_ENVIRONMENT = process.env;
     this.DEFAULT_PROFILE = 'bicycle';
     this.DEFAULT_INPUT_FORMAT = 'osm';
-    this.DEFAULT_LOAD_METHOD = (process.env.OSRM_LOAD_METHOD || 'datastore');
-    this.ROUTING_ALGORITHM = (process.env.ROUTING_ALGORITHM || 'mld').toUpperCase();
+    this.DEFAULT_LOAD_METHOD = worldParameters.loadMethod || 'datastore';
+    this.ROUTING_ALGORITHM = (worldParameters.algorithm || 'ch').toUpperCase();
     this.DEFAULT_ORIGIN = [1, 1];
     this.OSM_USER = 'osrm';
     this.OSM_UID = 1;
@@ -45,13 +46,13 @@ class Env {
     if (this.HOST.startsWith('https')) {
       this.client = https;
       this.agent = new https.Agent ({
-        timeout: this.TIMEOUT,
+        timeout: this.HTTP_TIMEOUT,
         defaultPort: this.OSRM_PORT,
       });
     } else {
       this.client = http;
       this.agent = new http.Agent ({
-        timeout: this.TIMEOUT,
+        timeout: this.HTTP_TIMEOUT,
         defaultPort: this.OSRM_PORT,
       });
     }
@@ -66,6 +67,7 @@ class Env {
       this.TERMSIGNAL = 'SIGTERM';
       this.EXE = '';
     }
+    this.CI = process.env.GITHUB_ACTIONS != undefined;
 
     // a log file for the long running process osrm-routed
     this.globalLogfile = fs.openSync(

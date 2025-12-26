@@ -201,11 +201,15 @@ export class OSRMDatastoreLoader extends OSRMBaseLoader {
     this.child.stderr.on('data', (data) => this.logSync(`osrm-routed stderr:\n${data}`));
     this.child.stdout.on('data', (data) => this.logSync(`osrm-routed stdout:\n${data}`));
 
-    this.child.on('exit', (code) => {
-      this.logSync(`*** osrm-routed exited with code ${code}\n`);
+    this.child.on('exit', (code, signal) => {
       this.child = null;
-      if (code != 0) {
-        throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
+      if (code != null) {
+        this.logSync(`*** osrm-routed exited with code ${code}\n`);
+        if (code != 0)
+          throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
+      }
+      if (signal != null) {
+        this.logSync(`*** osrm-routed exited with signal ${signal}\n`);
       }
     });
     return this.waitForConnection();
