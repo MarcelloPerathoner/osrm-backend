@@ -5,10 +5,11 @@ import fs from 'fs';
 import d3 from 'd3-queue';
 import * as OSM from '../lib/osm.js';
 import { Given } from '@cucumber/cucumber';
+import { env } from '../support/env.js';
 
 Given(/^the profile "([^"]*)"$/, function (profile, callback) {
-  this.profile = this.OSRM_PROFILE || profile;
-  this.profileFile = path.join(this.PROFILES_PATH, `${this.profile}.lua`);
+  this.profile = env.OSRM_PROFILE || profile;
+  this.profileFile = path.join(env.PROFILES_PATH, `${this.profile}.lua`);
   callback();
 });
 
@@ -66,9 +67,7 @@ Given(/^the shortcuts$/, function (table, callback) {
 });
 
 Given(/^the node map$/, function (docstring, callback) {
-  const q = d3.queue();
-
-  const addNode = (name, ri, ci, cb) => {
+  const addNode = (name, ri, ci) => {
     const lonLat = this.tableCoordToLonLat(ci, ri);
     if (name.match(/[a-z]/)) {
       if (this.nameNodeHash[name])
@@ -79,24 +78,21 @@ Given(/^the node map$/, function (docstring, callback) {
         throw new Error(util.format('*** duplicate node %s', name));
       this.addLocation(name, lonLat[0], lonLat[1], null);
     }
-    cb();
   };
 
   docstring.split(/\n/).forEach((row, ri) => {
     row.split('').forEach((cell, ci) => {
       if (cell.match(/[a-z0-9]/)) {
-        q.defer(addNode, cell, ri, ci * 0.5);
+        addNode (cell, ri, ci * 0.5);
       }
     });
   });
 
-  q.awaitAll(callback);
+  callback();
 });
 
 Given(/^the node locations$/, function (table, callback) {
-  const q = d3.queue();
-
-  const addNodeLocations = (row, cb) => {
+  const addNodeLocations = (row) => {
     const name = row.node;
     if (this.findNodeByName(name))
       throw new Error(util.format('*** duplicate node %s', name));
@@ -107,19 +103,15 @@ Given(/^the node locations$/, function (table, callback) {
     } else {
       this.addLocation(name, row.lon, row.lat);
     }
-
-    cb();
   };
 
-  table.hashes().forEach((row) => q.defer(addNodeLocations, row));
+  table.hashes().forEach(addNodeLocations);
 
-  q.awaitAll(callback);
+  callback();
 });
 
 Given(/^the nodes$/, function (table, callback) {
-  const q = d3.queue();
-
-  const addNode = (row, cb) => {
+  const addNode = (row) => {
     const name = row.node,
       node = this.findNodeByName(name);
     delete row.node;
@@ -131,12 +123,11 @@ Given(/^the nodes$/, function (table, callback) {
         node.addTag(key, row[key]);
       }
     }
-    cb();
   };
 
-  table.hashes().forEach((row) => q.defer(addNode, row));
+  table.hashes().forEach(addNode);
 
-  q.awaitAll(callback);
+  callback();
 });
 
 Given(
@@ -152,9 +143,9 @@ Given(
     const addWay = (row, cb) => {
       const way = new OSM.Way(
         this.makeOSMId(),
-        this.OSM_USER,
-        this.OSM_TIMESTAMP,
-        this.OSM_UID,
+        env.OSM_USER,
+        env.OSM_TIMESTAMP,
+        env.OSM_UID,
         !!add_locations,
       );
 
@@ -218,9 +209,9 @@ Given(/^the relations$/, function (table, callback) {
   const addRelation = (headers, row, cb) => {
     const relation = new OSM.Relation(
       this.makeOSMId(),
-      this.OSM_USER,
-      this.OSM_TIMESTAMP,
-      this.OSM_UID,
+      env.OSM_USER,
+      env.OSM_TIMESTAMP,
+      env.OSM_UID,
     );
 
     let name = null;
@@ -298,7 +289,7 @@ Given(/^the relations$/, function (table, callback) {
         if (key.match(/name/)) name = value;
       }
     }
-    relation.uid = this.OSM_UID;
+    relation.uid = env.OSM_UID;
 
     if (name) {
       this.nameRelationHash[name] = relation;
@@ -328,10 +319,7 @@ Given(/^the raster source$/, function (data, callback) {
   // TODO: Don't overwrite if it exists
   fs.writeFile(this.rasterCacheFile, data, callback);
   // we need this to pass it to the profiles
-  this.environment = Object.assign(
-    { OSRM_RASTER_SOURCE: this.rasterCacheFile },
-    this.environment,
-  );
+  Object.assign(this.environment, { 'OSRM_RASTER_SOURCE' : this.rasterCacheFile });
 });
 
 Given(/^the speed file$/, function (data, callback) {
@@ -347,7 +335,7 @@ Given(/^the turn penalty file$/, function (data, callback) {
 Given(
   /^the profile file(?: "([^"]*)" initialized with)?$/,
   function (profile, data, callback) {
-    const lua_profiles_path = this.PROFILES_PATH.split(path.sep).join('/');
+    const lua_profiles_path = env.PROFILES_PATH.split(path.sep).join('/');
     let text = `package.path = "${lua_profiles_path}/?.lua;" .. package.path\n`;
     if (profile == null) {
       text += `${data}\n`;
@@ -368,7 +356,9 @@ Given(
 );
 
 Given(/^the data has been saved to disk$/, function (callback) {
-  this.writeAndLinkOSM(callback);
+  this.writeOSM();
+  this.linkOSM();
+  callback();
 });
 
 Given(
@@ -378,18 +368,8 @@ Given(
   },
 );
 
-Given(/^osrm-routed is stopped$/, function (callback) {
-  this.OSRMLoader.shutdown(callback);
-});
-
-Given(/^data is loaded directly/, function (callback) {
-  this.osrmLoader.setLoadMethod('directly');
-  callback();
-});
-
-Given(/^data is loaded with datastore$/, function (callback) {
-  this.osrmLoader.setLoadMethod('datastore');
-  callback();
+Given(/^osrm-routed is stopped$/, (callback) => {
+  env.osrmLoader.cleanup(callback);
 });
 
 Given(/^the HTTP method "([^"]*)"$/, function (method, callback) {

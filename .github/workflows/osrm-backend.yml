@@ -177,7 +177,6 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang-20
             CXXCOMPILER: clang++-20
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_LTO: OFF
 
           - name: clang-19-release
@@ -187,7 +186,6 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_LTO: OFF
 
           - name: clang-18-release
@@ -197,17 +195,6 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang-18
             CXXCOMPILER: clang++-18
-            CUCUMBER_TIMEOUT: 60000
-            ENABLE_LTO: OFF
-
-          - name: clang-18-debug
-            continue-on-error: false
-            node:
-            runs-on: ubuntu-24.04
-            BUILD_TYPE: Debug
-            CCOMPILER: clang-18
-            CXXCOMPILER: clang++-18
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_LTO: OFF
 
           - name: clang-18-debug-clang-tidy
@@ -217,7 +204,6 @@ jobs:
             BUILD_TYPE: Debug
             CCOMPILER: clang-18
             CXXCOMPILER: clang++-18
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_CLANG_TIDY: ON
             NODE_PACKAGE_TESTS_ONLY: ON
             ENABLE_LTO: OFF
@@ -228,12 +214,9 @@ jobs:
             runs-on: ubuntu-24.04
             BUILD_TYPE: Debug
             CCOMPILER: clang-18
-            CUCUMBER_TIMEOUT: 20000
             CXXCOMPILER: clang++-18
             ENABLE_SANITIZER: ON
             TARGET_ARCH: x86_64-asan-ubsan
-            OSRM_CONNECTION_RETRIES: 10
-            OSRM_CONNECTION_EXP_BACKOFF_COEF: 1.5
 
           - name: clang-17-release
             continue-on-error: false
@@ -242,7 +225,6 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang-17
             CXXCOMPILER: clang++-17
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_LTO: OFF
 
           - name: clang-16-release
@@ -252,7 +234,6 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang-16
             CXXCOMPILER: clang++-16
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_LTO: OFF
 
           - name: gcc-14-release
@@ -279,7 +260,6 @@ jobs:
             runs-on: ubuntu-24.04
             BUILD_TYPE: Debug
             CCOMPILER: gcc-13
-            CUCUMBER_TIMEOUT: 20000
             CXXCOMPILER: g++-13
             ENABLE_COVERAGE: ON
 
@@ -343,9 +323,9 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang
             CXXCOMPILER: clang++
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_ASSERTIONS: ON
             ENABLE_CONAN: ON
+            CUCUMBER_TIMEOUT: 10000
 
           - name: conan-macos-arm64-release-node
             build_node_package: true
@@ -355,7 +335,6 @@ jobs:
             BUILD_TYPE: Release
             CCOMPILER: clang
             CXXCOMPILER: clang++
-            CUCUMBER_TIMEOUT: 60000
             ENABLE_ASSERTIONS: ON
             ENABLE_CONAN: ON
 
@@ -546,7 +525,8 @@ jobs:
         popd
       env:
         Boost_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
-    - name: Run all tests
+
+    - name: Run nodejs tests
       if: ${{ matrix.NODE_PACKAGE_TESTS_ONLY != 'ON' }}
       run: |
         make -C test/data benchmark
@@ -561,7 +541,11 @@ jobs:
           npm run nodejs-tests
         fi
         popd
-        npm test
+
+    - name: Run cucumber tests
+      if: ${{ matrix.NODE_PACKAGE_TESTS_ONLY != 'ON' }}
+      run: |
+        npm test -- --format summary --parallel $JOBS
 
     - name: Use Node 20
       if: ${{ matrix.NODE_PACKAGE_TESTS_ONLY == 'ON' }}
@@ -596,9 +580,9 @@ jobs:
 
     - name: Upload test logs
       uses: actions/upload-artifact@v4
-      if: failure()
+      if: failure() || success()
       with:
-        name: logs
+        name: ${{ matrix.name }}-test-logs
         path: test/logs/
 
     - name: Build Node package

@@ -1,27 +1,19 @@
 // Sets up global environment constants and configuration for test execution
+import crypto from 'crypto';
+import fs from 'node:fs';
+import http from 'node:http';
+import https from 'node:https';
 import path from 'path';
 import util from 'util';
-import fs from 'fs';
-import d3 from 'd3-queue';
-import child_process from 'child_process';
-import tryConnect from '../lib/try_connect.js';
-import { setDefaultTimeout } from '@cucumber/cucumber';
 
-// Set global timeout for all steps and hooks
-setDefaultTimeout(
-  (process.env.CUCUMBER_TIMEOUT && parseInt(process.env.CUCUMBER_TIMEOUT)) ||
-    5000,
-);
+import { OSRMDatastoreLoader, OSRMDirectLoader, OSRMmmapLoader } from '../lib/osrm_loader.js';
 
-// Sets up all constants that are valid for all features
-export default class Env {
-  constructor(world) {
-    this.world = world;
-  }
-
+/** Global environment for all scenarios. */
+class Env {
   // Initializes all environment constants and paths for test execution
-  initializeEnv(callback) {
+  beforeAll(worldParameters) {
     this.TIMEOUT = parseInt(process.env.CUCUMBER_TIMEOUT) || 5000;
+    this.HTTP_TIMEOUT = parseInt(process.env.CUCUMBER_HTTP_TIMEOUT) || 3000;
     this.ROOT_PATH = process.cwd();
 
     this.TEST_PATH = path.resolve(this.ROOT_PATH, 'test');
@@ -32,41 +24,41 @@ export default class Env {
     this.FIXTURES_PATH = path.resolve(this.ROOT_PATH, 'unit_tests/fixtures');
     this.BIN_PATH =
       process.env.OSRM_BUILD_DIR || path.resolve(this.ROOT_PATH, 'build');
-    this.DATASET_NAME = 'cucumber';
     this.PLATFORM_WINDOWS = process.platform.match(/^win.*/);
     this.DEFAULT_ENVIRONMENT = process.env;
     this.DEFAULT_PROFILE = 'bicycle';
     this.DEFAULT_INPUT_FORMAT = 'osm';
-    const loadMethod = process.env.OSRM_LOAD_METHOD || 'datastore';
-    this.DEFAULT_LOAD_METHOD = loadMethod.match('mmap')
-      ? 'mmap'
-      : loadMethod.match('directly')
-        ? 'directly'
-        : 'datastore';
+    this.DEFAULT_LOAD_METHOD = worldParameters.loadMethod || 'datastore';
+    this.ROUTING_ALGORITHM = (worldParameters.algorithm || 'ch').toUpperCase();
     this.DEFAULT_ORIGIN = [1, 1];
     this.OSM_USER = 'osrm';
     this.OSM_UID = 1;
     this.OSM_TIMESTAMP = '2000-01-01T00:00:00Z';
     this.WAY_SPACING = 100;
     this.DEFAULT_GRID_SIZE = 100; // meters
-    // get algorithm name from the command line profile argument
-    this.ROUTING_ALGORITHM = process.argv[process.argv.indexOf('-p') + 1].match(
-      'mld',
-    )
-      ? 'MLD'
-      : 'CH';
-    this.TIMEZONE_NAMES = this.PLATFORM_WINDOWS ? 'win' : 'iana';
 
-    this.OSRM_PORT = parseInt(process.env.OSRM_PORT) || 5000;
+    this.CUCUMBER_WORKER_ID = parseInt(process.env.CUCUMBER_WORKER_ID || '0');
+    this.OSRM_PORT = (parseInt(process.env.OSRM_PORT || '5000') + this.CUCUMBER_WORKER_ID).toString();
     this.OSRM_IP = process.env.OSRM_IP || '127.0.0.1';
-    this.OSRM_CONNECTION_RETRIES =
-      parseInt(process.env.OSRM_CONNECTION_RETRIES) || 10;
-    this.OSRM_CONNECTION_EXP_BACKOFF_COEF =
-      parseFloat(process.env.OSRM_CONNECTION_EXP_BACKOFF_COEF) || 1.1;
 
     this.HOST = `http://${this.OSRM_IP}:${this.OSRM_PORT}`;
 
+    if (this.HOST.startsWith('https')) {
+      this.client = https;
+      this.agent = new https.Agent ({
+        timeout: this.HTTP_TIMEOUT,
+        defaultPort: this.OSRM_PORT,
+      });
+    } else {
+      this.client = http;
+      this.agent = new http.Agent ({
+        timeout: this.HTTP_TIMEOUT,
+        defaultPort: this.OSRM_PORT,
+      });
+    }
+
     this.OSRM_PROFILE = process.env.OSRM_PROFILE;
+    this.DATASET_NAME = `cucumber${this.CUCUMBER_WORKER_ID}`;
 
     if (this.PLATFORM_WINDOWS) {
       this.TERMSIGNAL = 9;
@@ -75,6 +67,12 @@ export default class Env {
       this.TERMSIGNAL = 'SIGTERM';
       this.EXE = '';
     }
+    this.CI = process.env.GITHUB_ACTIONS != undefined;
+
+    // a log file for the long running process osrm-routed
+    this.globalLogfile = fs.openSync(
+      path.resolve(this.LOGS_PATH, `cucumber-global-${this.CUCUMBER_WORKER_ID}.log`),
+      'a');
 
     // heuristically detect .so/.a/.dll/.lib suffix
     this.LIB = ['lib%s.a', 'lib%s.so', '%s.dll', '%s.lib'].find((format) => {
@@ -93,96 +91,85 @@ export default class Env {
       );
     }
 
-    this.OSRM_EXTRACT_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-extract', this.EXE),
-    );
-    this.OSRM_CONTRACT_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-contract', this.EXE),
-    );
-    this.OSRM_CUSTOMIZE_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-customize', this.EXE),
-    );
-    this.OSRM_PARTITION_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-partition', this.EXE),
-    );
-    this.OSRM_ROUTED_PATH = path.resolve(
-      util.format('%s/%s%s', this.BIN_PATH, 'osrm-routed', this.EXE),
-    );
-    ((this.LIB_OSRM_EXTRACT_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_extract',
-    )),
-    (this.LIB_OSRM_CONTRACT_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_contract',
-    )),
-    (this.LIB_OSRM_CUSTOMIZE_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_customize',
-    )),
-    (this.LIB_OSRM_PARTITION_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm_partition',
-    )),
-    (this.LIB_OSRM_PATH = util.format(
-      `%s/${this.LIB}`,
-      this.BIN_PATH,
-      'osrm',
-    )));
+    /** binaries responsible for the cached files */
+    this.extractionBinaries = [];
+    /** libraries responsible for the cached files */
+    this.libraries = [];
+    /** binaries that must be present */
+    this.requiredBinaries = [];
 
-    fs.exists(this.TEST_PATH, (exists) => {
-      if (exists) return callback();
-      else return callback(new Error('*** Test folder doesn\'t exist.'));
-    });
+    for (const i of ['extract', 'contract', 'customize', 'partition']) {
+      const bin = path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`);
+      this.extractionBinaries.push(bin);
+      this.requiredBinaries.push(bin);
+    }
+    for (const i of 'routed'.split()) {
+      this.requiredBinaries.push(path.join(this.BIN_PATH, `osrm-${i}${this.EXE}`));
+    }
+    for (const i of ['_extract', '_contract', '_customize', '_partition', '']) {
+      const lib = path.join(this.BIN_PATH, util.format(this.LIB, `osrm${i}`));
+      this.libraries.push(lib);
+    }
+
+    if (!fs.existsSync(this.TEST_PATH)) {
+      callback(new Error(`*** Test folder doesn't exist: ${this.TEST_PATH}`));
+    };
+
+    /** A hash of all osrm binaries and lua profiles */
+    this.osrmHash = this.getOSRMHash();
+
+    this.setLoadMethod(this.DEFAULT_LOAD_METHOD);
+  }
+
+  async afterAll() {
+    await this.osrmLoader.afterAll();
+    fs.closeSync(this.globalLogfile);
+    this.globalLogfile = null;
+  }
+
+  globalLog(msg) {
+    fs.writeSync(this.globalLogfile, msg);
+  }
+
+  setLoadMethod(method) {
+    if (method === 'datastore') {
+      this.osrmLoader = new OSRMDatastoreLoader(this);
+    } else if (method === 'directly') {
+      this.osrmLoader = new OSRMDirectLoader(this);
+    } else if (method === 'mmap') {
+      this.osrmLoader = new OSRMmmapLoader(this);
+    } else {
+      this.osrmLoader = null;
+      throw new Error(`No such data load method: ${method}`);
+    }
   }
 
   getProfilePath(profile) {
     return path.resolve(this.PROFILES_PATH, `${profile}.lua`);
   }
 
-  verifyOSRMIsNotRunning(callback) {
-    tryConnect(this.OSRM_IP, this.OSRM_PORT, (err) => {
-      if (!err)
-        return callback(new Error('*** osrm-routed is already running.'));
-      else callback();
-    });
-  }
+  // returns a hash of all OSRM code side dependencies
+  // that is: all osrm binaries and all lua profiles
+  getOSRMHash() {
+    const dependencies = this.extractionBinaries.concat(this.libraries);
 
-  verifyExistenceOfBinaries(callback) {
-    const verify = function (binPath, cb) {
-      fs.exists(binPath, (exists) => {
-        if (!exists)
-          return cb(
-            new Error(util.format('%s is missing. Build failed?', binPath)),
-          );
-        const helpPath = util.format('%s --help', binPath);
-        child_process.exec(helpPath, (err) => {
-          if (err) {
-            return cb(
-              new Error(
-                util.format('*** %s exited with code %d', helpPath, err.code),
-              ),
-            );
-          }
-          cb();
-        });
-      });
+    const addLuaFiles = function (directory) {
+      const luaFiles = fs.readdirSync(path.normalize(directory))
+        .filter((f) => !!f.match(/\.lua$/))
+        .map((f) => path.normalize(`${directory}/${f}`));
+      Array.prototype.push.apply(dependencies, luaFiles);
     };
 
-    const q = d3.queue();
-    [
-      this.OSRM_EXTRACT_PATH,
-      this.OSRM_CONTRACT_PATH,
-      this.OSRM_CUSTOMIZE_PATH,
-      this.OSRM_PARTITION_PATH,
-      this.OSRM_ROUTED_PATH,
-    ].forEach((bin) => {
-      q.defer(verify, bin);
-    });
-    q.awaitAll(callback);
+    addLuaFiles(this.PROFILES_PATH);
+    addLuaFiles(`${this.PROFILES_PATH}/lib`);
+
+    const checksum = crypto.createHash('md5');
+    for (const file of dependencies) {
+      checksum.update(fs.readFileSync(file));
+    }
+    return checksum.digest('hex');
   }
 }
+
+/** Global environment */
+export const env = new Env();

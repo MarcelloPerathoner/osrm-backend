@@ -1,32 +1,62 @@
-// Default profile
-export default {
-  strict: true,
-  tags: 'not @stress and not @todo and not @mld',
-  import: ['features/support', 'features/step_definitions'],
-};
+// See: https://github.com/cucumber/cucumber-js/blob/main/docs/profiles.md
 
-// Additional profiles  
-export const ch = {
-  strict: true,
-  tags: 'not @stress and not @todo and not @mld',
-  format: ['progress'],
-  import: ['features/support', 'features/step_definitions'],
-};
+export default function() {
 
-export const todo = {
-  strict: true,
-  tags: '@todo',
-  import: ['features/support', 'features/step_definitions'],
-};
+  const common = {
+    strict: true,
+    import: [
+      'features/support/',
+      'features/step_definitions/',
+      'features/lib/'
+    ],
+    worldParameters: {
+      loadMethod: 'datastore',
+      algorithm:  'ch',
+    },
+    format: ['progress'],
+  }
 
-export const all = {
-  strict: true,
-  import: ['features/support', 'features/step_definitions'],
-};
+  return {
+    // Default profile
+    default: {
+      ...common,
+      tags: 'not @stress and not @todo and not @mld',
+    },
 
-export const mld = {
-  strict: true,
-  tags: 'not @stress and not @todo and not @ch',
-  format: ['progress'],
-  import: ['features/support', 'features/step_definitions'],
+    // Additional profiles
+    all: {
+      ...common,
+    },
+
+    todo: {
+      ...common,
+      tags: '@todo',
+    },
+
+    // algorithms
+    ch: {
+      ...common,
+      tags: 'not @stress and not @todo and not @mld',
+      worldParameters: {'algorithm': 'ch'},
+    },
+
+    mld: {
+      ...common,
+      tags: 'not @stress and not @todo and not @ch',
+      worldParameters: {'algorithm': 'mld'},
+    },
+
+    // data load methods
+    datastore: {
+      worldParameters: {'loadMethod': 'datastore'},
+    },
+
+    directly: {
+      worldParameters: {'loadMethod': 'directly'},
+    },
+
+    mmap: {
+      worldParameters: {'loadMethod': 'mmap'},
+    },
+  }
 };
