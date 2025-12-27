@@ -325,6 +325,7 @@ jobs:
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
             ENABLE_CONAN: ON
+            CUCUMBER_TIMEOUT: 10000
 
           - name: conan-macos-arm64-release-node
             build_node_package: true

@@ -160,6 +160,7 @@ export class OSRMDatastoreLoader extends OSRMBaseLoader {
     );
 
     if (this.osrmIsRunning())
+      // resolved by osrm-routed stdout "updated facade"
       return this.semaphore;
 
     // workaround for annoying misfeature: if there are no datastores osrm-routed
@@ -189,8 +190,10 @@ export class OSRMDatastoreLoader extends OSRMBaseLoader {
     );
 
     this.child.stdout.on('data', (data) => {
-      if (data.includes('updated facade'))
+      if (data.includes('updated facade')) {
+        this.logSync('Facade updated and promise resolved');
         this.resolve();
+      }
     });
 
     // we MUST consume these or the osrm-routed process will block eventually
