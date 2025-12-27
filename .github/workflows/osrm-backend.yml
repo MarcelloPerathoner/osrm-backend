@@ -579,17 +579,10 @@ jobs:
 
     - name: Upload test logs
       uses: actions/upload-artifact@v4
-      if: failure()
+      if: failure() || success()
       with:
         name: ${{ matrix.name }}-test-logs
         path: test/logs/
-
-    - name: Upload Cucumber HTML test reports
-      uses: actions/upload-artifact@v4
-      if: failure() || success()
-      with:
-        name: ${{ matrix.name }}-cucumber-report-html
-        path: test/logs/*.report.html
 
     - name: Build Node package
       if: ${{ matrix.build_node_package }}

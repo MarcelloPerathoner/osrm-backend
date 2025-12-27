@@ -1,37 +1,35 @@
 // HTTP client utilities for making API requests to OSRM routing server
 import { env } from './env.js';
 
-export default class Http {
-  constructor(world) {
-    this.world = world;
-  }
+export function sendRequest (url, log, callback) {
+  log(`sending request: ${url}`);
+  const req = env.client.get (url, { agent: env.agent }, (res) => {
+    let data = '';
 
-  sendRequest(url, callback) {
-    const req = env.client.get (url, { agent: env.agent }, (res) => {
-      let data = '';
-
-      // Collect data chunks
-      res.on('data', (chunk) => {
-        data += chunk;
-      });
-
-      // Handle end of response
-      res.on('end', () => {
-        callback(null, res, data);
-      });
+    // Collect data chunks
+    res.on('data', (chunk) => {
+      data += chunk;
     });
 
-    // Handle timeout
-    req.on('timeout', (err) => {
-      req.destroy();
-      callback(err);
+    // Handle end of response
+    res.on('end', () => {
+      log(`end of request: ${url}`);
+      callback(null, res, data);
     });
+  });
 
-    // Handle errors
-    req.on('error', (err) => {
-      callback(err);
-    });
+  // Handle timeout
+  req.on('timeout', (err) => {
+    log(`request timed out: ${url}`);
+    req.destroy();
+    callback(err);
+  });
 
-    req.end();
-  }
-}
+  // Handle errors
+  req.on('error', (err) => {
+    log(`request errored out: ${url} ${err.message}`);
+    callback(err);
+  });
+
+  req.end();
+};

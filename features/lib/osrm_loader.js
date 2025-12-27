@@ -4,7 +4,6 @@ import waitOn from 'wait-on';
 
 import { env } from '../support/env.js';
 import { runBinSync, mkBinPath } from '../support/run.js';
-import { errorReason } from '../lib/utils.js';
 
 /**
  * A class for running osrm-routed. Subclasses implement alternate ways of data loading.
@@ -38,9 +37,6 @@ class OSRMBaseLoader {
     this.child.on('exit', (code) => {
       log(`osrm-routed exited with code ${code}\n`);
       this.child = null;
-      if (code != 0) {
-        throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
-      }
     });
 
     return this.waitForConnection();
@@ -204,9 +200,11 @@ export class OSRMDatastoreLoader extends OSRMBaseLoader {
     this.child.on('exit', (code, signal) => {
       this.child = null;
       if (code != null) {
-        this.logSync(`osrm-routed exited with code ${code}\n`);
+        const msg = `osrm-routed exited with code ${code}\n`;
+        this.logSync(msg);
         if (code != 0)
-          throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
+          // osrm-routed should not error exit
+          throw new Error(msg);
       }
       if (signal != null) {
         this.logSync(`osrm-routed exited with signal ${signal}\n`);
