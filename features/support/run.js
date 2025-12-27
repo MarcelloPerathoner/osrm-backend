@@ -36,7 +36,7 @@ export function runBin(bin, args, options, log) {
   child.stdout.on('data', (data) => log(data));
 
   child.on('exit', (code) => {
-    log(`*** ${bin} exited with code ${code}\n`);
+    log(`${bin} exited with code ${code}\n`);
   });
   return child;
 }
@@ -63,13 +63,13 @@ export function runBinSync(bin, args, options, log) {
     args,
     options
   );
+  if (child.stdout)
+    log(`${bin} stdout:\n${child.stdout}`);
+  if (child.stderr)
+    log(`${bin} stderr:\n${child.stderr}`);
   if (child.status != null)
     log(`${bin} exited with code ${child.status}\n`);
   if (child.signal != null)
     log(`${bin} exited with signal ${child.signal}\n`);
-  if (child.stderr)
-    log(`${bin} stderr:\n${child.stderr}`);
-  if (child.stdout)
-    log(`${bin} stdout:\n${child.stdout}`);
   return child;
 }

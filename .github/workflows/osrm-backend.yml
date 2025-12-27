@@ -524,6 +524,7 @@ jobs:
         popd
       env:
         Boost_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
+
     - name: Run nodejs tests
       if: ${{ matrix.NODE_PACKAGE_TESTS_ONLY != 'ON' }}
       run: |
@@ -585,6 +586,7 @@ jobs:
 
     - name: Upload Cucumber HTML test reports
       uses: actions/upload-artifact@v4
+      if: failure() || success()
       with:
         name: ${{ matrix.name }}-cucumber-report-html
         path: test/logs/*.report.html

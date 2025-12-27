@@ -50,7 +50,7 @@ const errorReason = (err) => {
 function verifyExistenceOfBinaries(env) {
   for (const binPath of env.requiredBinaries) {
     if (!fs.existsSync(binPath)) {
-      return Promise.reject(new Error(`*** ${binPath} is missing. Build failed?`));
+      return Promise.reject(new Error(`${binPath} is missing. Build failed?`));
     }
     const res = child_process.spawnSync(binPath, ['--help']);
     if (res.error) {

@@ -53,7 +53,7 @@ export default function (expected, actual) {
   });
 
   // format
-  chalk.level = supportsColor.stdout.level;
+  chalk.level = supportsColor.level;
 
   const lines = [chalk.red('Tables were not identical:')];
   let cells = [];

@@ -6,30 +6,8 @@ export default class Http {
     this.world = world;
   }
 
-  paramsToString(params) {
-    let paramString = '';
-    if (params.coordinates !== undefined) {
-      // FIXME this disables passing the output if its a default
-      // Remove after #2173 is fixed.
-      const outputString =
-        params.output && params.output !== 'json' ? `.${params.output}` : '';
-      paramString = params.coordinates.join(';') + outputString;
-      delete params.coordinates;
-      delete params.output;
-    }
-    if (Object.keys(params).length) {
-      paramString += `?${Object.keys(params)
-        .map((k) => `${k}=${params[k]}`)
-        .join('&')}`;
-    }
-
-    return paramString;
-  }
-
-  sendRequest(baseUri, parameters, callback) {
-    const params = this.paramsToString(parameters);
-    const query = baseUri + (params.length ? `/${params}` : '');
-    const req = env.client.get (query, { agent: env.agent }, (res) => {
+  sendRequest(url, callback) {
+    const req = env.client.get (url, { agent: env.agent }, (res) => {
       let data = '';
 
       // Collect data chunks
@@ -41,6 +19,12 @@ export default class Http {
       res.on('end', () => {
         callback(null, res, data);
       });
+    });
+
+    // Handle timeout
+    req.on('timeout', (err) => {
+      req.destroy();
+      callback(err);
     });
 
     // Handle errors

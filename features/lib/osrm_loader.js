@@ -27,7 +27,7 @@ class OSRMBaseLoader {
 
     const cmd = mkBinPath('osrm-routed');
     const argsAsString = args.join(' ');
-    log(`*** running ${cmd} ${argsAsString}\n`);
+    log(`running ${cmd} ${argsAsString}\n`);
 
     this.child = child_process.spawn(
       cmd,
@@ -36,7 +36,7 @@ class OSRMBaseLoader {
     );
 
     this.child.on('exit', (code) => {
-      log(`*** osrm-routed exited with code ${code}\n`);
+      log(`osrm-routed exited with code ${code}\n`);
       this.child = null;
       if (code != 0) {
         throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
@@ -184,7 +184,7 @@ export class OSRMDatastoreLoader extends OSRMBaseLoader {
 
     const cmd = mkBinPath('osrm-routed');
     const argsAsString = args.join(' ');
-    this.logSync(`*** running ${cmd} ${argsAsString}\n`);
+    this.logSync(`running ${cmd} ${argsAsString}\n`);
 
     this.child = child_process.spawn(
       cmd,
@@ -204,12 +204,12 @@ export class OSRMDatastoreLoader extends OSRMBaseLoader {
     this.child.on('exit', (code, signal) => {
       this.child = null;
       if (code != null) {
-        this.logSync(`*** osrm-routed exited with code ${code}\n`);
+        this.logSync(`osrm-routed exited with code ${code}\n`);
         if (code != 0)
           throw new Error(`osrm-routed ${errorReason(err)}: ${err.cmd}`);
       }
       if (signal != null) {
-        this.logSync(`*** osrm-routed exited with signal ${signal}\n`);
+        this.logSync(`osrm-routed exited with signal ${signal}\n`);
       }
     });
     return this.waitForConnection();
@@ -236,6 +236,6 @@ export function testOsrmDown() {
     reverse: true,
   };
   return waitOn(waitOptions).catch(() => { throw new Error(
-    `*** osrm-routed is already running on ${host}.`
+    `osrm-routed is already running on ${host}.`
   );});
 }

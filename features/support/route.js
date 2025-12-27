@@ -8,20 +8,36 @@ export default class Route {
     this.world = world;
   }
 
-  requestPath(service, params, callback) {
-    let uri;
-    if (service == 'timestamp') {
-      uri = [env.HOST, service].join('/');
-    } else {
-      uri = [env.HOST, service, 'v1', this.profile].join('/');
+  paramsToQuery(params) {
+    let query = '';
+    if (params.coordinates !== undefined) {
+      // FIXME this disables passing the output if its a default
+      // Remove after #2173 is fixed.
+      const outputString =
+        params.output && params.output !== 'json' ? `.${params.output}` : '';
+      query = params.coordinates.join(';') + outputString;
+      delete params.coordinates;
+      delete params.output;
+    }
+    if (Object.keys(params).length) {
+      query += `?${Object.keys(params)
+        .map((k) => `${k}=${params[k]}`)
+        .join('&')}`;
     }
 
-    return new Http().sendRequest(uri, params, callback);
+    return query;
+  }
+
+  requestPath(service, parameters, callback) {
+    const baseUrl = new URL(`${service}/v1/${this.profile}/`, env.HOST);
+    const query = this.paramsToQuery(parameters);
+
+    new Http().sendRequest(new URL(query, baseUrl), callback);
   }
 
   requestUrl(path, callback) {
-    const uri = (this.query = [env.HOST, path].join('/'));
-    new Http().sendRequest(uri, '', callback);
+    const url = new URL(path, env.HOST);
+    new Http().sendRequest(url, callback);
   }
 
   // Overwrites the default values in defaults
