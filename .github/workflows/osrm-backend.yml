@@ -15,7 +15,6 @@ env:
   CCACHE_TEMPDIR: /tmp/.ccache-temp
   CCACHE_COMPRESS: 1
   CASHER_TIME_OUT: 599 # one second less than 10m to avoid 10m timeout error: https://github.com/Project-OSRM/osrm-backend/issues/2742
-  CMAKE_VERSION: 3.21.2
   ENABLE_NODE_BINDINGS: "ON"
 
 concurrency:
@@ -31,7 +30,10 @@ jobs:
       BUILD_TYPE: Release
     steps:
     - uses: actions/checkout@v4
-    - run: cmake --version
+    - name: Fix cmake 4.x compatibility issue
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.x'
     - uses: actions/setup-node@v4
       with:
         node-version: 20
@@ -97,6 +99,10 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
     - uses: actions/checkout@v4
+    - name: Fix cmake 4.x compatibility issue
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.x'
     - name: Use Node.js
       uses: actions/setup-node@v4
       with:
@@ -132,6 +138,10 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+      - name: Fix cmake 4.x compatibility issue
+        uses: jwlawson/actions-setup-cmake@v2
+        with:
+          cmake-version: '3.x'
       - name: Enable osm.pbf cache
         uses: actions/cache@v4
         with:
@@ -388,6 +398,10 @@ jobs:
       ENABLE_LTO: ${{ matrix.ENABLE_LTO }}
     steps:
     - uses: actions/checkout@v4
+    - name: Fix cmake 4.x compatibility issue
+      uses: jwlawson/actions-setup-cmake@v2
+      with:
+        cmake-version: '3.x'
     - name: Build machine architecture
       run: uname -m
     - name: Use Node.js
@@ -525,6 +539,7 @@ jobs:
         fi
 
         ccache --zero-stats
+        cmake --version
         cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                  -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
                  -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \

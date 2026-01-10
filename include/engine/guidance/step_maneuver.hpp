@@ -30,12 +30,7 @@ struct StepManeuver
 
 inline StepManeuver getInvalidStepManeuver()
 {
-    return {util::Coordinate{util::FloatLongitude{0.0}, util::FloatLatitude{0.0}},
-            0,
-            0,
-            osrm::guidance::TurnInstruction::NO_TURN(),
-            WaypointType::None,
-            0};
+    return {{}, 0, 0, osrm::guidance::TurnInstruction::NO_TURN(), WaypointType::None, 0};
 }
 
 } // namespace osrm::engine::guidance

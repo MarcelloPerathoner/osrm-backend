@@ -21,6 +21,7 @@ BOOST_AUTO_TEST_SUITE(api_url_parser)
 
 using namespace osrm;
 using namespace osrm::server;
+using namespace osrm::util::literals;
 
 // returns distance to front
 std::size_t testInvalidURL(std::string url)
@@ -64,7 +65,7 @@ BOOST_AUTO_TEST_CASE(valid_urls)
 
     // one coordinate
     std::vector<util::Coordinate> coords_3 = {
-        util::Coordinate{util::FloatLongitude{0}, util::FloatLatitude{1}},
+        0_lon + 1_lat,
     };
     api::ParsedURL reference_3{"route", 1, "profile", "0,1", 18UL};
     auto result_3 = api::parseURL("/route/v1/profile/0,1");

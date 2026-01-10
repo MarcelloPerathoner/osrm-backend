@@ -32,6 +32,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <boost/numeric/conversion/cast.hpp>
 
+#include <complex>
 #include <cstdint>
 #include <type_traits>
 
@@ -202,7 +203,11 @@ struct Coordinate
     FixedLongitude lon;
     FixedLatitude lat;
 
-    Coordinate() : lon{std::numeric_limits<int>::min()}, lat{std::numeric_limits<int>::min()} {}
+    Coordinate() : lon{0}, lat{0} {}
+
+    constexpr Coordinate(std::complex<double> coord)
+        : lon{static_cast<std::int32_t>(coord.real() * COORDINATE_PRECISION)},
+          lat{static_cast<std::int32_t>(coord.imag() * COORDINATE_PRECISION)} {};
 
     Coordinate(const FloatCoordinate &other);
 
@@ -217,16 +222,6 @@ struct Coordinate
     }
 
     Coordinate(const FixedLongitude lon_, const FixedLatitude lat_) : lon(lon_), lat(lat_) {}
-
-    template <class T> Coordinate(const T &coordinate) : lon(coordinate.lon), lat(coordinate.lat)
-    {
-        static_assert(!std::is_same<T, Coordinate>::value,
-                      "This constructor should not be used for Coordinates");
-        static_assert(std::is_same<decltype(lon), decltype(coordinate.lon)>::value,
-                      "coordinate types incompatible");
-        static_assert(std::is_same<decltype(lat), decltype(coordinate.lat)>::value,
-                      "coordinate types incompatible");
-    }
 
     bool IsValid() const;
     friend bool operator==(const Coordinate lhs, const Coordinate rhs);
@@ -251,10 +246,9 @@ struct FloatCoordinate
     FloatLongitude lon;
     FloatLatitude lat;
 
-    FloatCoordinate()
-        : lon{std::numeric_limits<double>::min()}, lat{std::numeric_limits<double>::min()}
-    {
-    }
+    FloatCoordinate() : lon{0}, lat{0} {}
+
+    constexpr FloatCoordinate(std::complex<double> coord) : lon{coord.real()}, lat{coord.imag()} {}
 
     FloatCoordinate(const Coordinate other)
         : FloatCoordinate(toFloating(other.lon), toFloating(other.lat))
@@ -280,7 +274,68 @@ inline Coordinate::Coordinate(const FloatCoordinate &other)
     : Coordinate(toFixed(other.lon), toFixed(other.lat))
 {
 }
+
+inline namespace literals
+{
+
+// Usage: Coordinate coord;
+//        coord =  42_lat + 69.123456_lon
+//        coord = -42_lat - 69.123456_lon
+//        coord =  42_N + 69.123456_E
+//        coord =  42_S + 69.123456_W
+
+constexpr std::complex<double> operator""_lon(long double lon)
+{
+    return {static_cast<double>(lon), 0};
+}
+constexpr std::complex<double> operator""_lat(long double lat)
+{
+    return {0, static_cast<double>(lat)};
+}
+constexpr std::complex<double> operator""_E(long double lon)
+{
+    return {static_cast<double>(lon), 0};
+}
+constexpr std::complex<double> operator""_W(long double lon)
+{
+    return {-static_cast<double>(lon), 0};
+}
+constexpr std::complex<double> operator""_N(long double lat)
+{
+    return {0, static_cast<double>(lat)};
+}
+constexpr std::complex<double> operator""_S(long double lat)
+{
+    return {0, -static_cast<double>(lat)};
+}
+constexpr std::complex<double> operator""_lon(unsigned long long int lon)
+{
+    return {static_cast<double>(lon), 0};
+}
+constexpr std::complex<double> operator""_lat(unsigned long long int lat)
+{
+    return {0, static_cast<double>(lat)};
+}
+constexpr std::complex<double> operator""_E(unsigned long long int lon)
+{
+    return {static_cast<double>(lon), 0};
+}
+constexpr std::complex<double> operator""_W(unsigned long long int lon)
+{
+    return {-static_cast<double>(lon), 0};
+}
+constexpr std::complex<double> operator""_N(unsigned long long int lat)
+{
+    return {0, static_cast<double>(lat)};
+}
+constexpr std::complex<double> operator""_S(unsigned long long int lat)
+{
+    return {0, -static_cast<double>(lat)};
+}
+} // namespace literals
+
 } // namespace util
+
 } // namespace osrm
 
 #endif /* COORDINATE_HPP_ */
