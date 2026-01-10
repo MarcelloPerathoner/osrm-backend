@@ -17,11 +17,6 @@ if(BUILD_AS_SUBPROJECT)
   message(STATUS "Building libosrm as subproject.")
 endif()
 
-# set OSRM_BUILD_DIR location (might be used in various scripts)
-if (NOT WIN32 AND NOT DEFINED ENV{OSRM_BUILD_DIR})
-  set(ENV{OSRM_BUILD_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
 option(BUILD_PACKAGE "Build OSRM package" OFF)
 option(ENABLE_ASSERTIONS "Use assertions in release mode" OFF)
 option(ENABLE_CCACHE "Speed up incremental rebuilds via ccache" ON)
@@ -32,9 +27,11 @@ option(ENABLE_DEBUG_LOGGING "Use debug logging in release mode" OFF)
 option(ENABLE_FUZZING "Fuzz testing using LLVM's libFuzzer" OFF)
 option(ENABLE_LTO "Use Link Time Optimisation" ON)
 option(ENABLE_NODE_BINDINGS "Build NodeJs bindings" OFF)
-option(ENABLE_SANITIZER "Use memory sanitizer for Debug build" OFF)
+option(ENABLE_ASAN "Use address sanitizer for Debug build" OFF)
+option(ENABLE_TSAN "Use thread sanitizer for Debug build (experimental)" OFF)
+option(ENABLE_UBSAN "Use undefined behaviour sanitizer for Debug build" OFF)
 
-if (ENABLE_CONAN)
+if (ENABLE_CONAN AND NOT SKIP_CONAN_INSTALL)
   message(STATUS "Installing Conan packages. It may take a while...")
   find_program(CONAN_EXECUTABLE NAMES conan)
 
@@ -44,7 +41,7 @@ if (ENABLE_CONAN)
     set(CMAKE_TOOLCHAIN_FILE "./conan_toolchain.cmake")
 
     execute_process(
-      COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing --settings compiler.cppstd=20 --settings build_type=${CMAKE_BUILD_TYPE}
+      COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${CMAKE_BUILD_TYPE}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       OUTPUT_VARIABLE conan_stdout
       ERROR_VARIABLE conan_stderr
@@ -70,6 +67,19 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(OSRM C CXX)
+
+# set OSRM_BUILD_DIR location (might be used in various scripts)
+if (NOT DEFINED ENV{OSRM_BUILD_DIR})
+  if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+  else()
+    set(OSRM_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  endif()
+  set(ENV{OSRM_BUILD_DIR} ${OSRM_BUILD_DIR})
+  if(DEFINED ENV{GITHUB_ENV})
+    file(APPEND "$ENV{GITHUB_ENV}" "OSRM_BUILD_DIR=${OSRM_BUILD_DIR}")
+  endif()
+endif()
 
 if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES MinRelSize OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
   include(CheckIPOSupported)
@@ -234,9 +244,21 @@ if (ENABLE_COVERAGE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ftest-coverage -fprofile-arcs")
 endif()
 
+if (ENABLE_ASAN)
+  set(ASAN_FLAGS "-shared-libasan -fsanitize=address -fsanitize-address-use-after-scope")
+endif()
 
-if (ENABLE_SANITIZER)
-  set(SANITIZER_FLAGS "-g -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=undefined -fno-omit-frame-pointer")
+if (ENABLE_TSAN)
+  set(TSAN_FLAGS "-fsanitize=thread")
+endif()
+
+if (ENABLE_UBSAN)
+  set(UBSAN_FLAGS "-fsanitize=undefined")
+endif()
+
+if (ENABLE_ASAN OR ENABLE_TSAN OR ENABLE_UBSAN)
+  set(SANITIZER_FLAGS "-g ${ASAN_FLAGS} ${TSAN_FLAGS} ${UBSAN_FLAGS} -fno-omit-frame-pointer")
+
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZER_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZER_FLAGS}")
   set(OSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${SANITIZER_FLAGS}")
