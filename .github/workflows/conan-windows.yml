@@ -17,7 +17,7 @@ env:
   TEST_DIR: ${{ github.workspace }}/test
   LOG_DIR: ${{ github.workspace }}/test/logs
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
-  VENV_DIR: ${{ github.workspace }}/.venv
+  VENV_DIR: ~/.venv
   CONAN_HOME: ${{ github.workspace }}/.conan2
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: ${{ github.workspace }}/.ccache-temp
