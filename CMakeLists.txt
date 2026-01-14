@@ -107,6 +107,33 @@ if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after proje
   )
 endif()
 
+# use sccache if available
+if(ENABLE_SCCACHE)
+  find_program(sccache_bin sccache)
+  if(sccache_bin)
+    message(STATUS "Check for sccache: ${sccache_bin}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${sccache_bin})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${sccache_bin})
+    cmake_policy(SET CMP0141 NEW)
+
+    if(sccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after project()
+      # get_filename_component(sccache_path ${sccache_bin} DIRECTORY)
+      # get_filename_component(sccache_name ${sccache_bin} NAME)
+
+      file(COPY_FILE "${sccache_bin}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
+      # By default Visual Studio generators will use /Zi which is not compatible
+      # with ccache, so tell Visual Studio to use /Z7 instead.
+      message(STATUS "Setting MSVC debug information format to 'Embedded'")
+      set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+      set(CMAKE_VS_GLOBALS
+        "CLToolExe=cl.exe"
+        "CLToolPath=${CMAKE_BINARY_DIR}"
+        "UseMultiToolTask=true"
+      )
+    endif()
+  endif()
+endif()
+
 # set OSRM_BUILD_DIR location (might be used in various scripts)
 if (NOT DEFINED ENV{OSRM_BUILD_DIR})
   if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")

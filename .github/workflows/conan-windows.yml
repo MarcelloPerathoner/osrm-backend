@@ -19,10 +19,15 @@ env:
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
   VENV_DIR: ~/.venv
   CONAN_HOME: ${{ github.workspace }}/.conan2
+
+  ENABLE_CCACHE: OFF
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: ${{ github.workspace }}/.ccache-temp
   CCACHE_COMPRESS: 1
-  ENABLE_CCACHE: ON
+
+  ENABLE_SCCACHE: ON
+  SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
   NODEJS_TESTS: ON
   PUBLISH: OFF
 
@@ -42,7 +47,7 @@ jobs:
         env:
           TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $CCACHE_DIR $CCACHE_TEMPDIR
+          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $CCACHE_DIR $CCACHE_TEMPDIR $SCCACHE_DIR
           echo "TEMP=$TEMP" >> "$GITHUB_ENV"
           echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
           echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
@@ -66,7 +71,7 @@ jobs:
       # CCache
 
       - name: Install SCCache
-        if: ${{ env.ENABLE_CCACHE == 'sccache'}}
+        if: ${{ env.ENABLE_SCCACHE == 'ON'}}
         uses: mozilla-actions/sccache-action@v0.0.9
 
       - name: Restore CCache
@@ -166,6 +171,8 @@ jobs:
 
           export CCACHE_COMPILER=cl.exe
           export CCACHE_COMPILERTYPE=msvc
+          export SCCACHE_COMPILER=cl.exe
+          export SCCACHE_COMPILERTYPE=msvc
 
           echo "::group::cmake .."
           # this also sets OSRM_BUILD_DIR (see CMakeLists.txt)
@@ -175,7 +182,8 @@ jobs:
                    -DENABLE_CONAN=ON \
                    -DSKIP_CONAN_INSTALL=ON \
                    -DENABLE_NODE_BINDINGS=ON \
-                   -DENABLE_CCACHE=${ENABLE_CCACHE}
+                   -DENABLE_CCACHE=${ENABLE_CCACHE} \
+                   -DENABLE_SCCACHE=${ENABLE_SCCACHE}
           echo "::endgroup::"
 
           # cat cl_exe_path >> "$GITHUB_PATH"
