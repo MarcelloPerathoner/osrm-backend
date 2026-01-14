@@ -17,7 +17,6 @@ env:
   TEST_DIR: ${{ github.workspace }}/test
   LOG_DIR: ${{ github.workspace }}/test/logs
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
-  NODE_DIR: ${{ github.workspace }}/.npm
   CONAN_HOME: ${{ github.workspace }}/.conan2
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: ${{ github.workspace }}/.ccache-temp
@@ -55,29 +54,13 @@ jobs:
           node-version: 22
           cache: 'npm'
 
-      - name: Restore node cache
-        uses: actions/cache/restore@v4
-        id: cache-node-restore
-        with:
-          path: ${{ env.NODE_DIR }}
-          key: ${{ runner.os }}-node-22-${{ hashFiles('**/package-lock.json') }}
-
       - name: Setup node environment
-        if: steps.cache-node-restore.outputs.cache-hit != 'true'
         run: |
-          mkdir -p ${{ env.NODE_DIR }}
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "ON" || echo "OFF") >> "$GITHUB_ENV"
           npm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
           npm install --ignore-scripts
           npm link --ignore-scripts
-
-      - name: Save node cache
-        uses: actions/cache/save@v4
-        if: steps.cache-node-restore.outputs.cache-hit != 'true'
-        with:
-          path: ${{ env.NODE_DIR }}
-          key: ${{ steps.cache-node-restore.outputs.cache-primary-key }}
 
       # CCache
 
@@ -128,8 +111,9 @@ jobs:
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          source ../.venv/Scripts/Activate
           "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+
+          source ../.venv/Scripts/Activate
 
           which conan
           conan --version

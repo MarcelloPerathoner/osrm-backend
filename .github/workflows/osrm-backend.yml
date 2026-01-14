@@ -13,18 +13,17 @@ on:
 
 env:
   # versions
-  CMAKE_VERSION: 3.21.2
   CONAN_VERSION: 2.24.0
   # paths
   BUILD_DIR: ${{ github.workspace }}/build
   TEST_DIR: ${{ github.workspace }}/test
   LOG_DIR: ${{ github.workspace }}/test/logs
+  NODE_DIR: ${{ github.workspace }}/.npm
   CONAN_HOME: ${{ github.workspace }}/.conan2
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: /tmp/.ccache-temp
   CCACHE_COMPRESS: 1
   CASHER_TIME_OUT: 599 # one second less than 10m to avoid 10m timeout error: https://github.com/Project-OSRM/osrm-backend/issues/2742
-  CUCUMBER_TIMEOUT: 5000 # in ms
   # defaults
   BUILD_TYPE: Release
   ENABLE_ASAN: OFF
@@ -47,21 +46,18 @@ jobs:
     runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
+
+      - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: 20
-      - name: Enable Node.js cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version: 22
+          cache: npm
+
       - name: Prepare environment
         run: |
           npm ci --ignore-scripts
           clang-format-15 --version
+
       - name: Run checks
         run: |
           ./scripts/check_taginfo.py taginfo.json profiles/car.lua
@@ -326,7 +322,6 @@ jobs:
       BUILD_SHARED_LIBS: ${{ matrix.BUILD_SHARED_LIBS }}
       CCOMPILER: ${{ matrix.CCOMPILER }}
       CFLAGS: ${{ matrix.CFLAGS }}
-      CUCUMBER_TIMEOUT: ${{ matrix.CUCUMBER_TIMEOUT }}
       CXXCOMPILER: ${{ matrix.CXXCOMPILER }}
       CXXFLAGS: ${{ matrix.CXXFLAGS }}
       ENABLE_ASSERTIONS: ${{ matrix.ENABLE_ASSERTIONS }}
@@ -345,10 +340,13 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build machine architecture
         run: uname -m
-      - name: Use Node.js
+
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
+          cache: npm
+
       - name: Enable Node.js cache
         uses: actions/cache@v4
         with:
@@ -604,6 +602,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
+          cache: npm
       - name: Run Node package tests on Node 20
         if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
         run: |
@@ -614,6 +613,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 22
+          cache: npm
       - name: Run Node package tests on Node 22
         if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
         run: |
@@ -624,6 +624,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 24
+          cache: npm
       - name: Run Node package tests on Node 24
         if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
         run: |
@@ -634,6 +635,7 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: latest
+          cache: npm
       - name: Run Node package tests on Node-latest
         if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
         run: |
