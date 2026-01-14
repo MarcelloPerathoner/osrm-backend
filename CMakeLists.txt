@@ -17,11 +17,6 @@ if(BUILD_AS_SUBPROJECT)
   message(STATUS "Building libosrm as subproject.")
 endif()
 
-# set OSRM_BUILD_DIR location (might be used in various scripts)
-if (NOT WIN32 AND NOT DEFINED ENV{OSRM_BUILD_DIR})
-  set(ENV{OSRM_BUILD_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
 option(BUILD_PACKAGE "Build OSRM package" OFF)
 option(ENABLE_ASSERTIONS "Use assertions in release mode" OFF)
 option(ENABLE_CCACHE "Speed up incremental rebuilds via ccache" ON)
@@ -32,9 +27,21 @@ option(ENABLE_DEBUG_LOGGING "Use debug logging in release mode" OFF)
 option(ENABLE_FUZZING "Fuzz testing using LLVM's libFuzzer" OFF)
 option(ENABLE_LTO "Use Link Time Optimisation" ON)
 option(ENABLE_NODE_BINDINGS "Build NodeJs bindings" OFF)
-option(ENABLE_SANITIZER "Use memory sanitizer for Debug build" OFF)
+option(ENABLE_ASAN "Use address sanitizer for Debug build" OFF)
+option(ENABLE_TSAN "Use thread sanitizer for Debug build (experimental)" OFF)
+option(ENABLE_UBSAN "Use undefined behaviour sanitizer for Debug build" OFF)
 
-if (ENABLE_CONAN)
+# use ccache if available
+if(ENABLE_CCACHE)
+  find_program(ccache_bin ccache)
+  if(ccache_bin)
+    message(STATUS "Check for ccache: ${ccache_bin}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${ccache_bin})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${ccache_bin})
+  endif()
+endif()
+
+if (ENABLE_CONAN AND NOT SKIP_CONAN_INSTALL)
   message(STATUS "Installing Conan packages. It may take a while...")
   find_program(CONAN_EXECUTABLE NAMES conan)
 
@@ -44,7 +51,7 @@ if (ENABLE_CONAN)
     set(CMAKE_TOOLCHAIN_FILE "./conan_toolchain.cmake")
 
     execute_process(
-      COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing --settings compiler.cppstd=20 --settings build_type=${CMAKE_BUILD_TYPE}
+      COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${CMAKE_BUILD_TYPE}
       WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
       OUTPUT_VARIABLE conan_stdout
       ERROR_VARIABLE conan_stderr
@@ -70,6 +77,50 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(OSRM C CXX)
+
+message(STATUS "CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
+
+# substitute ccache as cl.exe
+#
+# the default generator on windows is -G "Visual Studio 17 2022" -A x64 but that one
+# does not support the CMAKE_CXX_COMPILER_LAUNCHER we used above for the "Unix
+# Makefiles" generator.  We have to put ccache.exe renamed as cl.exe in the PATH before
+# the real cl.exe
+#
+# FIXME: but then it doesn't find the compiler's dlls
+#
+if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after project()
+  message(STATUS "Check for cl: ${CMAKE_CXX_COMPILER}")
+  get_filename_component(cl_exe_path CMAKE_CXX_COMPILER DIRECTORY)
+  message(STATUS "Path for cl: ${cl_exe_path}")
+  file(WRITE "${CMAKE_BINARY_DIR}/cl_exe_path" cl_exe_path)
+  message(STATUS "Written to ${CMAKE_BINARY_DIR}/cl_exe_path")
+
+  # See: https://github.com/ccache/ccache/wiki/MS-Visual-Studio
+  file(COPY_FILE ${ccache_bin} ${CMAKE_BINARY_DIR}/cl.exe ONLY_IF_DIFFERENT)
+  # By default Visual Studio generators will use /Zi which is not compatible
+  # with ccache, so tell Visual Studio to use /Z7 instead.
+  message(STATUS "Setting MSVC debug information format to 'Embedded'")
+  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+  set(CMAKE_VS_GLOBALS
+    "CLToolExe=cl.exe"
+    "CLToolPath=${CMAKE_BINARY_DIR}"
+    "UseMultiToolTask=true"
+  )
+endif()
+
+# set OSRM_BUILD_DIR location (might be used in various scripts)
+if (NOT DEFINED ENV{OSRM_BUILD_DIR})
+  if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+  else()
+    set(OSRM_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
+  endif()
+  set(ENV{OSRM_BUILD_DIR} ${OSRM_BUILD_DIR})
+  if(DEFINED ENV{GITHUB_ENV})
+    file(APPEND "$ENV{GITHUB_ENV}" "OSRM_BUILD_DIR=${OSRM_BUILD_DIR}")
+  endif()
+endif()
 
 if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES MinRelSize OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
   include(CheckIPOSupported)
@@ -173,9 +224,6 @@ add_library(SERVER OBJECT ${ServerGlob})
 
 set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
 
-# We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
-set_property(TARGET SERVER PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
-
 add_executable(osrm-routed src/tools/routed.cpp $<TARGET_OBJECTS:SERVER> $<TARGET_OBJECTS:UTIL>)
 add_executable(osrm-extract src/tools/extract.cpp)
 add_executable(osrm-partition src/tools/partition.cpp)
@@ -237,9 +285,21 @@ if (ENABLE_COVERAGE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ftest-coverage -fprofile-arcs")
 endif()
 
+if (ENABLE_ASAN)
+  set(ASAN_FLAGS "-shared-libasan -fsanitize=address -fsanitize-address-use-after-scope")
+endif()
 
-if (ENABLE_SANITIZER)
-  set(SANITIZER_FLAGS "-g -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=undefined -fno-omit-frame-pointer")
+if (ENABLE_TSAN)
+  set(TSAN_FLAGS "-fsanitize=thread")
+endif()
+
+if (ENABLE_UBSAN)
+  set(UBSAN_FLAGS "-fsanitize=undefined")
+endif()
+
+if (ENABLE_ASAN OR ENABLE_TSAN OR ENABLE_UBSAN)
+  set(SANITIZER_FLAGS "-g ${ASAN_FLAGS} ${TSAN_FLAGS} ${UBSAN_FLAGS} -fno-omit-frame-pointer")
+
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZER_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZER_FLAGS}")
   set(OSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${SANITIZER_FLAGS}")
@@ -438,18 +498,6 @@ else()
   endif()
   find_package(Osmium REQUIRED COMPONENTS io)
   include_directories(SYSTEM ${OSMIUM_INCLUDE_DIR})
-endif()
-
-
-
-# prefix compilation with ccache by default if available and on clang or gcc
-if(ENABLE_CCACHE AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
-  find_program(CCACHE_FOUND ccache)
-  if(CCACHE_FOUND)
-    message(STATUS "Using ccache to speed up incremental builds")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-  endif()
 endif()
 
 # even with conan builds we want to link to system zlib
