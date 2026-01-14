@@ -93,7 +93,6 @@ if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after proje
 
   get_filename_component(ccache_path ${ccache_bin} DIRECTORY)
   get_filename_component(ccache_name ${ccache_bin} NAME)
-  get_filename_component(ccache_ext  ${ccache_bin} EXT)
 
   # See: https://github.com/ccache/ccache/wiki/MS-Visual-Studio
   # file(COPY_FILE "${ccache_bin}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
@@ -102,7 +101,7 @@ if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after proje
   message(STATUS "Setting MSVC debug information format to 'Embedded'")
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
   set(CMAKE_VS_GLOBALS
-    "CLToolExe=${ccache_name}${ccache_ext}"
+    "CLToolExe=${ccache_name}"
     "CLToolPath=${ccache_path}"
     "UseMultiToolTask=true"
   )
