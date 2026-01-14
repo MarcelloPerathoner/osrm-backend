@@ -365,6 +365,8 @@ jobs:
           restore-keys: |
             ${{ matrix.name }}-ccache-
 
+      # PIP install Conan and cache it
+
       - name: Restore Python cache
         uses: actions/cache/restore@v4
         id: cache-python-restore
@@ -372,18 +374,20 @@ jobs:
         with:
           path: .venv
           key: ${{ matrix.runs-on }}-python-conan-${{ env.CONAN_VERSION }}
+
       - name: Pip Install Conan
         if: ${{ env.ENABLE_CONAN == 'ON' && steps.cache-python-restore.outputs.cache-hit != 'true' }}
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
           python3 -m pip install conan==${CONAN_VERSION}
+
       - name: Save Python cache
         uses: actions/cache/save@v4
         if: ${{ env.ENABLE_CONAN == 'ON' && steps.cache-python-restore.outputs.cache-hit != 'true' }}
         with:
           path: .venv
-          key: ${{ matrix.runs-on }}-python-conan-${{ env.CONAN_VERSION }}
+          key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
 
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
