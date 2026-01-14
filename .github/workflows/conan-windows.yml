@@ -52,13 +52,28 @@ jobs:
           node-version: 22
           cache: 'npm'
 
+      - name: Restore node cache
+        uses: actions/cache/restore@v4
+        id: cache-node-restore
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+
       - name: Setup node environment
+        if: steps.cache-node-restore.outputs.cache-hit != 'true'
         run: |
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "ON" || echo "OFF") >> "$GITHUB_ENV"
           npm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
           npm install --ignore-scripts
           npm link --ignore-scripts
+
+      - name: Save node cache
+        uses: actions/cache/save@v4
+        if: steps.cache-node-restore.outputs.cache-hit != 'true'
+        with:
+          path: ~/.npm
+          key: ${{ steps.cache-node-restore.outputs.cache-primary-key }}
 
       # CCache
 
@@ -164,6 +179,8 @@ jobs:
           cat  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           echo "::endgroup::"
 
+          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+
           echo "::group::cmake .."
           # this also sets OSRM_BUILD_DIR (see CMakeLists.txt)
           # defaults to: -G "Visual Studio 17 2022" -A x64 \
@@ -180,6 +197,8 @@ jobs:
       - name: Build
         working-directory: ${{ env.BUILD_DIR }}
         run: |
+          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+
           echo "::group::cmake --build"
           cmake --build . --config ${BUILD_TYPE} -j ${JOBS}
           echo "::endgroup::"
