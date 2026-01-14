@@ -46,6 +46,8 @@ jobs:
           echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
           echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
 
+      # Node
+
       - name: Install node
         uses: actions/setup-node@v4
         with:
@@ -57,7 +59,7 @@ jobs:
         id: cache-node-restore
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-node-22-${{ hashFiles('**/package-lock.json') }}
 
       - name: Setup node environment
         if: steps.cache-node-restore.outputs.cache-hit != 'true'
@@ -125,6 +127,7 @@ jobs:
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           source ../.venv/Scripts/Activate
+          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
 
           which conan
           conan --version
@@ -154,14 +157,12 @@ jobs:
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          echo "::group::cmake information"
+          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+
+          echo "::group::cmake --help"
           which cmake
           cmake --version
           cmake --help
-          echo "::endgroup::"
-
-          echo "::group::cat conan_toolchain.cmake"
-          cat conan_toolchain.cmake
           echo "::endgroup::"
 
           echo "::group::cl.exe -HELP"
@@ -174,10 +175,11 @@ jobs:
           which ccache
           echo "::endgroup::"
 
-          echo "::group::vcvarsall.bat"
-          echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
-          cat  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          echo "::group::cat conan_toolchain.cmake"
+          cat conan_toolchain.cmake
           echo "::endgroup::"
+
+          # echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
 
           "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
 
