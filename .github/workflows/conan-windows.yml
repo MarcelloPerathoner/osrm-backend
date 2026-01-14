@@ -17,6 +17,7 @@ env:
   TEST_DIR: ${{ github.workspace }}/test
   LOG_DIR: ${{ github.workspace }}/test/logs
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
+  NODE_DIR: ${{ github.workspace }}/.npm
   CONAN_HOME: ${{ github.workspace }}/.conan2
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: ${{ github.workspace }}/.ccache-temp
@@ -58,12 +59,13 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-node-restore
         with:
-          path: ~/.npm
+          path: ${{ env.NODE_DIR }}
           key: ${{ runner.os }}-node-22-${{ hashFiles('**/package-lock.json') }}
 
       - name: Setup node environment
         if: steps.cache-node-restore.outputs.cache-hit != 'true'
         run: |
+          mkdir -p ${{ env.NODE_DIR }}
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "ON" || echo "OFF") >> "$GITHUB_ENV"
           npm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
@@ -74,7 +76,7 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.cache-node-restore.outputs.cache-hit != 'true'
         with:
-          path: ~/.npm
+          path: ${{ env.NODE_DIR }}
           key: ${{ steps.cache-node-restore.outputs.cache-primary-key }}
 
       # CCache
@@ -157,7 +159,13 @@ jobs:
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
+          set >> set_before_vcvars.txt
           "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          set >> set_after_vcvars.txt
+
+          echo "::group::changes by vcvars64.bat"
+          diff -U 0 set_after_vcvars.txt set_before_vcvars.txt || true
+          echo "::endgroup::"
 
           echo "::group::cmake --help"
           which cmake
@@ -180,14 +188,6 @@ jobs:
           echo "::endgroup::"
 
           # echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
-
-          set >> set_before_vcvars.txt
-          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-          set >> set_after_vcvars.txt
-
-          echo "::group::changes by vcvars64.bat"
-          diff -U 1 set_after_vcvars.txt set_before_vcvars.txt
-          echo "::endgroup::"
 
           echo "::group::cmake .."
           # this also sets OSRM_BUILD_DIR (see CMakeLists.txt)
