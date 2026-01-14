@@ -160,7 +160,8 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::vcvarsall.bat"
-          cat "C:\Program Files\Microsoft Visual Studio\2022\Community\VC\Auxiliary\Build\vcvarsall.bat"
+          echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
+          cat  "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
           echo "::endgroup::"
 
           echo "::group::cmake .."
