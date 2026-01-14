@@ -181,7 +181,13 @@ jobs:
 
           # echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
 
+          echo "::group::set before vcvars64.bat"
+          set
+          echo "::endgroup::"
           "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          echo "::group::set after vcvars64.bat"
+          set
+          echo "::endgroup::"
 
           echo "::group::cmake .."
           # this also sets OSRM_BUILD_DIR (see CMakeLists.txt)

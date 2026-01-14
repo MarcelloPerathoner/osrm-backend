@@ -91,7 +91,7 @@ message(STATUS "CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
 #
 if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after project()
   message(STATUS "Check for cl: ${CMAKE_CXX_COMPILER}")
-  get_filename_component(cl_exe_path CMAKE_CXX_COMPILER DIRECTORY)
+  get_filename_component(cl_exe_path ${CMAKE_CXX_COMPILER} DIRECTORY)
   message(STATUS "Path for cl: ${cl_exe_path}")
   file(WRITE "${CMAKE_BINARY_DIR}/cl_exe_path" cl_exe_path)
   message(STATUS "Written to ${CMAKE_BINARY_DIR}/cl_exe_path")
