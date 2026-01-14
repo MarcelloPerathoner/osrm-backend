@@ -91,7 +91,7 @@ jobs:
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
           python3 -m venv ${{ env.VENV_DIR }}
-          source ${{ env.VENV_DIR }}/Scripts/Activate
+          . ${{ env.VENV_DIR }}/Scripts/Activate
           python3 -m pip install conan==${CONAN_VERSION}
       - name: Save Python cache
         uses: actions/cache/save@v4
@@ -112,7 +112,7 @@ jobs:
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          source ${{ env.VENV_DIR }}/Scripts/Activate
+          . ${{ env.VENV_DIR }}/Scripts/Activate
 
           which conan
           conan --version
