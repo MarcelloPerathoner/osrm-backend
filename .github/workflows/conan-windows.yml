@@ -111,7 +111,13 @@ jobs:
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
         run: |
+          set >> set_before_vcvars.txt
           "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
+          set >> set_after_vcvars.txt
+
+          echo "::group::changes by vcvars64.bat"
+          diff -U 0 set_after_vcvars.txt set_before_vcvars.txt || true
+          echo "::endgroup::"
 
           source ../.venv/Scripts/Activate
 
@@ -143,14 +149,6 @@ jobs:
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          set >> set_before_vcvars.txt
-          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-          set >> set_after_vcvars.txt
-
-          echo "::group::changes by vcvars64.bat"
-          diff -U 0 set_after_vcvars.txt set_before_vcvars.txt || true
-          echo "::endgroup::"
-
           echo "::group::cmake --help"
           which cmake
           cmake --version
@@ -173,6 +171,9 @@ jobs:
 
           # echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
 
+          export CCACHE_COMPILER=cl.exe
+          export CCACHE_COMPILERTYPE=msvc
+
           echo "::group::cmake .."
           # this also sets OSRM_BUILD_DIR (see CMakeLists.txt)
           # defaults to: -G "Visual Studio 17 2022" -A x64 \
@@ -189,8 +190,6 @@ jobs:
       - name: Build
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Auxiliary/Build/vcvars64.bat"
-
           echo "::group::cmake --build"
           cmake --build . --config ${BUILD_TYPE} -j ${JOBS}
           echo "::endgroup::"

@@ -90,21 +90,20 @@ message(STATUS "CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
 # FIXME: but then it doesn't find the compiler's dlls
 #
 if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after project()
-  message(STATUS "Check for cl: ${CMAKE_CXX_COMPILER}")
-  get_filename_component(cl_exe_path ${CMAKE_CXX_COMPILER} DIRECTORY)
-  message(STATUS "Path for cl: ${cl_exe_path}")
-  file(WRITE "${CMAKE_BINARY_DIR}/cl_exe_path" cl_exe_path)
-  message(STATUS "Written to ${CMAKE_BINARY_DIR}/cl_exe_path")
+
+  get_filename_component(ccache_path ${ccache_bin} DIRECTORY)
+  get_filename_component(ccache_name ${ccache_bin} NAME)
+  get_filename_component(ccache_ext  ${ccache_bin} EXT)
 
   # See: https://github.com/ccache/ccache/wiki/MS-Visual-Studio
-  file(COPY_FILE ${ccache_bin} ${CMAKE_BINARY_DIR}/cl.exe ONLY_IF_DIFFERENT)
+  # file(COPY_FILE "${ccache_bin}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
   # By default Visual Studio generators will use /Zi which is not compatible
   # with ccache, so tell Visual Studio to use /Z7 instead.
   message(STATUS "Setting MSVC debug information format to 'Embedded'")
   set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
   set(CMAKE_VS_GLOBALS
-    "CLToolExe=cl.exe"
-    "CLToolPath=${CMAKE_BINARY_DIR}"
+    "CLToolExe=${ccache_name}${ccache_ext}"
+    "CLToolPath=${ccache_path}"
     "UseMultiToolTask=true"
   )
 endif()
