@@ -73,6 +73,16 @@ jobs:
         if: ${{ env.ENABLE_SCCACHE == 'ON'}}
         uses: mozilla-actions/sccache-action@v0.0.9
 
+      - name: Restore SCCache
+        id: cache-sccache-restore
+        uses: actions/cache/restore@v4
+        if: ${{ env.ENABLE_SCCACHE == 'ON' }}
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: windows-sccache-${{ github.sha }}
+          restore-keys: |
+            windows-sccache-
+
       - name: Restore CCache
         id: cache-ccache-restore
         uses: actions/cache/restore@v4
@@ -219,6 +229,13 @@ jobs:
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.cache-ccache-restore.outputs.cache-primary-key }}
+
+      - name: Save SCCache directory
+        if: ${{ env.ENABLE_SCCACHE == 'ON'}}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.cache-sccache-restore.outputs.cache-primary-key }}
 
       - name: Run nodejs tests
         if: ${{ env.NODEJS_TESTS == 'ON' }}

@@ -129,6 +129,7 @@ if(ENABLE_SCCACHE)
         "CLToolExe=cl.exe"
         "CLToolPath=${CMAKE_BINARY_DIR}"
         "UseMultiToolTask=true"
+        "TrackFileAccess=false"
       )
     endif()
   endif()
