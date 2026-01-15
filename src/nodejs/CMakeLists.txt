@@ -5,7 +5,7 @@ message(STATUS "Building node_osrm")
 set(NAPI_VERSION 8)
 add_definitions(-DNAPI_VERSION=${NAPI_VERSION})
 
-set(BINDING_DIR "${PROJECT_SOURCE_DIR}/lib/binding_napi_v${NAPI_VERSION}")
+set(BINDING_DIR "${PROJECT_SOURCE_DIR}/lib/binding_napi_v8")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/node_modules/node-cmake")
 
@@ -37,16 +37,15 @@ target_link_libraries(node_osrm osrm)
 set(ARTIFACTS "")
 
 # Create the binding directory if it doesn't exist
-add_custom_command(OUTPUT ${BINDING_DIR}
-                   COMMAND ${CMAKE_COMMAND} -E make_directory ${BINDING_DIR})
+file(MAKE_DIRECTORY ${BINDING_DIR})
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
-  add_custom_command(OUTPUT ${BINDING_DIR}/${binary}
+  set(t "${BINDING_DIR}/${binary}${CMAKE_EXECUTABLE_SUFFIX}")
+  add_custom_command(OUTPUT "${t}"
                      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${binary}> ${BINDING_DIR}
                      DEPENDS ${binary} ${BINDING_DIR})
-  set_target_properties(${binary} PROPERTIES SYMBOLIC TRUE)
-  list(APPEND ARTIFACTS "${BINDING_DIR}/${binary}")
+  list(APPEND ARTIFACTS "${t}")
 endforeach(binary)
 
 # For Conan-enabled builds we copy over tbb's shared objects for packaging.
@@ -65,11 +64,11 @@ if (ENABLE_CONAN)
 endif()
 
 
-add_custom_command(OUTPUT "${BINDING_DIR}/node_osrm.node"
+add_custom_command(OUTPUT ${BINDING_DIR}/node_osrm.node
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:node_osrm> ${BINDING_DIR}
                    DEPENDS node_osrm ${BINDING_DIR})
 list(APPEND ARTIFACTS "${BINDING_DIR}/node_osrm.node")
 
 
 message(STATUS "node_osrm artifacts will be copied to: ${BINDING_DIR}")
-add_custom_target(copy_artifacts ALL DEPENDS ${BINDING_DIR} ${ARTIFACTS})
+add_custom_target(copy_artifacts ALL DEPENDS ${ARTIFACTS})
