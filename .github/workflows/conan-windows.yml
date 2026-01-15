@@ -20,6 +20,8 @@ env:
   CONAN_HOME: ${{ github.workspace }}/.conan2
   VENV_DIR: ${{ github.workspace }}/.venv
 
+  ENABLE_LTO: ON
+
   ENABLE_CCACHE: OFF
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: ${{ github.workspace }}/.ccache-temp
@@ -194,6 +196,7 @@ jobs:
                    -DENABLE_CONAN=ON \
                    -DSKIP_CONAN_INSTALL=ON \
                    -DENABLE_NODE_BINDINGS=ON \
+                   -DENABLE_LTO=${ENABLE_LTO} \
                    -DENABLE_CCACHE=${ENABLE_CCACHE} \
                    -DENABLE_SCCACHE=${ENABLE_SCCACHE}
           echo "::endgroup::"
