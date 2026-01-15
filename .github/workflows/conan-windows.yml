@@ -248,8 +248,8 @@ jobs:
           make -C ${TEST_DIR}/data
           # do not use the following: it doesn't know about .exe files
           # npm run nodejs-tests
-          ./lib/binding_napi_v8/osrm-datastore.exe "$TEST_DIR/data/ch/monaco.osrm"
-          node $TEST_DIR/nodejs/index.js | npx faucet
+          ${NAPI_DIR}/osrm-datastore.exe "${TEST_DIR}/data/ch/monaco.osrm"
+          node ${TEST_DIR}/nodejs/index.js | npx faucet
 
       - name: Run Cucumber tests
         working-directory: ${{ env.BUILD_DIR }}

@@ -37,7 +37,10 @@ target_link_libraries(node_osrm osrm)
 set(ARTIFACTS "")
 
 # Create the binding directory if it doesn't exist
-file(MAKE_DIRECTORY ${BINDING_DIR})
+# file(MAKE_DIRECTORY ${BINDING_DIR})
+add_custom_command(
+  OUTPUT ${BINDING_DIR}
+  COMMAND ${CMAKE_COMMAND} -E make_directory ${BINDING_DIR})
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
