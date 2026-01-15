@@ -103,7 +103,7 @@ jobs:
         id: cache-python-restore
         with:
           path: ${{ env.VENV_DIR }}
-          key: windows-python-conan-125-${{ env.CONAN_VERSION }}
+          key: windows-python-conan-126-${{ env.CONAN_VERSION }}
 
       - name: Activate Python
         if: steps.cache-python-restore.outputs.cache-hit == 'true'
@@ -114,11 +114,11 @@ jobs:
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
           python3 -m venv .venv
-          echo "${{ env.VENV_DIR }}/.venv/Scripts" >> "$GITHUB_PATH"
+          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
           echo "::group::Scripts/Activate"
-          cat .venv/Scripts/Activate
+          cat "${{ env.VENV_DIR }}/Scripts/Activate"
           echo "::endgroup::"
-          source .venv/Scripts/Activate
+          # source ."${{ env.VENV_DIR }}/Scripts/Activate"
           python3 -m pip install conan==${CONAN_VERSION}
 
       - name: Save Python cache
