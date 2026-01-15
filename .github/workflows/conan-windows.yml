@@ -48,7 +48,7 @@ jobs:
         run: |
           mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $CCACHE_DIR $CCACHE_TEMPDIR $SCCACHE_DIR
           echo "TEMP=$TEMP" >> "$GITHUB_ENV"
-          echo "JOBS=$((`nproc` + 2))" >> "$GITHUB_ENV"
+          echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
           echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
 
       # Node
@@ -100,7 +100,7 @@ jobs:
         id: cache-python-restore
         with:
           path: .venv
-          key: windows-python-conan-129-${{ env.CONAN_VERSION }}
+          key: windows-python-conan-130-${{ env.CONAN_VERSION }}
 
       - name: Pip install Conan
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
@@ -118,11 +118,13 @@ jobs:
 
       - name: Activate Python
         run: |
-          # don't use Scripts/Activate: it gets terribly confused with slashes and backslashes in dirnames
           source "${{ env.VENV_DIR }}/Scripts/activate"
           echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
+
+          echo "::group::debug info"
           ls   "${{ env.VENV_DIR }}/Scripts/"
           cat  "${{ env.VENV_DIR }}/Scripts/activate"
+          echo "::endgroup::"
 
       # Conan cache
 
@@ -136,12 +138,12 @@ jobs:
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          echo "::group::$PATH"
-          echo "$PATH"
-          echo "::endgroup::"
-
+          echo "::group::debug info"
+          echo "PATH=$PATH"
           which conan
           conan --version
+          echo "::endgroup::"
+
           conan profile detect --force
           conan install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${BUILD_TYPE}
 
@@ -168,6 +170,7 @@ jobs:
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
+          echo "::group::debug info"
           echo "::group::cmake --help"
           which cmake
           cmake --version
@@ -187,8 +190,7 @@ jobs:
           echo "::group::cat conan_toolchain.cmake"
           cat conan_toolchain.cmake
           echo "::endgroup::"
-
-          # echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
+          echo "::endgroup::"
 
           export CCACHE_COMPILER=cl.exe
           export CCACHE_COMPILERTYPE=msvc
@@ -217,6 +219,7 @@ jobs:
           cmake --build . --config ${BUILD_TYPE} -j ${JOBS}
           echo "::endgroup::"
 
+          echo "::group::debug info"
           echo "::group::ls build/"
           ls -al
           echo "::endgroup::"
@@ -228,15 +231,17 @@ jobs:
           echo "::group::ls lib/binding_napi_v8"
           ls -al ../lib/binding_napi_v8/
           echo "::endgroup::"
+          echo "::endgroup::"
 
       # Test
 
       # TODO: MSVC goes out of memory when building our tests
-      # - name: Run unit tests
-      #   working-directory: ${{ env.BUILD_DIR }}
-      #   run: |
-      #     cmake --build . --config ${BUILD_TYPE}  -j ${JOBS} --target tests
-      #     # TODO: run tests
+      - name: Build unit tests
+        working-directory: ${{ env.BUILD_DIR }}
+        continue-on-error: true
+        run: |
+          cmake --build . --config ${BUILD_TYPE}  -j ${JOBS} --target tests
+          # TODO: run tests
 
       - name: Save CCache directory
         if: ${{ env.ENABLE_CCACHE == 'ON'}}
