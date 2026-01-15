@@ -42,11 +42,11 @@ add_custom_command(OUTPUT ${BINDING_DIR}
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
-  add_custom_command(OUTPUT ${BINDING_DIR}/${binary}${SUFFIX}
+  add_custom_command(OUTPUT ${BINDING_DIR}/${binary}
                      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${binary}> ${BINDING_DIR}
                      DEPENDS ${binary} ${BINDING_DIR})
-  # set_target_properties(${binary} PROPERTIES SYMBOLIC TRUE)
-  list(APPEND ARTIFACTS "${BINDING_DIR}/${binary}${SUFFIX}")
+  set_target_properties(${binary} PROPERTIES SYMBOLIC TRUE)
+  list(APPEND ARTIFACTS "${BINDING_DIR}/${binary}")
 endforeach(binary)
 
 # For Conan-enabled builds we copy over tbb's shared objects for packaging.

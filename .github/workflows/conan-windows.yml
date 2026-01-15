@@ -103,7 +103,7 @@ jobs:
         uses: actions/cache/restore@v4
         id: cache-python-restore
         with:
-          path: ${{ env.VENV_DIR }}
+          path: .venv
           key: windows-python-conan-129-${{ env.CONAN_VERSION }}
 
       - name: Pip install Conan
@@ -117,7 +117,7 @@ jobs:
         uses: actions/cache/save@v4
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.VENV_DIR }}
+          path: .venv
           key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
 
       - name: Activate Python
