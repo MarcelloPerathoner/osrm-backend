@@ -42,78 +42,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  format-taginfo-docs:
-    runs-on: ubuntu-22.04
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install node
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-
-      - name: Prepare environment
-        run: |
-          npm ci --ignore-scripts
-          clang-format-15 --version
-
-      - name: Run checks
-        run: |
-          ./scripts/check_taginfo.py taginfo.json profiles/car.lua
-          ./scripts/format.sh && ./scripts/error_on_dirty.sh
-          node ./scripts/validate_changelog.js
-          npm run docs && ./scripts/error_on_dirty.sh
-          npm audit --production
-
-  windows:
-    uses: ./.github/workflows/conan-windows.yml
-    with:
-      build-type: Release
-    secrets: inherit
-
-  docker-image-matrix:
-    strategy:
-      matrix:
-        docker-base-image: ['debian', 'alpine']
-    runs-on: ubuntu-22.04
-    continue-on-error: false
-    steps:
-      - name: Check out the repo
-        uses: actions/checkout@v4
-      - name: Enable osm.pbf cache
-        uses: actions/cache@v4
-        with:
-          path: berlin-latest.osm.pbf
-          key: v1-berlin-osm-pbf
-      - name: Docker build
-        run: |
-          docker build -t osrm-backend-local -f docker/Dockerfile-${{ matrix.docker-base-image }} .
-      - name: Test Docker image
-        run: |
-          if [ ! -f "${PWD}/berlin-latest.osm.pbf" ]; then
-            wget http://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf
-          fi
-          TAG=osrm-backend-local
-          # when `--memory-swap` value equals `--memory` it means container won't use swap
-          # see https://docs.docker.com/config/containers/resource_constraints/#--memory-swap-details
-          MEMORY_ARGS="--memory=1g --memory-swap=1g"
-          docker run $MEMORY_ARGS -t -v "${PWD}:/data" "${TAG}" osrm-extract --dump-nbg-graph -p /opt/car.lua /data/berlin-latest.osm.pbf
-          docker run $MEMORY_ARGS -t -v "${PWD}:/data" "${TAG}" osrm-components /data/berlin-latest.osrm.nbg /data/berlin-latest.geojson
-          if [ ! -s "${PWD}/berlin-latest.geojson" ]
-          then
-            >&2 echo "No berlin-latest.geojson found"
-            exit 1
-          fi
-          # removing `.osrm.nbg` to check that whole pipeline works without it
-          rm -rf "${PWD}/berlin-latest.osrm.nbg"
-
-          docker run $MEMORY_ARGS -t -v "${PWD}:/data" "${TAG}" osrm-partition /data/berlin-latest.osrm
-          docker run $MEMORY_ARGS -t -v "${PWD}:/data" "${TAG}" osrm-customize /data/berlin-latest.osrm
-          docker run $MEMORY_ARGS --name=osrm-container -t -p 5000:5000 -v "${PWD}:/data" "${TAG}" osrm-routed --algorithm mld /data/berlin-latest.osrm &
-          curl --retry-delay 3 --retry 10 --retry-all-errors "http://127.0.0.1:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true"
-          docker stop osrm-container
-
   build-matrix:
     strategy:
       matrix:
@@ -669,8 +597,17 @@ jobs:
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
 
+  windows:
+    uses: ./.github/workflows/conan-windows.yml
+
+  docker:
+    uses: ./.github/workflows/docker.yml
+
+  format-taginfo-docs:
+    uses: ./.github/workflows/format-taginfo-docs.yml
+
   ci-complete:
     runs-on: ubuntu-latest
-    needs: [windows, build-matrix, format-taginfo-docs, docker-image-matrix]
+    needs: [format-taginfo-docs, docker, windows, build-matrix]
     steps:
       - run: echo "CI complete"

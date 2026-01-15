@@ -2,14 +2,10 @@ name: Windows Build
 
 on:
   workflow_call:
-    inputs:
-      build-type:
-        required: true
-        type: string
 
 env:
   EXE: .exe
-  BUILD_TYPE: ${{ inputs.build-type }}
+  BUILD_TYPE: Release
   # versions
   CONAN_VERSION: 2.24.0
   # paths
@@ -40,7 +36,7 @@ defaults:
 
 jobs:
   conan-node:
-    name: conan-${{ inputs.build-type }}-node
+    name: conan-release-node
     runs-on: windows-2025
     continue-on-error: false
     steps:

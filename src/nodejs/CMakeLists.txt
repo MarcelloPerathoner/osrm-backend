@@ -34,18 +34,17 @@ target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
 target_link_libraries(node_osrm osrm)
 
 # node_osrm artifacts in ${BINDING_DIR} to depend targets on
-set(ARTIFACTS "${BINDING_DIR}")
+set(ARTIFACTS "")
 
 # Create the binding directory if it doesn't exist
-add_custom_command(OUTPUT ${BINDING_DIR}
-                   COMMAND ${CMAKE_COMMAND} -E make_directory ${BINDING_DIR})
+file(MAKE_DIRECTORY ${BINDING_DIR})
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
   set(t "${BINDING_DIR}/${binary}${CMAKE_EXECUTABLE_SUFFIX}")
   add_custom_command(OUTPUT "${t}"
                      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${binary}> ${BINDING_DIR}
-                     DEPENDS ${binary} ${BINDING_DIR})
+                     DEPENDS ${binary})
   list(APPEND ARTIFACTS "${t}")
 endforeach(binary)
 
@@ -58,7 +57,7 @@ if (ENABLE_CONAN)
       get_filename_component(filename ${filepath} NAME)
       add_custom_command(OUTPUT "${BINDING_DIR}/${filename}"
                          COMMAND ${CMAKE_COMMAND} -E copy ${filepath} ${BINDING_DIR}
-                         DEPENDS ${filepath} ${BINDING_DIR})
+                         DEPENDS ${filepath})
       list(APPEND ARTIFACTS "${BINDING_DIR}/${filename}")
     endforeach()
   endforeach()
@@ -67,7 +66,7 @@ endif()
 
 add_custom_command(OUTPUT ${BINDING_DIR}/node_osrm.node
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:node_osrm> ${BINDING_DIR}
-                   DEPENDS node_osrm ${BINDING_DIR})
+                   DEPENDS node_osrm)
 list(APPEND ARTIFACTS "${BINDING_DIR}/node_osrm.node")
 
 
