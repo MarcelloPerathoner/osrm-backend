@@ -229,8 +229,6 @@ jobs:
           ls -al ../lib/binding_napi_v8/
           echo "::endgroup::"
 
-      # Test
-
       # TODO: MSVC goes out of memory when building target library-tests
       # See switch in: unit_tests/CMakeLists.txt
       - name: Build unit tests
@@ -238,13 +236,6 @@ jobs:
         continue-on-error: true
         run: |
           cmake --build . --config ${BUILD_TYPE}  -j ${JOBS} --target tests
-
-      - name: Run unit tests
-        working-directory: ${{ env.BUILD_DIR }}
-        continue-on-error: true
-        run: |
-          make -C test/data
-          for i in unit_tests/*-tests ; do echo Running $i ; $i ; done
 
       - name: Save CCache directory
         if: ${{ env.ENABLE_CCACHE == 'ON'}}
@@ -259,6 +250,15 @@ jobs:
         with:
           path: ${{ env.SCCACHE_DIR }}
           key: ${{ steps.cache-sccache-restore.outputs.cache-primary-key }}
+
+      # Test
+
+      - name: Run unit tests
+        working-directory: ${{ env.BUILD_DIR }}
+        continue-on-error: true
+        run: |
+          make -C ../test/data
+          for i in unit_tests/*-tests ; do echo Running $i ; $i ; done
 
       - name: Run nodejs tests
         if: ${{ env.NODEJS_TESTS == 'ON' }}
