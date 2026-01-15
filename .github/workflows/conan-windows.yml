@@ -114,9 +114,10 @@ jobs:
       - name: Pip install Conan
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
-          python3 -m venv "${{ env.VENV_DIR }}"
-          # don't use Scripts/Activate: it gets terribly confused with slashes and backslashes in dirnames
-          source "${{ env.VENV_DIR }}/Scripts/Activate"
+          VENV="${${{ env.VENV_DIR }}//\\/\//}"
+          echo $VENV
+          python3 -m venv $VENV
+          source "$VENV/Scripts/Activate"
           echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
           python3 -m pip install conan==${CONAN_VERSION}
           ls "${{ env.VENV_DIR }}/Scripts/"
