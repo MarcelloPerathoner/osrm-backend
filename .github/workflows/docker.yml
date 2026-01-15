@@ -13,14 +13,17 @@ jobs:
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
+
       - name: Enable osm.pbf cache
         uses: actions/cache@v4
         with:
           path: berlin-latest.osm.pbf
           key: v1-berlin-osm-pbf
+
       - name: Docker build
         run: |
           docker build -t osrm-backend-local -f docker/Dockerfile-${{ matrix.docker-base-image }} .
+
       - name: Test Docker image
         run: |
           if [ ! -f "${PWD}/berlin-latest.osm.pbf" ]; then

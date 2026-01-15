@@ -42,6 +42,15 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  format-taginfo-docs:
+    uses: ./.github/workflows/format-taginfo-docs.yml
+
+  docker:
+    uses: ./.github/workflows/docker.yml
+
+  windows:
+    uses: ./.github/workflows/conan-windows.yml
+
   build-matrix:
     strategy:
       matrix:
@@ -596,15 +605,6 @@ jobs:
           omitNameDuringUpdate: true
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
-
-  windows:
-    uses: ./.github/workflows/conan-windows.yml
-
-  docker:
-    uses: ./.github/workflows/docker.yml
-
-  format-taginfo-docs:
-    uses: ./.github/workflows/format-taginfo-docs.yml
 
   ci-complete:
     runs-on: ubuntu-latest
