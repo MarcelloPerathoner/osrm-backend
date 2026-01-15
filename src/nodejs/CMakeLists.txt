@@ -34,10 +34,11 @@ target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
 target_link_libraries(node_osrm osrm)
 
 # node_osrm artifacts in ${BINDING_DIR} to depend targets on
-set(ARTIFACTS "")
+set(ARTIFACTS "${BINDING_DIR}")
 
 # Create the binding directory if it doesn't exist
-file(MAKE_DIRECTORY ${BINDING_DIR})
+add_custom_command(OUTPUT ${BINDING_DIR}
+                   COMMAND ${CMAKE_COMMAND} -E make_directory ${BINDING_DIR})
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
