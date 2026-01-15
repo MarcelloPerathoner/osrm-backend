@@ -170,7 +170,6 @@ jobs:
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          echo "::group::debug info"
           echo "::group::cmake --help"
           which cmake
           cmake --version
@@ -189,7 +188,6 @@ jobs:
 
           echo "::group::cat conan_toolchain.cmake"
           cat conan_toolchain.cmake
-          echo "::endgroup::"
           echo "::endgroup::"
 
           export CCACHE_COMPILER=cl.exe
@@ -219,7 +217,6 @@ jobs:
           cmake --build . --config ${BUILD_TYPE} -j ${JOBS}
           echo "::endgroup::"
 
-          echo "::group::debug info"
           echo "::group::ls build/"
           ls -al
           echo "::endgroup::"
@@ -230,7 +227,6 @@ jobs:
 
           echo "::group::ls lib/binding_napi_v8"
           ls -al ../lib/binding_napi_v8/
-          echo "::endgroup::"
           echo "::endgroup::"
 
       # Test

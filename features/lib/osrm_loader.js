@@ -40,7 +40,15 @@ class OSRMBaseLoader {
       this.child = null;
     });
 
-    return this.waitForConnection();
+    return new Promise((resolve) => {
+      this.child.stdout.on('data', (data) => {
+        if (data.includes('running and waiting for requests')) {
+          log('Routed running and waiting for requests');
+          resolve();
+        }
+      });
+    });
+    // return this.waitForConnection();
   }
 
   // Terminates OSRM server process gracefully
