@@ -18,7 +18,8 @@ env:
   LOG_DIR: ${{ github.workspace }}/test/logs
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}/.conan2
-  VENV_DIR: ${{ github.workspace }}/.venv
+  # FIXME:
+  VENV_DIR: "/d/a/osrm-backend/osrm-backend/.venv"
 
   ENABLE_LTO: ON
 
@@ -103,25 +104,14 @@ jobs:
         id: cache-python-restore
         with:
           path: ${{ env.VENV_DIR }}
-          key: windows-python-conan-127-${{ env.CONAN_VERSION }}
-
-      - name: Activate Python
-        if: steps.cache-python-restore.outputs.cache-hit == 'true'
-        run: |
-          # don't use Scripts/Activate: it gets terribly confused with slashes and backslashes in dirnames
-          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
+          key: windows-python-conan-129-${{ env.CONAN_VERSION }}
 
       - name: Pip install Conan
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
-          VENV="${${{ env.VENV_DIR }}//\\/\//}"
-          echo $VENV
-          python3 -m venv $VENV
-          source "$VENV/Scripts/Activate"
-          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
+          python3 -m venv ${{ env.VENV_DIR }}
+          source "${{ env.VENV_DIR }}/Scripts/activate"
           python3 -m pip install conan==${CONAN_VERSION}
-          ls "${{ env.VENV_DIR }}/Scripts/"
-          cat "${{ env.VENV_DIR }}/Scripts/Activate"
 
       - name: Save Python cache
         uses: actions/cache/save@v4
@@ -129,6 +119,14 @@ jobs:
         with:
           path: ${{ env.VENV_DIR }}
           key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
+
+      - name: Activate Python
+        run: |
+          # don't use Scripts/Activate: it gets terribly confused with slashes and backslashes in dirnames
+          source "${{ env.VENV_DIR }}/Scripts/activate"
+          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
+          ls   "${{ env.VENV_DIR }}/Scripts/"
+          cat  "${{ env.VENV_DIR }}/Scripts/activate"
 
       # Conan cache
 
