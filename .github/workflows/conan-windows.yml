@@ -103,12 +103,12 @@ jobs:
         id: cache-python-restore
         with:
           path: ${{ env.VENV_DIR }}
-          key: windows-python-conan-124-${{ env.CONAN_VERSION }}
+          key: windows-python-conan-125-${{ env.CONAN_VERSION }}
 
       - name: Activate Python
         if: steps.cache-python-restore.outputs.cache-hit == 'true'
         run: |
-          echo "${{ env.VENV_DIR }}/.venv/Scripts" >> "$GITHUB_PATH"
+          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
 
       - name: Pip install Conan
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
