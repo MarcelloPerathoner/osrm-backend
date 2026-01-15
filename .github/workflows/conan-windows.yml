@@ -108,17 +108,16 @@ jobs:
       - name: Activate Python
         if: steps.cache-python-restore.outputs.cache-hit == 'true'
         run: |
+          # don't use Scripts/Activate: it gets terribly confused with slashes and backslashes in dirnames
           echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
 
       - name: Pip install Conan
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
           python3 -m venv .venv
-          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
-          echo "::group::Scripts/Activate"
-          cat "${{ env.VENV_DIR }}/Scripts/Activate"
-          echo "::endgroup::"
+          # don't use Scripts/Activate: it gets terribly confused with slashes and backslashes in dirnames
           # source ."${{ env.VENV_DIR }}/Scripts/Activate"
+          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
           python3 -m pip install conan==${CONAN_VERSION}
 
       - name: Save Python cache
@@ -227,6 +226,10 @@ jobs:
 
           echo "::group::ls build/${BUILD_TYPE}/"
           ls -al ${BUILD_TYPE}/
+          echo "::endgroup::"
+
+          echo "::group::ls lib/binding_napi_v8"
+          ls -al ../lib/binding_napi_v8/
           echo "::endgroup::"
 
       # Test

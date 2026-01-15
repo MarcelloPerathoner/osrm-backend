@@ -5,7 +5,7 @@ message(STATUS "Building node_osrm")
 set(NAPI_VERSION 8)
 add_definitions(-DNAPI_VERSION=${NAPI_VERSION})
 
-set(BINDING_DIR "${PROJECT_SOURCE_DIR}/lib/binding_napi_v8")
+set(BINDING_DIR "${PROJECT_SOURCE_DIR}/lib/binding_napi_v${NAPI_VERSION}")
 
 list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/node_modules/node-cmake")
 
@@ -37,14 +37,12 @@ target_link_libraries(node_osrm osrm)
 set(ARTIFACTS "")
 
 # Create the binding directory if it doesn't exist
-# file(MAKE_DIRECTORY ${BINDING_DIR})
-add_custom_command(
-  OUTPUT ${BINDING_DIR}
-  COMMAND ${CMAKE_COMMAND} -E make_directory ${BINDING_DIR})
+add_custom_command(OUTPUT ${BINDING_DIR}
+                   COMMAND ${CMAKE_COMMAND} -E make_directory ${BINDING_DIR})
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
-  add_custom_command(OUTPUT ${BINDING_DIR}/${binary}
+  add_custom_command(OUTPUT ${BINDING_DIR}/${binary} SYMBOLIC
                      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${binary}> ${BINDING_DIR}
                      DEPENDS ${binary} ${BINDING_DIR})
   list(APPEND ARTIFACTS "${BINDING_DIR}/${binary}")
@@ -66,11 +64,11 @@ if (ENABLE_CONAN)
 endif()
 
 
-add_custom_command(OUTPUT ${BINDING_DIR}/node_osrm.node
+add_custom_command(OUTPUT "${BINDING_DIR}/node_osrm.node"
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:node_osrm> ${BINDING_DIR}
                    DEPENDS node_osrm ${BINDING_DIR})
 list(APPEND ARTIFACTS "${BINDING_DIR}/node_osrm.node")
 
 
 message(STATUS "node_osrm artifacts will be copied to: ${BINDING_DIR}")
-add_custom_target(copy_artifacts ALL DEPENDS ${ARTIFACTS})
+add_custom_target(copy_artifacts ALL DEPENDS ${BINDING_DIR} ${ARTIFACTS})
