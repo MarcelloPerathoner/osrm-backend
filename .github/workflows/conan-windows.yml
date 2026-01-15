@@ -105,10 +105,16 @@ jobs:
           path: ${{ env.VENV_DIR }}
           key: windows-python-conan-124-${{ env.CONAN_VERSION }}
 
+      - name: Activate Python
+        if: steps.cache-python-restore.outputs.cache-hit == 'true'
+        run: |
+          echo "${{ env.VENV_DIR }}/.venv/Scripts" >> "$GITHUB_PATH"
+
       - name: Pip install Conan
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
           python3 -m venv .venv
+          echo "${{ env.VENV_DIR }}/.venv/Scripts" >> "$GITHUB_PATH"
           echo "::group::Scripts/Activate"
           cat .venv/Scripts/Activate
           echo "::endgroup::"
@@ -134,7 +140,9 @@ jobs:
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          source ../.venv/Scripts/Activate
+          echo "::group::$PATH"
+          echo "$PATH"
+          echo "::endgroup::"
 
           which conan
           conan --version
