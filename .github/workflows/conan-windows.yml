@@ -258,7 +258,9 @@ jobs:
         continue-on-error: true
         run: |
           make -C ../test/data
-          for i in unit_tests/*-tests ; do echo Running $i ; $i ; done
+          cd unit_tests/Release/
+          ls -al
+          for i in *-tests.exe ; do echo Running $i ; $i ; done
 
       - name: Run nodejs tests
         if: ${{ env.NODEJS_TESTS == 'ON' }}
