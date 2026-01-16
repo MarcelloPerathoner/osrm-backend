@@ -396,34 +396,27 @@ jobs:
 
           echo "PKG_CONFIG_PATH=${OSRM_INSTALL_DIR}/lib/pkgconfig" >> $GITHUB_ENV
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OSRM_INSTALL_DIR}/lib" >> $GITHUB_ENV
-            # if [[ "$ENABLE_ASAN" == 'ON' ]]; then
-            #   echo "LD_PRELOAD=`clang -print-file-name=libclang_rt.asan-x86_64.so`:$LD_PRELOAD" >> $GITHUB_ENV
-            # fi
-            # if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
-            #   echo "LD_PRELOAD=`clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`:$LD_PRELOAD" >> $GITHUB_ENV
-            # fi
-          fi
-
-          if [[ "${UNIT_TESTS}" == "ON" ]]; then
             if [[ "$ENABLE_ASAN" == 'ON' ]]; then
               export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH
-              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
             fi
             if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
               export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`):$LD_LIBRARY_PATH
-              echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
             fi
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OSRM_INSTALL_DIR}/lib" >> $GITHUB_ENV
+          fi
+
+          if [[ "${UNIT_TESTS}" == "ON" ]]; then
             echo "::group::make tests"
             make --jobs=${JOBS} tests
             echo "::endgroup::"
+
             echo "::group::make benchmarks"
             make --jobs=${JOBS} benchmarks
             echo "::endgroup::"
 
-            echo "::group::make install"
-            sudo make install
-            echo "::endgroup::"
+            # echo "::group::make install"
+            # sudo make install
+            # echo "::endgroup::"
           fi
 
         env:
@@ -457,10 +450,10 @@ jobs:
         run: |
           make -C ${TEST_DIR}/data benchmark
 
-          if [[ "${RUNNER_OS}" == "macOS" ]]; then
-            # macOS SIP strips the linker path. Reset this inside the running shell
-            export LD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }}
-          fi
+          # if [[ "${RUNNER_OS}" == "macOS" ]]; then
+          #   # macOS SIP strips the linker path. Reset this inside the running shell
+          #   export LD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }}
+          # fi
 
           for i in unit_tests/*-tests
           do echo "::group::Running $i"
