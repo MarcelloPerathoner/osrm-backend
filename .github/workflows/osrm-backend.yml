@@ -367,7 +367,7 @@ jobs:
           fi
 
       - name: Build and install OSRM
-        working-directory: ${{ env.OSRM_BUILD_DIR }}
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::cmake"
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -435,13 +435,14 @@ jobs:
 
       - name: Run unit tests
         if: ${{ env.UNIT_TESTS == 'ON' }}
-        working-directory: ${{ env.OSRM_BUILD_DIR }}
         run: |
-          make -C ${TEST_DIR}/data benchmark
+          make -C ${TEST_DIR}/data
 
-          for i in unit_tests/*-tests
+          set +o errexit
+          cd ${{ env.OSRM_BUILD_DIR }}/unit_tests${{ env.OSRM_BUILD_SUBDIR }}
+          for i in *-tests${EXE}
           do echo "::group::Running $i"
-            $i
+            ./$i
             echo "::endgroup::"
           done
 

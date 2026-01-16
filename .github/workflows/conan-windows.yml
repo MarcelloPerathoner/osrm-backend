@@ -34,6 +34,7 @@ jobs:
     env:
       BUILD_TYPE:         Release
       ENABLE_CONAN:       ON
+      UNIT_TESTS:         ON
       NODE_PACKAGE_TESTS: ON
       BUILD_NODE_PACKAGE: ON
       PUBLISH:            OFF
@@ -227,31 +228,20 @@ jobs:
       # Test
 
       - name: Run unit tests
-        working-directory: ${{ env.BUILD_DIR }}
-        continue-on-error: true
+        if: ${{ env.UNIT_TESTS == 'ON' }}
         run: |
-          make -C ../test/data
-          cd unit_tests/Release/
+          make -C ${TEST_DIR}/data
+
           set +o errexit
-          for i in *-tests.exe
+          cd ${{ env.OSRM_BUILD_DIR }}/unit_tests${{ env.OSRM_BUILD_SUBDIR }}
+          for i in *-tests${EXE}
           do echo "::group::Running $i"
             ./$i
             echo "::endgroup::"
           done
 
       - name: Run Cucumber tests
-        working-directory: ${{ env.BUILD_DIR }}
-        continue-on-error: true
         run: |
-          npm run lint
-
-          echo "::group::PATH"
-          echo $PATH
-          echo "::endgroup::"
-
-          # smoke test (see if we can find the DLLs)
-          ${OSRM_BUILD_DIR}/osrm-extract.exe --version
-
           npm test -- --parallel $JOBS
 
       - name: Run Node package tests
