@@ -314,7 +314,6 @@ export default class Data {
       this.writeOSM();
       this.runExtractionChain();
       await env.osrmLoader.before(this);
-      await new Promise(resolve => setTimeout(resolve, 10));
       this.dataLoaded = true;
     }
     callback();

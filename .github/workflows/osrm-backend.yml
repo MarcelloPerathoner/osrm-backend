@@ -12,8 +12,6 @@ on:
       - master
 
 env:
-  # versions
-  CONAN_VERSION: 2.24.0
   # paths
   BUILD_DIR: ${{ github.workspace }}/build
   TEST_DIR: ${{ github.workspace }}/test
@@ -307,14 +305,14 @@ jobs:
         if: ${{ env.ENABLE_CONAN == 'ON' }}
         with:
           path: .venv
-          key: ${{ matrix.runs-on }}-python-conan-${{ env.CONAN_VERSION }}
+          key: ${{ matrix.runs-on }}-python-${{ hashFiles('requirements-dev.txt') }}
 
-      - name: Pip Install Conan
+      - name: Pip Install requirements
         if: ${{ env.ENABLE_CONAN == 'ON' && steps.cache-python-restore.outputs.cache-hit != 'true' }}
         run: |
           python3 -m venv .venv
           source .venv/bin/activate
-          python3 -m pip install conan==${CONAN_VERSION}
+          python3 -m pip install -r requirements-dev.txt
 
       - name: Save Python cache
         uses: actions/cache/save@v4
@@ -323,13 +321,15 @@ jobs:
           path: .venv
           key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
 
+      # Conan cache
+
       - name: Restore Conan cache
         uses: actions/cache/restore@v4
         if: ${{ env.ENABLE_CONAN == 'ON' }}
         id: cache-conan-restore
         with:
           path: ${{ env.CONAN_HOME }}
-          key: ${{ matrix.name }}-conan-${{ env.CONAN_VERSION }}
+          key: ${{ matrix.name }}-conan-${{ hashFiles('conanfile.py') }}
 
       - name: Prepare environment
         run: |

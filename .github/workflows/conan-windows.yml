@@ -6,8 +6,6 @@ on:
 env:
   EXE: .exe
   BUILD_TYPE: Release
-  # versions
-  CONAN_VERSION: 2.24.0
   # paths
   BUILD_DIR: ${{ github.workspace }}/build
   TEST_DIR: ${{ github.workspace }}/test
@@ -100,14 +98,14 @@ jobs:
         id: cache-python-restore
         with:
           path: .venv
-          key: windows-python-conan-130-${{ env.CONAN_VERSION }}
+          key: windows-python-${{ hashFiles('requirements-dev.txt') }}
 
-      - name: Pip install Conan
+      - name: Pip install requirements
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
         run: |
           python3 -m venv ${{ env.VENV_DIR }}
           source "${{ env.VENV_DIR }}/Scripts/activate"
-          python3 -m pip install conan==${CONAN_VERSION}
+          python3 -m pip install -r requirements-dev.txt
 
       - name: Save Python cache
         uses: actions/cache/save@v4
