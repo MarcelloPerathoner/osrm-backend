@@ -18,22 +18,13 @@ env:
   LOG_DIR: ${{ github.workspace }}/test/logs
   NODE_DIR: ${{ github.workspace }}/.npm
   CONAN_HOME: ${{ github.workspace }}/.conan2
+
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: /tmp/.ccache-temp
   CCACHE_COMPRESS: 1
-  CASHER_TIME_OUT: 599 # one second less than 10m to avoid 10m timeout error: https://github.com/Project-OSRM/osrm-backend/issues/2742
-  # defaults
-  BUILD_TYPE: Release
-  ENABLE_ASAN: OFF
-  ENABLE_UBSAN: OFF
-  ENABLE_LTO: OFF
   ENABLE_CCACHE: ON
-  ENABLE_NODE_BINDINGS: ON
-  UNIT_TESTS: ON
-  NODEJS_TESTS: ON
-  CUCUMBER_TESTS: ON
-  NODE_PACKAGE_TESTS: OFF
-  PUBLISH: OFF
+
+  CASHER_TIME_OUT: 599 # one second less than 10m to avoid 10m timeout error: https://github.com/Project-OSRM/osrm-backend/issues/2742
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
@@ -54,7 +45,6 @@ jobs:
       matrix:
         include:
           - name: clang-20-release
-            continue-on-error: false
             node: 24
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -62,7 +52,6 @@ jobs:
             CXXCOMPILER: clang++-20
 
           - name: clang-19-release
-            continue-on-error: false
             node: 24
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -102,11 +91,9 @@ jobs:
             UNIT_TESTS: OFF
             NODEJS_TESTS: OFF
             CUCUMBER_TESTS: OFF
-            NODE_PACKAGE_TESTS: OFF
             ENABLE_LTO: OFF
 
           - name: clang-18-release
-            continue-on-error: false
             node: 22
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -115,7 +102,6 @@ jobs:
             ENABLE_LTO: OFF
 
           - name: clang-17-release
-            continue-on-error: false
             node: 22
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -124,7 +110,6 @@ jobs:
             ENABLE_LTO: OFF
 
           - name: clang-16-release
-            continue-on-error: false
             node: 20
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -133,7 +118,6 @@ jobs:
             ENABLE_LTO: OFF
 
           - name: gcc-14-release
-            continue-on-error: false
             node: 24
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -141,7 +125,6 @@ jobs:
             CXXCOMPILER: g++-14
 
           - name: gcc-13-release
-            continue-on-error: false
             node: 22
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -149,7 +132,6 @@ jobs:
             CXXCOMPILER: g++-13
 
           - name: gcc-13-debug-cov
-            continue-on-error: false
             node: 22
             runs-on: ubuntu-24.04
             BOOST_PLATFORM: 24.04
@@ -158,7 +140,6 @@ jobs:
             ENABLE_COVERAGE: ON
 
           - name: gcc-12-release
-            continue-on-error: false
             node: 20
             runs-on: ubuntu-22.04
             BOOST_PLATFORM: 22.04
@@ -166,108 +147,74 @@ jobs:
             CXXCOMPILER: g++-12
             CXXFLAGS: '-Wno-array-bounds -Wno-uninitialized'
 
-          - name: conan-linux-release
-            continue-on-error: false
-            node: 22
-            runs-on: ubuntu-24.04
-            CCOMPILER: clang-19
-            CXXCOMPILER: clang++-19
-            ENABLE_CONAN: ON
-
-          - name: conan-linux-debug
-            continue-on-error: false
-            node: 22
-            runs-on: ubuntu-24.04
-            CCOMPILER: clang-19
-            CXXCOMPILER: clang++-19
-            ENABLE_CONAN: ON
-
           - name: conan-linux-release-node
-            build_node_package: true
-            continue-on-error: false
             node: 22
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
-            ENABLE_CONAN: ON
-            NODE_PACKAGE_TESTS: ON
 
           - name: conan-linux-debug-node
-            build_node_package: true
-            continue-on-error: false
             node: 22
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
-            ENABLE_CONAN: ON
-            NODE_PACKAGE_TESTS: ON
 
           - name: conan-macos-14-arm64-release-node
-            build_node_package: true
-            continue-on-error: false
             node: 22
             runs-on: macos-14 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
-            ENABLE_CONAN: ON
-            NODE_PACKAGE_TESTS: ON
 
           - name: conan-macos-15-x64-release-node
-            build_node_package: true
-            continue-on-error: false
             node: 22
             runs-on: macos-15-intel # x86_64
             CCOMPILER: clang
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
-            ENABLE_CONAN: ON
-            NODE_PACKAGE_TESTS: ON
 
           - name: conan-macos-15-arm64-release-node
-            build_node_package: true
-            continue-on-error: false
             node: 22
             runs-on: macos-15 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
-            ENABLE_CONAN: ON
-            NODE_PACKAGE_TESTS: ON
 
           - name: conan-macos-26-arm64-release-node
-            build_node_package: true
-            continue-on-error: false
             node: 24
             runs-on: macos-26 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
-            ENABLE_CONAN: ON
-            NODE_PACKAGE_TESTS: ON
 
     name: ${{ matrix.name }}
-    continue-on-error: ${{ matrix.continue-on-error }}
+    continue-on-error: ${{ matrix.continue-on-error == 'false' && 'false' || 'true' }}
     runs-on: ${{ matrix.runs-on }}
     env:
-      BUILD_TYPE: ${{ contains(matrix.name, 'debug') && 'Debug' || 'Release' }}
+      PUBLISH: OFF
+
+      BUILD_TYPE:           ${{ contains(matrix.name, 'debug') && 'Debug' || 'Release' }}
+      ENABLE_CONAN:         ${{ contains(matrix.name, 'conan') && 'ON' || 'OFF' }}
+      ENABLE_NODE_BINDINGS: ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
+      NODE_PACKAGE_TESTS:   ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
+      BUILD_NODE_PACKAGE:   ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
+
       BUILD_SHARED_LIBS: ${{ matrix.BUILD_SHARED_LIBS }}
-      CCOMPILER: ${{ matrix.CCOMPILER }}
-      CFLAGS: ${{ matrix.CFLAGS }}
-      CXXCOMPILER: ${{ matrix.CXXCOMPILER }}
-      CXXFLAGS: ${{ matrix.CXXFLAGS }}
+      CCOMPILER:         ${{ matrix.CCOMPILER }}
+      CFLAGS:            ${{ matrix.CFLAGS }}
+      CXXCOMPILER:       ${{ matrix.CXXCOMPILER }}
+      CXXFLAGS:          ${{ matrix.CXXFLAGS }}
+
       ENABLE_ASSERTIONS: ${{ matrix.ENABLE_ASSERTIONS }}
       ENABLE_CLANG_TIDY: ${{ matrix.ENABLE_CLANG_TIDY }}
-      ENABLE_COVERAGE: ${{ matrix.ENABLE_COVERAGE }}
-      ENABLE_CONAN: ${{ matrix.ENABLE_CONAN }}
-      ENABLE_ASAN: ${{ matrix.ENABLE_ASAN }}
-      ENABLE_UBSAN: ${{ matrix.ENABLE_UBSAN }}
-      UNIT_TESTS: ${{ (matrix.UNIT_TESTS != 'OFF'        ) && 'ON' || 'OFF' }}
-      NODEJS_TESTS: ${{ (matrix.NODEJS_TESTS != 'OFF'      ) && 'ON' || 'OFF' }}
-      CUCUMBER_TESTS: ${{ (matrix.CUCUMBER_TESTS != 'OFF'    ) && 'ON' || 'OFF' }}
-      NODE_PACKAGE_TESTS: ${{ (matrix.NODE_PACKAGE_TESTS != 'OFF') && 'ON' || 'OFF' }}
-      TARGET_ARCH: ${{ matrix.TARGET_ARCH }}
-      ENABLE_LTO: ${{ matrix.ENABLE_LTO }}
+      ENABLE_COVERAGE:   ${{ matrix.ENABLE_COVERAGE }}
+      ENABLE_ASAN:       ${{ matrix.ENABLE_ASAN }}
+      ENABLE_UBSAN:      ${{ matrix.ENABLE_UBSAN }}
+      UNIT_TESTS:        ${{ (matrix.UNIT_TESTS != 'OFF'        ) && 'ON' || 'OFF' }}
+      NODEJS_TESTS:      ${{ (matrix.NODEJS_TESTS != 'OFF'      ) && 'ON' || 'OFF' }}
+      CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS != 'OFF'    ) && 'ON' || 'OFF' }}
+      ENABLE_LTO:        ${{ matrix.ENABLE_LTO }}
+
     steps:
       - uses: actions/checkout@v4
       - name: Build machine architecture
@@ -350,11 +297,11 @@ jobs:
       # See: https://github.com/actions/toolkit/issues/946#issuecomment-1590016041
       # We need it to be able to access system folders while restoring cached Boost below
       - name: Give tar root ownership
-        if: runner.os == 'Linux' && matrix.ENABLE_CONAN != 'ON'
+        if: runner.os == 'Linux' && env.ENABLE_CONAN != 'ON'
         run: sudo chown root /bin/tar && sudo chmod u+s /bin/tar
 
       - name: Install boost
-        if: ${{ matrix.ENABLE_CONAN != 'ON' }}
+        if: ${{ env.ENABLE_CONAN != 'ON' }}
         uses: MarkusJx/install-boost@v2
         id: install-boost
         with:
@@ -528,65 +475,23 @@ jobs:
         run: |
           npm test -- --parallel $JOBS
 
-      - name: Use Node 20
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 20
-          cache: npm
-      - name: Run Node package tests on Node 20
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        run: |
-          node --version
-          npm run nodejs-tests
-      - name: Use Node 22
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-      - name: Run Node package tests on Node 22
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        run: |
-          node --version
-          npm run nodejs-tests
-      - name: Use Node 24
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-      - name: Run Node package tests on Node 24
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        run: |
-          node --version
-          npm run nodejs-tests
-      - name: Use Node latest
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: latest
-          cache: npm
-      - name: Run Node package tests on Node-latest
-        if: ${{ matrix.NODE_PACKAGE_TESTS == 'ON' }}
-        run: |
-          node --version
-          npm run nodejs-tests
+      - if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+        uses: ./.github/actions/node-package-tests.yml
 
       - name: Upload test logs
         uses: actions/upload-artifact@v4
-        if: failure() || success()
+        if: always()
         with:
           if-no-files-found: ignore
           name: ${{ matrix.name }}-test-logs
           path: ${{ env.LOG_DIR }}
 
       - name: Build Node package
-        if: ${{ matrix.build_node_package }}
+        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' }}
         run: ./scripts/ci/node_package.sh
 
       - name: Publish Node package
-        if: ${{ matrix.build_node_package && env.PUBLISH == 'ON' }}
+        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON' }}
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true

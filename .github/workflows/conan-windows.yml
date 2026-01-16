@@ -5,14 +5,14 @@ on:
 
 env:
   EXE: .exe
-  BUILD_TYPE: Release
   # paths
   BUILD_DIR: ${{ github.workspace }}/build
   TEST_DIR: ${{ github.workspace }}/test
   LOG_DIR: ${{ github.workspace }}/test/logs
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}/.conan2
-  # FIXME:
+
+  # FIXME: how to convert ${{ github.workspace }} to all slashes, like this?
   VENV_DIR: "/d/a/osrm-backend/osrm-backend/.venv"
 
   ENABLE_LTO: ON
@@ -20,8 +20,6 @@ env:
   ENABLE_SCCACHE: ON
   SCCACHE_DIR: ${{ github.workspace }}/.sccache
 
-  NODEJS_TESTS: ON
-  PUBLISH: OFF
 
 defaults:
   run:
@@ -32,6 +30,13 @@ jobs:
     name: conan-release-node
     runs-on: windows-2025
     continue-on-error: false
+    env:
+      BUILD_TYPE:         Release
+      ENABLE_CONAN:       ON
+      NODE_PACKAGE_TESTS: ON
+      BUILD_NODE_PACKAGE: ON
+      NODEJS_TESTS:       ON
+      PUBLISH:            OFF
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -276,10 +281,11 @@ jobs:
           path: ${{ env.LOG_DIR }}
 
       - name: Build Node package
+        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' }}
         run: ./scripts/ci/node_package.sh
 
       - name: Publish Node package
-        if: ${{ env.PUBLISH == 'ON' }}
+        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON' }}
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
