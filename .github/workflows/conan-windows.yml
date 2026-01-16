@@ -44,7 +44,7 @@ jobs:
         env:
           TEMP: ${{ runner.temp }}
         run: |
-          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $CCACHE_DIR $CCACHE_TEMPDIR $SCCACHE_DIR
+          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $SCCACHE_DIR
           echo "TEMP=$TEMP" >> "$GITHUB_ENV"
           echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
           echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
@@ -137,7 +137,7 @@ jobs:
           path: ${{ env.CONAN_HOME }}
           key: ${{ steps.cache-conan-restore.outputs.cache-primary-key }}
 
-      # CCache
+      # SCCache
 
       - name: Install SCCache
         if: ${{ env.ENABLE_SCCACHE == 'ON'}}
@@ -169,17 +169,10 @@ jobs:
           which cl.exe
           echo "::endgroup::"
 
-          echo "::group::ccache --help"
-          ccache --help
-          which ccache
-          echo "::endgroup::"
-
           echo "::group::cat conan_toolchain.cmake"
           cat conan_toolchain.cmake
           echo "::endgroup::"
 
-          export CCACHE_COMPILER=cl.exe
-          export CCACHE_COMPILERTYPE=msvc
           export SCCACHE_COMPILER=cl.exe
           export SCCACHE_COMPILERTYPE=msvc
 
@@ -192,7 +185,6 @@ jobs:
                    -DSKIP_CONAN_INSTALL=ON \
                    -DENABLE_NODE_BINDINGS=ON \
                    -DENABLE_LTO=${ENABLE_LTO} \
-                   -DENABLE_CCACHE=${ENABLE_CCACHE} \
                    -DENABLE_SCCACHE=${ENABLE_SCCACHE}
           echo "::endgroup::"
 

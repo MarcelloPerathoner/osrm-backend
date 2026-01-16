@@ -13,11 +13,12 @@ on:
 
 env:
   # paths
-  BUILD_DIR: ${{ github.workspace }}/build
-  TEST_DIR: ${{ github.workspace }}/test
-  LOG_DIR: ${{ github.workspace }}/test/logs
-  NODE_DIR: ${{ github.workspace }}/.npm
-  NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
+  BUILD_DIR:  ${{ github.workspace }}/build
+  TEST_DIR:   ${{ github.workspace }}/test
+  LOG_DIR:    ${{ github.workspace }}/test/logs
+  CI_DIR:     ${{ github.workspace }}/scripts/ci
+  NODE_DIR:   ${{ github.workspace }}/.npm
+  NAPI_DIR:   ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}/.conan2
 
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -247,6 +248,10 @@ jobs:
           path: .venv
           key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
 
+      - name: Activate Python
+        run: |
+          echo "${{ github.workspace }}/.venv/bin" >> "$GITHUB_PATH"
+
       # Conan cache
 
       - name: Restore Conan cache
@@ -275,10 +280,7 @@ jobs:
 
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
-          echo "OSRM_BUILD_DIR=${GITHUB_WORKSPACE}/build-osrm" >> $GITHUB_ENV
-          echo "TEST_DIR=${GITHUB_WORKSPACE}/test" >> $GITHUB_ENV
           if [[ "$ENABLE_ASAN" == "ON" || "$ENABLE_UBSAN" == "ON" ]]; then
-            CI_DIR=${GITHUB_WORKSPACE}/scripts/ci
             # We can only set this after checkout once we know the workspace directory
             echo "ASAN_OPTIONS=log_path=${LOG_DIR}/asan.log:print_suppressions=0:suppressions=${CI_DIR}/addresssanitizer.conf" >> $GITHUB_ENV
             echo "LSAN_OPTIONS=log_path=${LOG_DIR}/lsan.log:print_suppressions=0:suppressions=${CI_DIR}/leaksanitizer.conf" >> $GITHUB_ENV
@@ -362,18 +364,12 @@ jobs:
             echo "CPATH=${CPATH}:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" >> $GITHUB_ENV
           fi
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
-            source .venv/bin/activate
             conan profile detect --force
           fi
 
       - name: Build and install OSRM
         working-directory: ${{ env.OSRM_BUILD_DIR }}
         run: |
-          if [[ "${ENABLE_CONAN}" == "ON" ]]; then
-            # conan is also called from cmake
-            source ../.venv/bin/activate
-          fi
-
           echo "::group::cmake"
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                    -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
@@ -468,7 +464,7 @@ jobs:
 
       - name: Build Node package
         if: ${{ env.BUILD_NODE_PACKAGE == 'ON' }}
-        run: ./scripts/ci/node_package.sh
+        run: ${{ env.CI_DIR }}/node_package.sh
 
       - name: Publish Node package
         if: ${{ env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON' }}
