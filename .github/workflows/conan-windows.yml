@@ -259,6 +259,7 @@ jobs:
         run: |
           make -C ../test/data
           cd unit_tests/Release/
+          set +o errexit
           for i in *-tests.exe
           do echo "::group::Running $i"
             ./$i
