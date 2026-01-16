@@ -371,6 +371,8 @@ jobs:
 
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
+        env:
+          Boost_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
         run: |
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                    -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
@@ -411,9 +413,6 @@ jobs:
             make --jobs=${JOBS} benchmarks
             echo "::endgroup::"
           fi
-
-        env:
-          Boost_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
 
       - name: Save Conan cache
         uses: actions/cache/save@v4
