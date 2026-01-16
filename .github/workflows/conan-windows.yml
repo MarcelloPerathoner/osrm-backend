@@ -259,8 +259,11 @@ jobs:
         run: |
           make -C ../test/data
           cd unit_tests/Release/
-          ls -al
-          for i in *-tests.exe ; do echo Running $i ; $i ; done
+          for i in *-tests.exe
+          do echo "::group::Running $i"
+            ./$i
+            echo "::endgroup::"
+          done
 
       - name: Run nodejs tests
         if: ${{ env.NODEJS_TESTS == 'ON' }}
