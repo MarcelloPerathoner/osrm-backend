@@ -67,7 +67,6 @@ jobs:
             CXXCOMPILER: clang++-19
             ENABLE_ASAN: ON
             ENABLE_LTO: OFF
-            NODEJS_TESTS: OFF
 
           - name: clang-19-debug-ubsan
             continue-on-error: true
@@ -78,7 +77,6 @@ jobs:
             CXXCOMPILER: clang++-19
             ENABLE_UBSAN: ON
             ENABLE_LTO: OFF
-            NODEJS_TESTS: OFF
 
           - name: clang-19-debug-tidy
             continue-on-error: true
@@ -89,7 +87,6 @@ jobs:
             CXXCOMPILER: clang++-19
             ENABLE_CLANG_TIDY: ON
             UNIT_TESTS: OFF
-            NODEJS_TESTS: OFF
             CUCUMBER_TESTS: OFF
             ENABLE_LTO: OFF
 
@@ -198,6 +195,7 @@ jobs:
       ENABLE_NODE_BINDINGS: ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
       NODE_PACKAGE_TESTS:   ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
       BUILD_NODE_PACKAGE:   ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
+      NODEJS_TESTS:         ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
 
       BUILD_SHARED_LIBS: ${{ matrix.BUILD_SHARED_LIBS }}
       CCOMPILER:         ${{ matrix.CCOMPILER }}
@@ -208,12 +206,11 @@ jobs:
       ENABLE_ASSERTIONS: ${{ matrix.ENABLE_ASSERTIONS }}
       ENABLE_CLANG_TIDY: ${{ matrix.ENABLE_CLANG_TIDY }}
       ENABLE_COVERAGE:   ${{ matrix.ENABLE_COVERAGE }}
+      ENABLE_LTO:        ${{ matrix.ENABLE_LTO }}
       ENABLE_ASAN:       ${{ matrix.ENABLE_ASAN }}
       ENABLE_UBSAN:      ${{ matrix.ENABLE_UBSAN }}
       UNIT_TESTS:        ${{ (matrix.UNIT_TESTS != 'OFF'        ) && 'ON' || 'OFF' }}
-      NODEJS_TESTS:      ${{ (matrix.NODEJS_TESTS != 'OFF'      ) && 'ON' || 'OFF' }}
       CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS != 'OFF'    ) && 'ON' || 'OFF' }}
-      ENABLE_LTO:        ${{ matrix.ENABLE_LTO }}
 
     steps:
       - uses: actions/checkout@v4
