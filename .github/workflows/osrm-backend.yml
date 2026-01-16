@@ -188,7 +188,7 @@ jobs:
             ENABLE_ASSERTIONS: ON
 
     name: ${{ matrix.name }}
-    continue-on-error: ${{ matrix.continue-on-error == 'false' && 'false' || 'true' }}
+    continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
     runs-on: ${{ matrix.runs-on }}
     env:
       PUBLISH: OFF
