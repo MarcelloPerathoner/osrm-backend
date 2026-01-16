@@ -321,9 +321,9 @@ jobs:
         if: ${{ env.ENABLE_CCACHE == 'ON' }}
         with:
           path: ${{ env.CCACHE_DIR }}
-          key: ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ github.sha }}
+          key: ccache-${{ matrix.name }}-${{ github.sha }}
           restore-keys: |
-            ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-
+            ccache-${{ matrix.name }}-
 
       - name: Prepare environment
         run: |

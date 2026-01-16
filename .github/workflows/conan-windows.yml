@@ -67,7 +67,7 @@ jobs:
         id: cache-python-restore
         with:
           path: .venv
-          key: python-${{ matrix.runs-on }}-${{ hashFiles('requirements-dev.txt') }}
+          key: python-windows-${{ hashFiles('requirements-dev.txt') }}
 
       - name: Pip install requirements
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
@@ -100,7 +100,7 @@ jobs:
         id: cache-conan-restore
         with:
           path: ${{ env.CONAN_HOME }}
-          key: conan-${{ matrix.runs-on }}-${{ hashFiles('conanfile.py') }}
+          key: conan-windows-${{ hashFiles('conanfile.py') }}
 
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
@@ -144,9 +144,9 @@ jobs:
         if: ${{ env.ENABLE_SCCACHE == 'ON' }}
         with:
           path: ${{ env.SCCACHE_DIR }}
-          key: ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ github.sha }}
+          key: ccache-windows-${{ github.sha }}
           restore-keys: |
-            ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-
+            ccache-windows-
 
       # Build
 
