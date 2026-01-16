@@ -1,50 +1,50 @@
 name: Node package tests
+description: Run node package tests
 
 runs:
   using: "composite"
 
   steps:
     - name: Use Node 20
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
       uses: actions/setup-node@v4
       with:
         node-version: 20
         cache: npm
     - name: Run Node package tests on Node 20
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+      shell: bash
       run: |
         node --version
         npm run nodejs-tests
+
     - name: Use Node 22
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
       uses: actions/setup-node@v4
       with:
         node-version: 22
         cache: npm
     - name: Run Node package tests on Node 22
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+      shell: bash
       run: |
         node --version
         npm run nodejs-tests
+
     - name: Use Node 24
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
       uses: actions/setup-node@v4
       with:
         node-version: 24
         cache: npm
     - name: Run Node package tests on Node 24
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+      shell: bash
       run: |
         node --version
         npm run nodejs-tests
+
     - name: Use Node latest
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
       uses: actions/setup-node@v4
       with:
         node-version: latest
         cache: npm
     - name: Run Node package tests on Node-latest
-      if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+      shell: bash
       run: |
         node --version
         npm run nodejs-tests

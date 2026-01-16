@@ -472,8 +472,9 @@ jobs:
         run: |
           npm test -- --parallel $JOBS
 
-      - if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
-        uses: ./.github/actions/node-package-tests.yml
+      - name: Run Node package tests
+        if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+        uses: ./.github/actions/node-package-tests
 
       - name: Upload test logs
         uses: actions/upload-artifact@v4
