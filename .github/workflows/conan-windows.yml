@@ -1,4 +1,5 @@
 name: Windows Build
+description: Build on Microsoft Windows
 
 on:
   workflow_call:

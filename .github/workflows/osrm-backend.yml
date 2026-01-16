@@ -275,7 +275,6 @@ jobs:
 
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
-          echo "OSRM_INSTALL_DIR=${GITHUB_WORKSPACE}/install-osrm" >> $GITHUB_ENV
           echo "OSRM_BUILD_DIR=${GITHUB_WORKSPACE}/build-osrm" >> $GITHUB_ENV
           echo "TEST_DIR=${GITHUB_WORKSPACE}/test" >> $GITHUB_ENV
           if [[ "$ENABLE_ASAN" == "ON" || "$ENABLE_UBSAN" == "ON" ]]; then
@@ -386,15 +385,13 @@ jobs:
                    -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                    -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                    -DENABLE_CCACHE=${ENABLE_CCACHE:-ON} \
-                   -DENABLE_LTO=${ENABLE_LTO:-ON} \
-                   -DCMAKE_INSTALL_PREFIX=${OSRM_INSTALL_DIR}
+                   -DENABLE_LTO=${ENABLE_LTO:-ON}
           echo "::endgroup::"
 
           echo "::group::make"
           make --jobs=${JOBS}
           echo "::endgroup::"
 
-          echo "PKG_CONFIG_PATH=${OSRM_INSTALL_DIR}/lib/pkgconfig" >> $GITHUB_ENV
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             if [[ "$ENABLE_ASAN" == 'ON' ]]; then
               export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH
@@ -402,7 +399,7 @@ jobs:
             if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
               export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`):$LD_LIBRARY_PATH
             fi
-            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OSRM_INSTALL_DIR}/lib" >> $GITHUB_ENV
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
           fi
 
           if [[ "${UNIT_TESTS}" == "ON" ]]; then
@@ -413,10 +410,6 @@ jobs:
             echo "::group::make benchmarks"
             make --jobs=${JOBS} benchmarks
             echo "::endgroup::"
-
-            # echo "::group::make install"
-            # sudo make install
-            # echo "::endgroup::"
           fi
 
         env:
@@ -449,11 +442,6 @@ jobs:
         working-directory: ${{ env.OSRM_BUILD_DIR }}
         run: |
           make -C ${TEST_DIR}/data benchmark
-
-          # if [[ "${RUNNER_OS}" == "macOS" ]]; then
-          #   # macOS SIP strips the linker path. Reset this inside the running shell
-          #   export LD_LIBRARY_PATH=${{ env.LD_LIBRARY_PATH }}
-          # fi
 
           for i in unit_tests/*-tests
           do echo "::group::Running $i"
