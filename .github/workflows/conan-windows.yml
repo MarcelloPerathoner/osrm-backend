@@ -4,7 +4,6 @@ on:
   workflow_call:
 
 env:
-  EXE: .exe
   # paths
   BUILD_DIR: ${{ github.workspace }}/build
   TEST_DIR: ${{ github.workspace }}/test
@@ -12,6 +11,7 @@ env:
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}/.conan2
 
+  EXE: .exe
   # FIXME: how to convert ${{ github.workspace }} to all slashes, like this?
   VENV_DIR: "/d/a/osrm-backend/osrm-backend/.venv"
 
@@ -35,7 +35,6 @@ jobs:
       ENABLE_CONAN:       ON
       NODE_PACKAGE_TESTS: ON
       BUILD_NODE_PACKAGE: ON
-      NODEJS_TESTS:       ON
       PUBLISH:            OFF
     steps:
       - name: Checkout repository
@@ -247,16 +246,6 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Run nodejs tests
-        if: ${{ env.NODEJS_TESTS == 'ON' }}
-        continue-on-error: true
-        run: |
-          make -C ${TEST_DIR}/data
-          # do not use the following: it doesn't know about .exe files
-          # npm run nodejs-tests
-          ${NAPI_DIR}/osrm-datastore.exe "${TEST_DIR}/data/ch/monaco.osrm"
-          node ${TEST_DIR}/nodejs/index.js | npx faucet
-
       - name: Run Cucumber tests
         working-directory: ${{ env.BUILD_DIR }}
         continue-on-error: true
@@ -271,6 +260,10 @@ jobs:
           ${OSRM_BUILD_DIR}/osrm-extract.exe --version
 
           npm test -- --parallel $JOBS
+
+      - name: Run Node package tests
+        if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+        uses: ./.github/actions/node-package-tests
 
       - name: Upload test logs
         uses: actions/upload-artifact@v4

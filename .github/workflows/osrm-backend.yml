@@ -17,6 +17,7 @@ env:
   TEST_DIR: ${{ github.workspace }}/test
   LOG_DIR: ${{ github.workspace }}/test/logs
   NODE_DIR: ${{ github.workspace }}/.npm
+  NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}/.conan2
 
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -195,7 +196,6 @@ jobs:
       ENABLE_NODE_BINDINGS: ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
       NODE_PACKAGE_TESTS:   ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
       BUILD_NODE_PACKAGE:   ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
-      NODEJS_TESTS:         ${{ contains(matrix.name, 'node')  && 'ON' || 'OFF' }}
 
       BUILD_SHARED_LIBS: ${{ matrix.BUILD_SHARED_LIBS }}
       CCOMPILER:         ${{ matrix.CCOMPILER }}
@@ -395,9 +395,9 @@ jobs:
           echo "::endgroup::"
 
           if [[ "${UNIT_TESTS}" == "ON" ]]; then
-            if [[ "$ENABLE_ASAN" == 'ON' ]]; then
-              export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH
-            fi
+            # if [[ "$ENABLE_ASAN" == 'ON' ]]; then
+            #   export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH
+            # fi
             echo "::group::make tests"
             make --jobs=${JOBS} tests
             echo "::endgroup::"
@@ -409,10 +409,16 @@ jobs:
             sudo make install
             echo "::endgroup::"
 
+            echo "PKG_CONFIG_PATH=${OSRM_INSTALL_DIR}/lib/pkgconfig" >> $GITHUB_ENV
             if [[ "${RUNNER_OS}" == "Linux" ]]; then
               echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH:${OSRM_INSTALL_DIR}/lib" >> $GITHUB_ENV
+              if [[ "$ENABLE_ASAN" == 'ON' ]]; then
+                echo "LD_PRELOAD=`clang -print-file-name=libclang_rt.asan-x86_64.so`:$LD_PRELOAD" >> $GITHUB_ENV
+              fi
+              if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
+                echo "LD_PRELOAD=`clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`:$LD_PRELOAD" >> $GITHUB_ENV
+              fi
             fi
-            echo "PKG_CONFIG_PATH=${OSRM_INSTALL_DIR}/lib/pkgconfig" >> $GITHUB_ENV
           fi
         env:
           Boost_ROOT: ${{ steps.install-boost.outputs.BOOST_ROOT }}
@@ -456,18 +462,7 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Run nodejs tests
-        if: ${{ env.NODEJS_TESTS == 'ON' }}
-        run: |
-          if [[ "$ENABLE_ASAN" == 'ON' ]]; then
-            export LD_PRELOAD=`clang -print-file-name=libclang_rt.asan-x86_64.so`:"$LD_PRELOAD"
-          fi
-          if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
-            export LD_PRELOAD=`clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`:"$LD_PRELOAD"
-          fi
-          npm run nodejs-tests
-
-      - name: Run cucumber tests
+      - name: Run Cucumber tests
         if: ${{ env.CUCUMBER_TESTS == 'ON' }}
         run: |
           npm test -- --parallel $JOBS
