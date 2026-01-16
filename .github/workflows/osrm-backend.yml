@@ -347,7 +347,6 @@ jobs:
           sudo cp -a oneapi-tbb-${TBB_VERSION}/include/. /usr/local/include/
       - name: Prepare build
         run: |
-          mkdir -p ${OSRM_BUILD_DIR}
           mkdir -p ${TEST_DIR}
           ccache --max-size=256M
           ccache --zero-stats
@@ -385,6 +384,7 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::make"
+          mkdir -p ${OSRM_BUILD_DIR}
           make --jobs=${JOBS}
           echo "::endgroup::"
 
