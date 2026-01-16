@@ -17,11 +17,6 @@ env:
 
   ENABLE_LTO: ON
 
-  ENABLE_CCACHE: OFF
-  CCACHE_DIR: ${{ github.workspace }}/.ccache
-  CCACHE_TEMPDIR: ${{ github.workspace }}/.ccache-temp
-  CCACHE_COMPRESS: 1
-
   ENABLE_SCCACHE: ON
   SCCACHE_DIR: ${{ github.workspace }}/.sccache
 
@@ -65,32 +60,6 @@ jobs:
           npm install --ignore-scripts
           npm link --ignore-scripts
 
-      # CCache
-
-      - name: Install SCCache
-        if: ${{ env.ENABLE_SCCACHE == 'ON'}}
-        uses: mozilla-actions/sccache-action@v0.0.9
-
-      - name: Restore SCCache
-        id: cache-sccache-restore
-        uses: actions/cache/restore@v4
-        if: ${{ env.ENABLE_SCCACHE == 'ON' }}
-        with:
-          path: ${{ env.SCCACHE_DIR }}
-          key: windows-sccache-${{ github.sha }}
-          restore-keys: |
-            windows-sccache-
-
-      - name: Restore CCache
-        id: cache-ccache-restore
-        uses: actions/cache/restore@v4
-        if: ${{ env.ENABLE_CCACHE == 'ON' }}
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: windows-ccache-${{ github.sha }}
-          restore-keys: |
-            windows-ccache-
-
       # PIP install Conan and cache it
 
       - name: Restore Python cache
@@ -98,7 +67,7 @@ jobs:
         id: cache-python-restore
         with:
           path: .venv
-          key: windows-python-${{ hashFiles('requirements-dev.txt') }}
+          key: python-${{ matrix.runs-on }}-${{ hashFiles('requirements-dev.txt') }}
 
       - name: Pip install requirements
         if: steps.cache-python-restore.outputs.cache-hit != 'true'
@@ -131,7 +100,7 @@ jobs:
         id: cache-conan-restore
         with:
           path: ${{ env.CONAN_HOME }}
-          key: windows-conan-${{ hashFiles('conanfile.py') }}
+          key: conan-${{ matrix.runs-on }}-${{ hashFiles('conanfile.py') }}
 
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
@@ -162,6 +131,22 @@ jobs:
         with:
           path: ${{ env.CONAN_HOME }}
           key: ${{ steps.cache-conan-restore.outputs.cache-primary-key }}
+
+      # CCache
+
+      - name: Install SCCache
+        if: ${{ env.ENABLE_SCCACHE == 'ON'}}
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Restore SCCache
+        id: cache-sccache-restore
+        uses: actions/cache/restore@v4
+        if: ${{ env.ENABLE_SCCACHE == 'ON' }}
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-
 
       # Build
 
@@ -234,13 +219,6 @@ jobs:
         continue-on-error: true
         run: |
           cmake --build . --config ${BUILD_TYPE}  -j ${JOBS} --target tests
-
-      - name: Save CCache directory
-        if: ${{ env.ENABLE_CCACHE == 'ON'}}
-        uses: actions/cache/save@v4
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ steps.cache-ccache-restore.outputs.cache-primary-key }}
 
       - name: Save SCCache directory
         if: ${{ env.ENABLE_SCCACHE == 'ON'}}

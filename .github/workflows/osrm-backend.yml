@@ -279,24 +279,6 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
-      - name: Enable Node.js cache
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-
-      - name: Restore CCache
-        id: cache-ccache-restore
-        uses: actions/cache/restore@v4
-        if: ${{ env.ENABLE_CCACHE == 'ON' }}
-        with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ matrix.name }}-ccache-${{ github.sha }}
-          restore-keys: |
-            ${{ matrix.name }}-ccache-
-
       # PIP install Conan and cache it
 
       - name: Restore Python cache
@@ -305,7 +287,7 @@ jobs:
         if: ${{ env.ENABLE_CONAN == 'ON' }}
         with:
           path: .venv
-          key: ${{ matrix.runs-on }}-python-${{ hashFiles('requirements-dev.txt') }}
+          key: python-${{ matrix.runs-on }}-${{ hashFiles('requirements-dev.txt') }}
 
       - name: Pip Install requirements
         if: ${{ env.ENABLE_CONAN == 'ON' && steps.cache-python-restore.outputs.cache-hit != 'true' }}
@@ -329,12 +311,23 @@ jobs:
         id: cache-conan-restore
         with:
           path: ${{ env.CONAN_HOME }}
-          key: ${{ matrix.name }}-conan-${{ hashFiles('conanfile.py') }}
+          key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
+
+      # CCache
+
+      - name: Restore CCache
+        id: cache-ccache-restore
+        uses: actions/cache/restore@v4
+        if: ${{ env.ENABLE_CCACHE == 'ON' }}
+        with:
+          path: ${{ env.CCACHE_DIR }}
+          key: ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ github.sha }}
+          restore-keys: |
+            ccache-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-
 
       - name: Prepare environment
         run: |
           mkdir -p "$CCACHE_DIR"
-          echo "CCACHE_DIR=$CCACHE_DIR" >> $GITHUB_ENV
 
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
