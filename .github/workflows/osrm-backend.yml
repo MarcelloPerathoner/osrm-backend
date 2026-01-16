@@ -214,11 +214,16 @@ jobs:
       CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS != 'OFF'    ) && 'ON' || 'OFF' }}
 
     steps:
-      - uses: actions/checkout@v4
-      - name: Build machine architecture
-        run: uname -m
+      - name: Checkout repository
+        uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Setup environment
+        run: |
+          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $CCACHE_DIR
+          echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
+          uname -m
+
+      - name: Install node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
