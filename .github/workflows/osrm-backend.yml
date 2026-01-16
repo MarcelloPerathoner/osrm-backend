@@ -281,8 +281,6 @@ jobs:
 
       - name: Prepare environment
         run: |
-          mkdir -p "$CCACHE_DIR"
-
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
           if [[ "$ENABLE_ASAN" == "ON" || "$ENABLE_UBSAN" == "ON" ]]; then
@@ -350,9 +348,9 @@ jobs:
           tar zxvf onetbb.tgz
           sudo cp -a oneapi-tbb-${TBB_VERSION}/lib/. /usr/local/lib/
           sudo cp -a oneapi-tbb-${TBB_VERSION}/include/. /usr/local/include/
+
       - name: Prepare build
         run: |
-          mkdir -p ${TEST_DIR}
           ccache --max-size=256M
           ccache --zero-stats
           npm ci --ignore-scripts
@@ -371,10 +369,9 @@ jobs:
             conan profile detect --force
           fi
 
-      - name: Build and install OSRM
+      - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
-          echo "::group::cmake"
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                    -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
                    -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
@@ -386,8 +383,10 @@ jobs:
                    -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                    -DENABLE_CCACHE=${ENABLE_CCACHE:-ON} \
                    -DENABLE_LTO=${ENABLE_LTO:-ON}
-          echo "::endgroup::"
 
+      - name: Build
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
           echo "::group::make"
           mkdir -p ${OSRM_BUILD_DIR}
           make --jobs=${JOBS}

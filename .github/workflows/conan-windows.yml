@@ -187,8 +187,6 @@ jobs:
                    -DENABLE_SCCACHE=${ENABLE_SCCACHE}
           echo "::endgroup::"
 
-          # cat cl_exe_path >> "$GITHUB_PATH"
-
       - name: Build
         working-directory: ${{ env.BUILD_DIR }}
         run: |
