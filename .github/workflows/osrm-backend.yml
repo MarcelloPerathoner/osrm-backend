@@ -187,9 +187,9 @@ jobs:
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
 
-    name: matrix.name
+    name: ${{ matrix.name }}
     continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
-    runs-on: matrix.runs-on
+    runs-on: ${{ matrix.runs-on }}
     env:
       PUBLISH: OFF
 
