@@ -13,8 +13,6 @@ env:
   CONAN_HOME: ${{ github.workspace }}/.conan2
   CONAN_VERSION: 2.24.0
 
-  EXE: .exe
-
   ENABLE_LTO: ON
 
   ENABLE_SCCACHE: ON
@@ -63,7 +61,8 @@ jobs:
           npm install --ignore-scripts
           npm link --ignore-scripts
 
-      # PIP install Conan and cache it
+      # Conan
+
       - name: Install Conan
         uses: conan-io/setup-conan@v1
         with:
@@ -71,7 +70,7 @@ jobs:
           cache_packages: true
           use_venv: true
 
-      - name: Run Conan install
+      - name: Setup Conan environment
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::debug info"
@@ -188,7 +187,7 @@ jobs:
 
           set +o errexit
           cd ${{ env.OSRM_BUILD_DIR }}/unit_tests${{ env.OSRM_BUILD_SUBDIR }}
-          for i in *-tests${EXE}
+          for i in *-tests${EXECUTABLE_SUFFIX}
           do echo "::group::Running $i"
             ./$i
             echo "::endgroup::"

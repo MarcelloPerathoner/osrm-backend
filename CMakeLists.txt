@@ -80,34 +80,7 @@ project(OSRM C CXX)
 
 message(STATUS "CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
 
-# substitute ccache as cl.exe
-#
-# the default generator on windows is -G "Visual Studio 17 2022" -A x64 but that one
-# does not support the CMAKE_CXX_COMPILER_LAUNCHER we used above for the "Unix
-# Makefiles" generator.  We have to put ccache.exe renamed as cl.exe in the PATH before
-# the real cl.exe
-#
-# FIXME: but then it doesn't find the compiler's dlls
-#
-if(ccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after project()
-
-  get_filename_component(ccache_path ${ccache_bin} DIRECTORY)
-  get_filename_component(ccache_name ${ccache_bin} NAME)
-
-  # See: https://github.com/ccache/ccache/wiki/MS-Visual-Studio
-  # file(COPY_FILE "${ccache_bin}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
-  # By default Visual Studio generators will use /Zi which is not compatible
-  # with ccache, so tell Visual Studio to use /Z7 instead.
-  message(STATUS "Setting MSVC debug information format to 'Embedded'")
-  set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
-  set(CMAKE_VS_GLOBALS
-    "CLToolExe=${ccache_name}"
-    "CLToolPath=${ccache_path}"
-    "UseMultiToolTask=true"
-  )
-endif()
-
-# use sccache if available
+# use sccache if available (ccache does not work on Windows)
 if(ENABLE_SCCACHE)
   find_program(sccache_bin sccache)
   if(sccache_bin)
@@ -146,9 +119,11 @@ if (NOT DEFINED ENV{OSRM_BUILD_DIR})
   endif()
   set(ENV{OSRM_BUILD_DIR} ${OSRM_BUILD_DIR})
   set(ENV{OSRM_BUILD_SUBDIR} ${OSRM_BUILD_SUBDIR})
+  set(ENV{EXECUTABLE_SUFFIX} ${CMAKE_EXECUTABLE_SUFFIX})
   if(DEFINED ENV{GITHUB_ENV})
     file(APPEND "$ENV{GITHUB_ENV}" "OSRM_BUILD_DIR=${OSRM_BUILD_DIR}\n")
     file(APPEND "$ENV{GITHUB_ENV}" "OSRM_BUILD_SUBDIR=${OSRM_BUILD_SUBDIR}\n")
+    file(APPEND "$ENV{GITHUB_ENV}" "EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}\n")
   endif()
 endif()
 

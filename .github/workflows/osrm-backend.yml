@@ -19,8 +19,8 @@ env:
   CI_DIR:     ${{ github.workspace }}/scripts/ci
   NODE_DIR:   ${{ github.workspace }}/.npm
   NAPI_DIR:   ${{ github.workspace }}/lib/binding_napi_v8
-  CONAN_HOME: ${{ github.workspace }}/.conan2
 
+  CONAN_VERSION: 2.24.0
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: /tmp/.ccache-temp
   CCACHE_COMPRESS: 1
@@ -219,9 +219,22 @@ jobs:
 
       - name: Setup environment
         run: |
-          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $CCACHE_DIR
-          echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
+          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CCACHE_DIR
           uname -m
+
+          if [[ "$ENABLE_ASAN" == "ON" || "$ENABLE_UBSAN" == "ON" ]]; then
+            echo "ASAN_OPTIONS=log_path=${LOG_DIR}/asan.log:print_suppressions=0:suppressions=${CI_DIR}/addresssanitizer.conf" >> $GITHUB_ENV
+            echo "LSAN_OPTIONS=log_path=${LOG_DIR}/lsan.log:print_suppressions=0:suppressions=${CI_DIR}/leaksanitizer.conf" >> $GITHUB_ENV
+            echo "UBSAN_OPTIONS=log_path=${LOG_DIR}/ubsan.log:symbolize=1:halt_on_error=1:print_stacktrace=1:suppressions=${CI_DIR}/undefinedsanitizer.conf" >> $GITHUB_ENV
+          fi
+
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
+          elif [[ "${RUNNER_OS}" == "macOS" ]]; then
+            echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
+          fi
+
+      # Node
 
       - name: Install node
         uses: actions/setup-node@v4
@@ -229,43 +242,43 @@ jobs:
           node-version: ${{ matrix.node }}
           cache: npm
 
-      # PIP install Conan and cache it
+      - name: Setup node environment
+        run: |
+          PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
 
-      - name: Restore Python cache
-        uses: actions/cache/restore@v4
-        id: cache-python-restore
+      # Conan
+
+      - name: Install Conan
+        uses: conan-io/setup-conan@v1
         if: ${{ env.ENABLE_CONAN == 'ON' }}
         with:
-          path: .venv
-          key: python-${{ matrix.runs-on }}-${{ hashFiles('requirements-dev.txt') }}
+          version: ${{ env.CONAN_VERSION }}
+          cache_packages: true
+          use_venv: true
 
-      - name: Pip Install requirements
-        if: ${{ env.ENABLE_CONAN == 'ON' && steps.cache-python-restore.outputs.cache-hit != 'true' }}
+      - name: Setup Conan environment
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
-          python3 -m venv .venv
-          source .venv/bin/activate
-          python3 -m pip install -r requirements-dev.txt
+          echo "::group::debug info"
+          echo "PATH=$PATH"
+          which conan
+          conan --version
+          echo "::endgroup::"
 
-      - name: Save Python cache
-        uses: actions/cache/save@v4
-        if: ${{ env.ENABLE_CONAN == 'ON' && steps.cache-python-restore.outputs.cache-hit != 'true' }}
-        with:
-          path: .venv
-          key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
+          conan profile detect --force
+          conan install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${BUILD_TYPE}
 
-      - name: Activate Python
-        run: |
-          echo "${{ github.workspace }}/.venv/bin" >> "$GITHUB_PATH"
+          echo "::group::Conan cache contents"
+          conan list
+          echo "::endgroup::"
 
-      # Conan cache
+          echo "::group::Conan DLL paths"
+          cat *.runpath
+          echo "::endgroup::"
 
-      - name: Restore Conan cache
-        uses: actions/cache/restore@v4
-        if: ${{ env.ENABLE_CONAN == 'ON' }}
-        id: cache-conan-restore
-        with:
-          path: ${{ env.CONAN_HOME }}
-          key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
+          # magic, adds DLL paths, see: conanfile.py
+          while read -r line; do echo "$line" >> "$GITHUB_PATH"; done < *.runpath
 
       # CCache
 
@@ -279,22 +292,6 @@ jobs:
           restore-keys: |
             ccache-${{ matrix.name }}-
 
-      - name: Prepare environment
-        run: |
-          PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
-          echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
-          if [[ "$ENABLE_ASAN" == "ON" || "$ENABLE_UBSAN" == "ON" ]]; then
-            # We can only set this after checkout once we know the workspace directory
-            echo "ASAN_OPTIONS=log_path=${LOG_DIR}/asan.log:print_suppressions=0:suppressions=${CI_DIR}/addresssanitizer.conf" >> $GITHUB_ENV
-            echo "LSAN_OPTIONS=log_path=${LOG_DIR}/lsan.log:print_suppressions=0:suppressions=${CI_DIR}/leaksanitizer.conf" >> $GITHUB_ENV
-            echo "UBSAN_OPTIONS=log_path=${LOG_DIR}/ubsan.log:symbolize=1:halt_on_error=1:print_stacktrace=1:suppressions=${CI_DIR}/undefinedsanitizer.conf" >> $GITHUB_ENV
-          fi
-
-          if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
-          elif [[ "${RUNNER_OS}" == "macOS" ]]; then
-            echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
-          fi
       # See: https://github.com/actions/toolkit/issues/946#issuecomment-1590016041
       # We need it to be able to access system folders while restoring cached Boost below
       - name: Give tar root ownership
@@ -376,6 +373,7 @@ jobs:
         run: |
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                    -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
+                   -DSKIP_CONAN_INSTALL=ON \
                    -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
                    -DENABLE_CLANG_TIDY=${ENABLE_CLANG_TIDY:-OFF} \
                    -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} \
@@ -443,7 +441,7 @@ jobs:
 
           set +o errexit
           cd ${{ env.OSRM_BUILD_DIR }}/unit_tests${{ env.OSRM_BUILD_SUBDIR }}
-          for i in *-tests${EXE}
+          for i in *-tests${EXECUTABLE_SUFFIX}
           do echo "::group::Running $i"
             ./$i
             echo "::endgroup::"
