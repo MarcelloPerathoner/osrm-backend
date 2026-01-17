@@ -11,10 +11,9 @@ env:
   LOG_DIR: ${{ github.workspace }}/test/logs
   NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}/.conan2
+  CONAN_VERSION: 2.24.0
 
   EXE: .exe
-  # FIXME: how to convert ${{ github.workspace }} to all slashes, like this?
-  VENV_DIR: "/d/a/osrm-backend/osrm-backend/.venv"
 
   ENABLE_LTO: ON
 
@@ -65,46 +64,12 @@ jobs:
           npm link --ignore-scripts
 
       # PIP install Conan and cache it
-
-      - name: Restore Python cache
-        uses: actions/cache/restore@v4
-        id: cache-python-restore
+      - name: Install Conan
+        uses: conan-io/setup-conan@v1
         with:
-          path: .venv
-          key: python-windows-${{ hashFiles('requirements-dev.txt') }}
-
-      - name: Pip install requirements
-        if: steps.cache-python-restore.outputs.cache-hit != 'true'
-        run: |
-          python3 -m venv ${{ env.VENV_DIR }}
-          source "${{ env.VENV_DIR }}/Scripts/activate"
-          python3 -m pip install -r requirements-dev.txt
-
-      - name: Save Python cache
-        uses: actions/cache/save@v4
-        if: steps.cache-python-restore.outputs.cache-hit != 'true'
-        with:
-          path: .venv
-          key: ${{ steps.cache-python-restore.outputs.cache-primary-key }}
-
-      - name: Activate Python
-        run: |
-          source "${{ env.VENV_DIR }}/Scripts/activate"
-          echo "${{ env.VENV_DIR }}/Scripts" >> "$GITHUB_PATH"
-
-          echo "::group::debug info"
-          ls   "${{ env.VENV_DIR }}/Scripts/"
-          cat  "${{ env.VENV_DIR }}/Scripts/activate"
-          echo "::endgroup::"
-
-      # Conan cache
-
-      - name: Restore Conan cache
-        uses: actions/cache/restore@v4
-        id: cache-conan-restore
-        with:
-          path: ${{ env.CONAN_HOME }}
-          key: conan-windows-${{ hashFiles('conanfile.py') }}
+          version: ${{ env.CONAN_VERSION }}
+          cache_packages: true
+          use_venv: true
 
       - name: Run Conan install
         working-directory: ${{ env.BUILD_DIR }}
@@ -128,13 +93,6 @@ jobs:
 
           # magic, adds DLL paths, see: conanfile.py
           while read -r line; do echo "$line" >> "$GITHUB_PATH"; done < *.runpath
-
-      - name: Save Conan cache
-        uses: actions/cache/save@v4
-        if: always() && steps.cache-conan-restore.outputs.cache-hit != 'true'
-        with:
-          path: ${{ env.CONAN_HOME }}
-          key: ${{ steps.cache-conan-restore.outputs.cache-primary-key }}
 
       # SCCache
 
