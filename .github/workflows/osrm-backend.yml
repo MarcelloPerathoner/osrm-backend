@@ -19,6 +19,7 @@ env:
   CI_DIR:     ${{ github.workspace }}/scripts/ci
   NODE_DIR:   ${{ github.workspace }}/.npm
   NAPI_DIR:   ${{ github.workspace }}/lib/binding_napi_v8
+  CONAN_HOME: ${{ github.workspace }}.conan2
 
   CONAN_VERSION: 2.24.0
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -186,9 +187,9 @@ jobs:
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
 
-    name: ${{ matrix.name }}
+    name: matrix.name
     continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
-    runs-on: ${{ matrix.runs-on }}
+    runs-on: matrix.runs-on
     env:
       PUBLISH: OFF
 
@@ -239,7 +240,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: matrix.node
           cache: npm
 
       - name: Setup node environment
@@ -253,13 +254,22 @@ jobs:
         uses: conan-io/setup-conan@v1
         if: env.ENABLE_CONAN == 'ON'
         with:
-          version: ${{ env.CONAN_VERSION }}
+          version: env.CONAN_VERSION
+          home: env.CONAN_HOME
           cache_packages: true
           use_venv: true
 
+      - name: Restore Conan cache
+        id: conan-cache-restore
+        uses: actions/cache/restore@v4
+        if: env.ENABLE_CONAN == 'ON'
+        with:
+          path: env.CONAN_HOME
+          key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
+
       - name: Setup Conan environment
         if: env.ENABLE_CONAN == 'ON'
-        working-directory: ${{ env.BUILD_DIR }}
+        working-directory: env.BUILD_DIR
         run: |
           echo "::group::debug info"
           echo "PATH=$PATH"
@@ -283,6 +293,13 @@ jobs:
 
           echo "CMAKE_EXTRA_DEFS=-DENABLE_CONAN=ON -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DSKIP_CONAN_INSTALL=ON" >> $GITHUB_ENV
 
+      - name: Save Conan cache
+        uses: actions/cache/save@v4
+        if: always() && env.ENABLE_CONAN == 'ON' && steps.conan-cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: env.CONAN_HOME
+          key: steps.cache-conan-restore.outputs.cache-primary-key
+
       # CCache
 
       - name: Restore CCache
@@ -290,7 +307,7 @@ jobs:
         uses: actions/cache/restore@v4
         if: env.ENABLE_CCACHE == 'ON'
         with:
-          path: ${{ env.CCACHE_DIR }}
+          path: env.CCACHE_DIR
           key: ccache-${{ matrix.name }}-${{ github.sha }}
           restore-keys: |
             ccache-${{ matrix.name }}-
@@ -307,7 +324,7 @@ jobs:
         id: install-boost
         with:
           boost_version: 1.88.0
-          platform_version: ${{ matrix.BOOST_PLATFORM }}
+          platform_version: matrix.BOOST_PLATFORM
 
       - name: Install dev dependencies
         run: |
@@ -368,7 +385,7 @@ jobs:
           fi
 
       - name: Cmake
-        working-directory: ${{ env.BUILD_DIR }}
+        working-directory: env.BUILD_DIR
         run: |
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                    -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
@@ -383,7 +400,7 @@ jobs:
                    ${CMAKE_EXTRA_DEFS}
 
       - name: Build
-        working-directory: ${{ env.BUILD_DIR }}
+        working-directory: env.BUILD_DIR
         run: |
           echo "::group::make"
           mkdir -p ${OSRM_BUILD_DIR}
@@ -414,8 +431,8 @@ jobs:
         uses: actions/cache/save@v4
         if: always() && env.ENABLE_CCACHE == 'ON' && steps.cache-ccache-restore.outputs.cache-hit != 'true'
         with:
-          path: ${{ env.CCACHE_DIR }}
-          key: ${{ steps.cache-ccache-restore.outputs.cache-primary-key }}
+          path: env.CCACHE_DIR
+          key: steps.cache-ccache-restore.outputs.cache-primary-key
 
       - name: Show CCache statistics
         if: always() && env.ENABLE_CCACHE == 'ON'
@@ -453,7 +470,7 @@ jobs:
         with:
           if-no-files-found: ignore
           name: ${{ matrix.name }}-test-logs
-          path: ${{ env.LOG_DIR }}
+          path: env.LOG_DIR
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
@@ -471,7 +488,7 @@ jobs:
           omitName: true
           omitNameDuringUpdate: true
           replacesArtifacts: true
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: secrets.GITHUB_TOKEN
 
   ci-complete:
     runs-on: ubuntu-latest

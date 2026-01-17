@@ -51,8 +51,6 @@ if (ENABLE_CONAN)
     if (NOT CONAN_EXECUTABLE)
       message(FATAL_ERROR "Conan not found! Please install Conan 2.x and try again.")
     else()
-      set(CMAKE_TOOLCHAIN_FILE "./conan_toolchain.cmake")
-
       execute_process(
         COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${CMAKE_BUILD_TYPE}
         WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
@@ -64,6 +62,8 @@ if (ENABLE_CONAN)
       if (NOT conan_install_result EQUAL 0)
         message(FATAL_ERROR "Conan install failed: ${conan_install_result}. Stderr: ${conan_stderr}. Stdout: ${conan_stdout}")
       endif()
+
+      cmake_path(APPEND CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_BINARY_DIR} "conan_toolchain.cmake")
     endif()
   endif()
 endif()
@@ -432,50 +432,35 @@ if (MSVC)
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 
+find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+find_package(TBB REQUIRED)
+find_package(EXPAT REQUIRED)
+find_package(BZip2 REQUIRED)
+find_package(Lua 5.2 REQUIRED)
+
+add_dependency_includes(${Boost_INCLUDE_DIRS})
+add_dependency_includes(${TBB_INCLUDE_DIR})
+add_dependency_includes(${BZIP2_INCLUDE_DIR})
 
 if (ENABLE_CONAN)
-  # set(Boost_USE_STATIC_LIBS ON)
-  find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-  find_package(TBB REQUIRED)
-  find_package(EXPAT REQUIRED)
-  find_package(BZip2 REQUIRED)
-  find_package(Lua 5.2 REQUIRED)
-
-  add_dependency_includes(${Boost_INCLUDE_DIRS})
+  add_dependency_includes(${expat_INCLUDE_DIRS})
+  add_dependency_includes(${lua_INCLUDE_DIRS})
 
   set(BOOST_BASE_LIBRARIES ${Boost_LIBRARIES})
   set(BOOST_ENGINE_LIBRARIES ${Boost_LIBRARIES})
-
-  add_dependency_includes(${TBB_INCLUDE_DIR})
-  set(TBB_LIBRARIES ${TBB_LIBRARIES})
-
-  add_dependency_includes(${expat_INCLUDE_DIRS})
   set(EXPAT_LIBRARIES ${expat_LIBRARIES})
   set(EXPAT_INCLUDE_DIRS ${expat_INCLUDE_DIRS})
-
-  add_dependency_includes(${BZIP2_INCLUDE_DIR})
 
   set(LUA_LIBRARIES lua::lua)
   if (LUA_FOUND)
     message(STATUS "Using Lua ${LUA_VERSION_STRING}")
   endif()
 
-  add_dependency_includes(${lua_INCLUDE_DIRS})
-
   # note: we avoid calling find_package(Osmium ...) here to ensure that the
   # expat and bzip2 are used from conan rather than the system
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium/include)
 else()
-  find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-  find_package(TBB REQUIRED)
-  find_package(EXPAT REQUIRED)
-  find_package(BZip2 REQUIRED)
-  find_package(Lua 5.2 REQUIRED)
-
-  add_dependency_includes(${Boost_INCLUDE_DIRS})
-  add_dependency_includes(${TBB_INCLUDE_DIR})
   add_dependency_includes(${EXPAT_INCLUDE_DIRS})
-  add_dependency_includes(${BZIP2_INCLUDE_DIR})
   add_dependency_includes(${LUA_INCLUDE_DIR})
 
   set(TBB_LIBRARIES TBB::tbb)
