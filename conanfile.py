@@ -48,6 +48,7 @@ class OsrmConan(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables["CMAKE_CXX_STANDARD"] = "20"
+        tc.variables["Boost_DIR"] = "${CMAKE_BINARY_DIR}"
         tc.generate()
 
         ms = OsrmVirtualRunEnv(self)

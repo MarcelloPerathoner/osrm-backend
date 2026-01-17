@@ -281,6 +281,8 @@ jobs:
           # magic, adds DLL paths, see: conanfile.py
           while read -r line; do echo "$line" >> "$GITHUB_PATH"; done < *.runpath
 
+          echo "CMAKE_EXTRA_DEFS=-DENABLE_CONAN=ON -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake -DSKIP_CONAN_INSTALL=ON" >> $GITHUB_ENV
+
       # CCache
 
       - name: Restore CCache
@@ -346,6 +348,8 @@ jobs:
           sudo cp -a oneapi-tbb-${TBB_VERSION}/lib/. /usr/local/lib/
           sudo cp -a oneapi-tbb-${TBB_VERSION}/include/. /usr/local/include/
 
+          echo "CMAKE_EXTRA_DEFS=" >> $GITHUB_ENV
+
       - name: Prepare build
         run: |
           ccache --max-size=256M
@@ -362,16 +366,11 @@ jobs:
             echo "LIBRARY_PATH=${LIBRARY_PATH}:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib" >> $GITHUB_ENV
             echo "CPATH=${CPATH}:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" >> $GITHUB_ENV
           fi
-          if [[ "${ENABLE_CONAN}" == "ON" ]]; then
-            conan profile detect --force
-          fi
 
       - name: Cmake
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-                   -DENABLE_CONAN=${ENABLE_CONAN:-OFF} \
-                   -DSKIP_CONAN_INSTALL=ON \
                    -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
                    -DENABLE_CLANG_TIDY=${ENABLE_CLANG_TIDY:-OFF} \
                    -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} \
@@ -380,7 +379,8 @@ jobs:
                    -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                    -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                    -DENABLE_CCACHE=${ENABLE_CCACHE:-ON} \
-                   -DENABLE_LTO=${ENABLE_LTO:-ON}
+                   -DENABLE_LTO=${ENABLE_LTO:-ON} \
+                   ${CMAKE_EXTRA_DEFS}
 
       - name: Build
         working-directory: ${{ env.BUILD_DIR }}
