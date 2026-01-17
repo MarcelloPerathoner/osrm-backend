@@ -158,6 +158,7 @@ jobs:
                    -DSKIP_CONAN_INSTALL=ON \
                    -DENABLE_NODE_BINDINGS=ON \
                    -DENABLE_LTO=${ENABLE_LTO} \
+                   -DENABLE_CCACHE=OFF \
                    -DENABLE_SCCACHE=${ENABLE_SCCACHE}
           echo "::endgroup::"
 

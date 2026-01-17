@@ -21,6 +21,7 @@ endif()
 option(BUILD_PACKAGE "Build OSRM package" OFF)
 option(ENABLE_ASSERTIONS "Use assertions in release mode" OFF)
 option(ENABLE_CCACHE "Speed up incremental rebuilds via ccache" ON)
+option(ENABLE_SCCACHE "Speed up incremental rebuilds via sccache" OFF)
 option(ENABLE_CLANG_TIDY "Enables clang-tidy checks" OFF)
 option(ENABLE_CONAN "Use conan for dependencies" OFF)
 option(ENABLE_COVERAGE "Build with coverage instrumentalisation" OFF)
@@ -32,18 +33,7 @@ option(ENABLE_ASAN "Use address sanitizer for Debug build" OFF)
 option(ENABLE_TSAN "Use thread sanitizer for Debug build (experimental)" OFF)
 option(ENABLE_UBSAN "Use undefined behaviour sanitizer for Debug build" OFF)
 
-# use ccache if available
-if(ENABLE_CCACHE)
-  find_program(ccache_bin ccache)
-  if(ccache_bin)
-    message(STATUS "Check for ccache: ${ccache_bin}")
-    set(CMAKE_C_COMPILER_LAUNCHER ${ccache_bin})
-    set(CMAKE_CXX_COMPILER_LAUNCHER ${ccache_bin})
-  endif()
-endif()
-
 if (ENABLE_CONAN)
-  message(STATUS "Using Conan")
   if (NOT SKIP_CONAN_INSTALL)
     message(STATUS "Installing Conan packages. It may take a while...")
     find_program(CONAN_EXECUTABLE NAMES conan)
@@ -83,6 +73,16 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(OSRM C CXX)
 
 message(STATUS "CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
+
+# use ccache if available
+if(ENABLE_CCACHE)
+  find_program(ccache_bin ccache)
+  if(ccache_bin)
+    message(STATUS "Check for ccache: ${ccache_bin}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${ccache_bin})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${ccache_bin})
+  endif()
+endif()
 
 # use sccache if available (ccache does not work on Windows)
 if(ENABLE_SCCACHE)
@@ -426,9 +426,15 @@ include_directories(SYSTEM ${FMT_INCLUDE_DIR})
 
 
 # see https://stackoverflow.com/questions/70898030/boost-link-error-using-conan-find-package
-# if (MSVC)
-#   add_definitions(-DBOOST_ALL_NO_LIB)
-# endif()
+if (MSVC)
+  // BOOST_ALL_NO_LIB: Tells the config system not to automatically select
+  // which libraries to link against.
+  // Normally if a compiler supports #pragma lib, then the correct library
+  // build variant will be automatically selected and linked against,
+  // simply by the act of including one of that library's headers.
+  // This macro turns that feature off.
+  add_definitions(-DBOOST_ALL_NO_LIB)
+endif()
 
 set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
 
@@ -452,7 +458,6 @@ if (ENABLE_CONAN)
   add_dependency_includes(${expat_INCLUDE_DIRS})
   add_dependency_includes(${lua_INCLUDE_DIRS})
 
-  message(STATUS "boost libraries ${Boost_LIBRARIES}")
   set(BOOST_BASE_LIBRARIES              ${Boost_LIBRARIES})
   set(BOOST_ENGINE_LIBRARIES            ${Boost_LIBRARIES})
   set(EXPAT_LIBRARIES                   ${expat_LIBRARIES})
