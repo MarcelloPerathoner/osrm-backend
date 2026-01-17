@@ -51,6 +51,7 @@ class OsrmConan(ConanFile):
         tc.variables["Bzip2_ROOT"] = "${CMAKE_BINARY_DIR}"
         tc.variables["LZMA_ROOT"] = "${CMAKE_BINARY_DIR}"
         tc.variables["TBB_ROOT"] = "${CONAN_ONETBB_ROOT}"
+        tc.variables["Boost_ROOT"] = "${CONAN_BOOST_ROOT}"
         tc.generate()
 
         ms = OsrmVirtualRunEnv(self)
