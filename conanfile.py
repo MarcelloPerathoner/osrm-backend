@@ -29,7 +29,7 @@ class OsrmConan(ConanFile):
     generators = "CMakeDeps"
 
     def requirements(self):
-        self.requires("boost/1.85.0")
+        self.requires("boost/1.88.0")
         self.requires("bzip2/1.0.8")
         self.requires("expat/2.6.2")
         self.requires("lua/5.4.6")
@@ -42,7 +42,6 @@ class OsrmConan(ConanFile):
         self.options["boost"].without_coroutine = True
         self.options["boost"].without_stacktrace = True
         self.options["boost"].without_cobalt = True
-        self.options["boost"].shared = True
         self.options["bzip2"].shared = True
         self.options["xz_utils"].shared = True
 

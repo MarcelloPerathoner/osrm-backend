@@ -442,16 +442,21 @@ add_dependency_includes(${Boost_INCLUDE_DIRS})
 add_dependency_includes(${TBB_INCLUDE_DIRS})
 
 if (ENABLE_CONAN)
+  # the following fixes the linker error:
+  # usr/bin/ld: in function `main': undefined reference to `boost::unit_test::unit_test_main(bool (*)(), int, char**)'
+  set(Boost_USE_STATIC_LIBS ON)
+
   # these are named different in conan and cmake Find*
   # but cmake variables are case-sensitive ...
   add_dependency_includes(${BZip2_INCLUDE_DIRS})
   add_dependency_includes(${expat_INCLUDE_DIRS})
   add_dependency_includes(${lua_INCLUDE_DIRS})
 
-  set(BOOST_BASE_LIBRARIES   ${Boost_LIBRARIES})
-  set(BOOST_ENGINE_LIBRARIES ${Boost_LIBRARIES})
-  set(EXPAT_LIBRARIES        ${expat_LIBRARIES})
-  set(LUA_LIBRARIES          ${lua_LIBRARIES})
+  message(STATUS "boost libraries ${Boost_LIBRARIES}")
+  set(BOOST_BASE_LIBRARIES              ${Boost_LIBRARIES})
+  set(BOOST_ENGINE_LIBRARIES            ${Boost_LIBRARIES})
+  set(EXPAT_LIBRARIES                   ${expat_LIBRARIES})
+  set(LUA_LIBRARIES                     ${lua_LIBRARIES})
 
   # note: we avoid calling find_package(Osmium ...) here to ensure that the
   # expat and bzip2 are used from conan rather than the system

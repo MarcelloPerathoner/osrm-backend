@@ -65,10 +65,20 @@ jobs:
 
       - name: Install Conan
         uses: conan-io/setup-conan@v1
+        if: env.ENABLE_CONAN == 'ON'
         with:
           version: ${{ env.CONAN_VERSION }}
+          home: ${{ env.CONAN_HOME }}
           cache_packages: true
           use_venv: true
+
+      - name: Restore Conan cache
+        id: conan-cache-restore
+        uses: actions/cache/restore@v4
+        if: env.ENABLE_CONAN == 'ON'
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
 
       - name: Setup Conan environment
         working-directory: ${{ env.BUILD_DIR }}
@@ -92,6 +102,13 @@ jobs:
 
           # magic, adds DLL paths, see: conanfile.py
           while read -r line; do echo "$line" >> "$GITHUB_PATH"; done < *.runpath
+
+      - name: Save Conan cache
+        uses: actions/cache/save@v4
+        if: always() && env.ENABLE_CONAN == 'ON' && steps.conan-cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.conan-cache-restore.outputs.cache-primary-key }}
 
       # SCCache
 
