@@ -36,15 +36,19 @@ target_link_libraries(node_osrm osrm)
 # node_osrm artifacts in ${BINDING_DIR} to depend targets on
 set(ARTIFACTS "")
 
-# Create the binding directory if it doesn't exist
+# Create the binding directory at config time
+# MSVC outputs a warning if we make a dependency on this and create it at run time:
+# "MSB8065: Custom build for item binding_dir succeeded, but specified output
+# binding_dir was not created.  Incremental compilation may not work correctly."
 file(MAKE_DIRECTORY ${BINDING_DIR})
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
 foreach(binary ${OSRM_BINARIES})
-  add_custom_command(OUTPUT ${BINDING_DIR}/${binary}
+  set(t "${BINDING_DIR}/${binary}${CMAKE_EXECUTABLE_SUFFIX}")
+  add_custom_command(OUTPUT "${t}"
                      COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:${binary}> ${BINDING_DIR}
-                     DEPENDS ${binary} ${BINDING_DIR})
-  list(APPEND ARTIFACTS "${BINDING_DIR}/${binary}")
+                     DEPENDS ${binary})
+  list(APPEND ARTIFACTS "${t}")
 endforeach(binary)
 
 # For Conan-enabled builds we copy over tbb's shared objects for packaging.
@@ -56,7 +60,7 @@ if (ENABLE_CONAN)
       get_filename_component(filename ${filepath} NAME)
       add_custom_command(OUTPUT "${BINDING_DIR}/${filename}"
                          COMMAND ${CMAKE_COMMAND} -E copy ${filepath} ${BINDING_DIR}
-                         DEPENDS ${filepath} ${BINDING_DIR})
+                         DEPENDS ${filepath})
       list(APPEND ARTIFACTS "${BINDING_DIR}/${filename}")
     endforeach()
   endforeach()
@@ -65,7 +69,7 @@ endif()
 
 add_custom_command(OUTPUT ${BINDING_DIR}/node_osrm.node
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:node_osrm> ${BINDING_DIR}
-                   DEPENDS node_osrm ${BINDING_DIR})
+                   DEPENDS node_osrm)
 list(APPEND ARTIFACTS "${BINDING_DIR}/node_osrm.node")
 
 

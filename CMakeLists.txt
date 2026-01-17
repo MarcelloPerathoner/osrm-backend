@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 3.18)
+cmake_minimum_required(VERSION 3.31)
+message(STATUS "CMake version: ${CMAKE_VERSION}")
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -17,14 +18,10 @@ if(BUILD_AS_SUBPROJECT)
   message(STATUS "Building libosrm as subproject.")
 endif()
 
-# set OSRM_BUILD_DIR location (might be used in various scripts)
-if (NOT WIN32 AND NOT DEFINED ENV{OSRM_BUILD_DIR})
-  set(ENV{OSRM_BUILD_DIR} ${CMAKE_CURRENT_BINARY_DIR})
-endif()
-
 option(BUILD_PACKAGE "Build OSRM package" OFF)
 option(ENABLE_ASSERTIONS "Use assertions in release mode" OFF)
 option(ENABLE_CCACHE "Speed up incremental rebuilds via ccache" ON)
+option(ENABLE_SCCACHE "Speed up incremental rebuilds via sccache" OFF)
 option(ENABLE_CLANG_TIDY "Enables clang-tidy checks" OFF)
 option(ENABLE_CONAN "Use conan for dependencies" OFF)
 option(ENABLE_COVERAGE "Build with coverage instrumentalisation" OFF)
@@ -32,27 +29,31 @@ option(ENABLE_DEBUG_LOGGING "Use debug logging in release mode" OFF)
 option(ENABLE_FUZZING "Fuzz testing using LLVM's libFuzzer" OFF)
 option(ENABLE_LTO "Use Link Time Optimisation" ON)
 option(ENABLE_NODE_BINDINGS "Build NodeJs bindings" OFF)
-option(ENABLE_SANITIZER "Use memory sanitizer for Debug build" OFF)
+option(ENABLE_ASAN "Use address sanitizer for Debug build" OFF)
+option(ENABLE_TSAN "Use thread sanitizer for Debug build (experimental)" OFF)
+option(ENABLE_UBSAN "Use undefined behaviour sanitizer for Debug build" OFF)
 
 if (ENABLE_CONAN)
-  message(STATUS "Installing Conan packages. It may take a while...")
-  find_program(CONAN_EXECUTABLE NAMES conan)
+  if (NOT SKIP_CONAN_INSTALL)
+    message(STATUS "Installing Conan packages. It may take a while...")
+    find_program(CONAN_EXECUTABLE NAMES conan)
 
-  if (NOT CONAN_EXECUTABLE)
-    message(FATAL_ERROR "Conan not found! Please install Conan 2.x and try again.")
-  else()
-    set(CMAKE_TOOLCHAIN_FILE "./conan_toolchain.cmake")
+    if (NOT CONAN_EXECUTABLE)
+      message(FATAL_ERROR "Conan not found! Please install Conan 2.x and try again.")
+    else()
+      execute_process(
+        COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${CMAKE_BUILD_TYPE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        OUTPUT_VARIABLE conan_stdout
+        ERROR_VARIABLE conan_stderr
+        RESULT_VARIABLE conan_install_result
+      )
 
-    execute_process(
-      COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing --settings compiler.cppstd=20 --settings build_type=${CMAKE_BUILD_TYPE}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      OUTPUT_VARIABLE conan_stdout
-      ERROR_VARIABLE conan_stderr
-      RESULT_VARIABLE conan_install_result
-    )
+      if (NOT conan_install_result EQUAL 0)
+        message(FATAL_ERROR "Conan install failed: ${conan_install_result}. Stderr: ${conan_stderr}. Stdout: ${conan_stdout}")
+      endif()
 
-    if (NOT conan_install_result EQUAL 0)
-      message(FATAL_ERROR "Conan install failed: ${conan_install_result}. Stderr: ${conan_stderr}. Stdout: ${conan_stdout}")
+      cmake_path(APPEND CMAKE_TOOLCHAIN_FILE ${CMAKE_CURRENT_BINARY_DIR} "conan_toolchain.cmake")
     endif()
   endif()
 endif()
@@ -70,6 +71,65 @@ endif()
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(OSRM C CXX)
+
+message(STATUS "CMAKE_CXX_COMPILER_ID is ${CMAKE_CXX_COMPILER_ID}")
+
+# use ccache if available
+if(ENABLE_CCACHE)
+  find_program(ccache_bin ccache)
+  if(ccache_bin)
+    message(STATUS "Check for ccache: ${ccache_bin}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${ccache_bin})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${ccache_bin})
+  endif()
+endif()
+
+# use sccache if available (ccache does not work on Windows)
+if(ENABLE_SCCACHE)
+  find_program(sccache_bin sccache)
+  if(sccache_bin)
+    message(STATUS "Check for sccache: ${sccache_bin}")
+    set(CMAKE_C_COMPILER_LAUNCHER ${sccache_bin})
+    set(CMAKE_CXX_COMPILER_LAUNCHER ${sccache_bin})
+    cmake_policy(SET CMP0141 NEW)
+
+    if(sccache_bin AND CMAKE_CXX_COMPILER_ID MATCHES "MSVC") # works only after project()
+      # get_filename_component(sccache_path ${sccache_bin} DIRECTORY)
+      # get_filename_component(sccache_name ${sccache_bin} NAME)
+
+      file(COPY_FILE "${sccache_bin}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
+      # By default Visual Studio generators will use /Zi which is not compatible
+      # with ccache, so tell Visual Studio to use /Z7 instead.
+      message(STATUS "Setting MSVC debug information format to 'Embedded'")
+      set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+      set(CMAKE_VS_GLOBALS
+        "CLToolExe=cl.exe"
+        "CLToolPath=${CMAKE_BINARY_DIR}"
+        "UseMultiToolTask=true"
+        "TrackFileAccess=false"
+      )
+    endif()
+  endif()
+endif()
+
+# set OSRM_BUILD_DIR location (might be used in various scripts)
+if (NOT DEFINED ENV{OSRM_BUILD_DIR})
+  if(CMAKE_CXX_COMPILER_ID MATCHES "MSVC")
+    set(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}/${CMAKE_BUILD_TYPE}")
+    set(OSRM_BUILD_SUBDIR "/${CMAKE_BUILD_TYPE}")
+  else()
+    set(OSRM_BUILD_DIR ${CMAKE_CURRENT_BINARY_DIR})
+    set(OSRM_BUILD_SUBDIR "")
+  endif()
+  set(ENV{OSRM_BUILD_DIR} ${OSRM_BUILD_DIR})
+  set(ENV{OSRM_BUILD_SUBDIR} ${OSRM_BUILD_SUBDIR})
+  set(ENV{EXECUTABLE_SUFFIX} ${CMAKE_EXECUTABLE_SUFFIX})
+  if(DEFINED ENV{GITHUB_ENV})
+    file(APPEND "$ENV{GITHUB_ENV}" "OSRM_BUILD_DIR=${OSRM_BUILD_DIR}\n")
+    file(APPEND "$ENV{GITHUB_ENV}" "OSRM_BUILD_SUBDIR=${OSRM_BUILD_SUBDIR}\n")
+    file(APPEND "$ENV{GITHUB_ENV}" "EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}\n")
+  endif()
+endif()
 
 if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES MinRelSize OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
   include(CheckIPOSupported)
@@ -142,8 +202,6 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/generated/include/)
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sol2/include)
 
-set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
-
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/version.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/include/util/version.hpp
@@ -172,9 +230,6 @@ add_library(ENGINE OBJECT ${EngineGlob})
 add_library(SERVER OBJECT ${ServerGlob})
 
 set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
-
-# We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
-set_property(TARGET SERVER PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
 
 add_executable(osrm-routed src/tools/routed.cpp $<TARGET_OBJECTS:SERVER> $<TARGET_OBJECTS:UTIL>)
 add_executable(osrm-extract src/tools/extract.cpp)
@@ -237,9 +292,21 @@ if (ENABLE_COVERAGE)
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -O0 -ftest-coverage -fprofile-arcs")
 endif()
 
+if (ENABLE_ASAN)
+  set(ASAN_FLAGS "-shared-libasan -fsanitize=address -fsanitize-address-use-after-scope")
+endif()
 
-if (ENABLE_SANITIZER)
-  set(SANITIZER_FLAGS "-g -fsanitize=address -fsanitize-address-use-after-scope -fsanitize=undefined -fno-omit-frame-pointer")
+if (ENABLE_TSAN)
+  set(TSAN_FLAGS "-fsanitize=thread")
+endif()
+
+if (ENABLE_UBSAN)
+  set(UBSAN_FLAGS "-fsanitize=undefined")
+endif()
+
+if (ENABLE_ASAN OR ENABLE_TSAN OR ENABLE_UBSAN)
+  set(SANITIZER_FLAGS "-g ${ASAN_FLAGS} ${TSAN_FLAGS} ${UBSAN_FLAGS} -fno-omit-frame-pointer")
+
   set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZER_FLAGS}")
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZER_FLAGS}")
   set(OSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${SANITIZER_FLAGS}")
@@ -360,53 +427,48 @@ include_directories(SYSTEM ${FMT_INCLUDE_DIR})
 
 # see https://stackoverflow.com/questions/70898030/boost-link-error-using-conan-find-package
 if (MSVC)
+  # BOOST_ALL_NO_LIB: Tells the config system not to automatically select
+  # which libraries to link against.
+  # Normally if a compiler supports #pragma lib, then the correct library
+  # build variant will be automatically selected and linked against,
+  # simply by the act of including one of that library's headers.
+  # This macro turns that feature off.
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 
+set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
+
+find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
+find_package(TBB REQUIRED)
+find_package(EXPAT REQUIRED)
+find_package(BZip2 REQUIRED)
+find_package(Lua 5.2 REQUIRED)
+
+add_dependency_includes(${Boost_INCLUDE_DIRS})
+add_dependency_includes(${TBB_INCLUDE_DIRS})
 
 if (ENABLE_CONAN)
+  # the following fixes the linker error:
+  # usr/bin/ld: in function `main': undefined reference to `boost::unit_test::unit_test_main(bool (*)(), int, char**)'
   set(Boost_USE_STATIC_LIBS ON)
-  find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
-  find_package(TBB REQUIRED)
-  find_package(EXPAT REQUIRED)
-  find_package(BZip2 REQUIRED)
-  find_package(Lua 5.2 REQUIRED)
 
-  add_dependency_includes(${Boost_INCLUDE_DIRS})
-
-  set(BOOST_BASE_LIBRARIES ${Boost_LIBRARIES})
-  set(BOOST_ENGINE_LIBRARIES ${Boost_LIBRARIES})
-
-  add_dependency_includes(${TBB_INCLUDE_DIR})
-  set(TBB_LIBRARIES ${TBB_LIBRARIES})
-
+  # these are named different in conan and cmake Find*
+  # but cmake variables are case-sensitive ...
+  add_dependency_includes(${BZip2_INCLUDE_DIRS})
   add_dependency_includes(${expat_INCLUDE_DIRS})
-  set(EXPAT_LIBRARIES ${expat_LIBRARIES})
-  set(EXPAT_INCLUDE_DIRS ${expat_INCLUDE_DIRS})
-
-  add_dependency_includes(${BZIP2_INCLUDE_DIR})
-
-  set(LUA_LIBRARIES lua::lua)
-  if (LUA_FOUND)
-    message(STATUS "Using Lua ${LUA_VERSION_STRING}")
-  endif()
-
   add_dependency_includes(${lua_INCLUDE_DIRS})
+
+  set(BOOST_BASE_LIBRARIES              ${Boost_LIBRARIES})
+  set(BOOST_ENGINE_LIBRARIES            ${Boost_LIBRARIES})
+  set(EXPAT_LIBRARIES                   ${expat_LIBRARIES})
+  set(LUA_LIBRARIES                     ${lua_LIBRARIES})
 
   # note: we avoid calling find_package(Osmium ...) here to ensure that the
   # expat and bzip2 are used from conan rather than the system
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium/include)
 else()
-  find_package(Boost REQUIRED CONFIG COMPONENTS ${BOOST_COMPONENTS})
-  find_package(TBB REQUIRED)
-  find_package(EXPAT REQUIRED)
-  find_package(BZip2 REQUIRED)
-  find_package(Lua 5.2 REQUIRED)
-
-  add_dependency_includes(${Boost_INCLUDE_DIRS})
-  add_dependency_includes(${TBB_INCLUDE_DIR})
-  add_dependency_includes(${EXPAT_INCLUDE_DIRS})
   add_dependency_includes(${BZIP2_INCLUDE_DIR})
+  add_dependency_includes(${EXPAT_INCLUDE_DIRS})
   add_dependency_includes(${LUA_INCLUDE_DIR})
 
   set(TBB_LIBRARIES TBB::tbb)
@@ -438,18 +500,6 @@ else()
   endif()
   find_package(Osmium REQUIRED COMPONENTS io)
   include_directories(SYSTEM ${OSMIUM_INCLUDE_DIR})
-endif()
-
-
-
-# prefix compilation with ccache by default if available and on clang or gcc
-if(ENABLE_CCACHE AND (CMAKE_CXX_COMPILER_ID MATCHES "Clang" OR CMAKE_CXX_COMPILER_ID MATCHES "GNU"))
-  find_program(CCACHE_FOUND ccache)
-  if(CCACHE_FOUND)
-    message(STATUS "Using ccache to speed up incremental builds")
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_COMPILE ccache)
-    set_property(GLOBAL PROPERTY RULE_LAUNCH_LINK ccache)
-  endif()
 endif()
 
 # even with conan builds we want to link to system zlib

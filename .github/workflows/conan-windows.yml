@@ -1,0 +1,243 @@
+name: Windows Build
+description: Build on Microsoft Windows
+
+on:
+  workflow_call:
+
+env:
+  # paths
+  BUILD_DIR: ${{ github.workspace }}/build
+  TEST_DIR: ${{ github.workspace }}/test
+  LOG_DIR: ${{ github.workspace }}/test/logs
+  NAPI_DIR: ${{ github.workspace }}/lib/binding_napi_v8
+  CONAN_HOME: ${{ github.workspace }}/.conan2
+
+  ENABLE_LTO: ON
+
+  ENABLE_SCCACHE: ON
+  SCCACHE_DIR: ${{ github.workspace }}/.sccache
+
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  conan-node:
+    name: conan-release-node
+    runs-on: windows-2025
+    continue-on-error: false
+    env:
+      BUILD_TYPE:         Release
+      ENABLE_CONAN:       ON
+      UNIT_TESTS:         ON
+      NODE_PACKAGE_TESTS: ON
+      BUILD_NODE_PACKAGE: ON
+      PUBLISH:            OFF
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Setup environment
+        run: |
+          mkdir -p $BUILD_DIR $TEST_DIR $LOG_DIR $CONAN_HOME $SCCACHE_DIR
+          echo "JOBS=$((`nproc` + 1))" >> "$GITHUB_ENV"
+          echo "C:/Program Files/Microsoft Visual Studio/2022/Enterprise/VC/Tools/MSVC/14.44.35207/bin/Hostx64/x64/" >> "$GITHUB_PATH"
+
+      # Node
+
+      - name: Install node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Setup node environment
+        run: |
+          PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
+          echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "ON" || echo "OFF") >> "$GITHUB_ENV"
+          npm config set script-shell "C:\\Program Files\\Git\\bin\\bash.exe"
+          npm install --ignore-scripts
+          npm link --ignore-scripts
+
+      # Conan
+
+      - name: Install Conan
+        if: env.ENABLE_CONAN == 'ON'
+        uses: actions/setup-python@v6
+        with:
+          cache: 'pip'
+          pip-install: -r requirements-dev.txt
+
+      - name: Restore Conan cache
+        id: conan-cache-restore
+        uses: actions/cache/restore@v4
+        if: env.ENABLE_CONAN == 'ON'
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
+
+      - name: Setup Conan environment
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          echo "::group::debug info"
+          echo "PATH=$PATH"
+          which conan
+          conan --version
+          echo "::endgroup::"
+
+          conan profile detect --force
+          conan install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${BUILD_TYPE}
+
+          echo "::group::Conan cache contents"
+          conan list
+          echo "::endgroup::"
+
+          echo "::group::Conan DLL paths"
+          cat *.runpath
+          echo "::endgroup::"
+
+          # magic, adds DLL paths, see: conanfile.py
+          while read -r line; do echo "$line" >> "$GITHUB_PATH"; done < *.runpath
+
+      - name: Save Conan cache
+        uses: actions/cache/save@v4
+        if: always() && env.ENABLE_CONAN == 'ON' && steps.conan-cache-restore.outputs.cache-hit != 'true'
+        with:
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.conan-cache-restore.outputs.cache-primary-key }}
+
+      # SCCache
+
+      - name: Install SCCache
+        if: ${{ env.ENABLE_SCCACHE == 'ON'}}
+        uses: mozilla-actions/sccache-action@v0.0.9
+
+      - name: Restore SCCache
+        id: cache-sccache-restore
+        uses: actions/cache/restore@v4
+        if: ${{ env.ENABLE_SCCACHE == 'ON' }}
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ccache-windows-${{ github.sha }}
+          restore-keys: |
+            ccache-windows-
+
+      # Build
+
+      - name: Cmake
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          echo "::group::cmake --help"
+          which cmake
+          cmake --version
+          cmake --help
+          echo "::endgroup::"
+
+          echo "::group::cl.exe -HELP"
+          cl.exe -HELP
+          which cl.exe
+          echo "::endgroup::"
+
+          echo "::group::cat conan_toolchain.cmake"
+          cat conan_toolchain.cmake
+          echo "::endgroup::"
+
+          export SCCACHE_COMPILER=cl.exe
+          export SCCACHE_COMPILERTYPE=msvc
+
+          echo "::group::cmake .."
+          # this also sets OSRM_BUILD_DIR (see CMakeLists.txt)
+          # defaults to: -G "Visual Studio 17 2022" -A x64 \
+          cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
+                   -DENABLE_CONAN=ON \
+                   -DCMAKE_TOOLCHAIN_FILE=conan_toolchain.cmake \
+                   -DSKIP_CONAN_INSTALL=ON \
+                   -DENABLE_NODE_BINDINGS=ON \
+                   -DENABLE_LTO=${ENABLE_LTO} \
+                   -DENABLE_CCACHE=OFF \
+                   -DENABLE_SCCACHE=${ENABLE_SCCACHE}
+          echo "::endgroup::"
+
+      - name: Build
+        working-directory: ${{ env.BUILD_DIR }}
+        run: |
+          echo "::group::cmake --build"
+          cmake --build . --config ${BUILD_TYPE} -j ${JOBS}
+          echo "::endgroup::"
+
+          echo "::group::ls build/"
+          ls -al
+          echo "::endgroup::"
+
+          echo "::group::ls build/${BUILD_TYPE}/"
+          ls -al ${BUILD_TYPE}/
+          echo "::endgroup::"
+
+          echo "::group::ls lib/binding_napi_v8"
+          ls -al ../lib/binding_napi_v8/
+          echo "::endgroup::"
+
+      # TODO: MSVC goes out of memory when building target library-tests
+      # See switch in: unit_tests/CMakeLists.txt
+      - name: Build unit tests
+        working-directory: ${{ env.BUILD_DIR }}
+        continue-on-error: true
+        run: |
+          cmake --build . --config ${BUILD_TYPE}  -j ${JOBS} --target tests
+
+      - name: Save SCCache directory
+        if: ${{ env.ENABLE_SCCACHE == 'ON'}}
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ env.SCCACHE_DIR }}
+          key: ${{ steps.cache-sccache-restore.outputs.cache-primary-key }}
+
+      # Test
+
+      - name: Run unit tests
+        if: ${{ env.UNIT_TESTS == 'ON' }}
+        run: |
+          make -C ${TEST_DIR}/data
+
+          set +o errexit
+          cd ${{ env.OSRM_BUILD_DIR }}/unit_tests${{ env.OSRM_BUILD_SUBDIR }}
+          for i in *-tests${EXECUTABLE_SUFFIX}
+          do echo "::group::Running $i"
+            ./$i
+            echo "::endgroup::"
+          done
+
+      - name: Run Cucumber tests
+        run: |
+          npm test -- --parallel $JOBS
+
+      - name: Run Node package tests
+        if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+        uses: ./.github/actions/node-package-tests
+
+      - name: Upload test logs
+        uses: actions/upload-artifact@v4
+        if: failure() || success()
+        with:
+          if-no-files-found: ignore
+          name: conan-windows-release-test-logs
+          path: ${{ env.LOG_DIR }}
+
+      - name: Build Node package
+        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' }}
+        run: ./scripts/ci/node_package.sh
+
+      - name: Publish Node package
+        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON' }}
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          artifacts: build/stage/**/*.tar.gz
+          omitBody: true
+          omitBodyDuringUpdate: true
+          omitName: true
+          omitNameDuringUpdate: true
+          replacesArtifacts: true
+          token: ${{ secrets.GITHUB_TOKEN }}
