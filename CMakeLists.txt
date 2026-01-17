@@ -439,27 +439,25 @@ find_package(BZip2 REQUIRED)
 find_package(Lua 5.2 REQUIRED)
 
 add_dependency_includes(${Boost_INCLUDE_DIRS})
-add_dependency_includes(${TBB_INCLUDE_DIR})
-add_dependency_includes(${BZIP2_INCLUDE_DIR})
+add_dependency_includes(${TBB_INCLUDE_DIRS})
 
 if (ENABLE_CONAN)
+  # these are named different in conan and cmake Find*
+  # but cmake variables are case-sensitive ...
+  add_dependency_includes(${BZip2_INCLUDE_DIRS})
   add_dependency_includes(${expat_INCLUDE_DIRS})
   add_dependency_includes(${lua_INCLUDE_DIRS})
 
-  set(BOOST_BASE_LIBRARIES ${Boost_LIBRARIES})
+  set(BOOST_BASE_LIBRARIES   ${Boost_LIBRARIES})
   set(BOOST_ENGINE_LIBRARIES ${Boost_LIBRARIES})
-  set(EXPAT_LIBRARIES ${expat_LIBRARIES})
-  set(EXPAT_INCLUDE_DIRS ${expat_INCLUDE_DIRS})
-
-  set(LUA_LIBRARIES lua::lua)
-  if (LUA_FOUND)
-    message(STATUS "Using Lua ${LUA_VERSION_STRING}")
-  endif()
+  set(EXPAT_LIBRARIES        ${expat_LIBRARIES})
+  set(LUA_LIBRARIES          ${lua_LIBRARIES})
 
   # note: we avoid calling find_package(Osmium ...) here to ensure that the
   # expat and bzip2 are used from conan rather than the system
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium/include)
 else()
+  add_dependency_includes(${BZIP2_INCLUDE_DIR})
   add_dependency_includes(${EXPAT_INCLUDE_DIRS})
   add_dependency_includes(${LUA_INCLUDE_DIR})
 

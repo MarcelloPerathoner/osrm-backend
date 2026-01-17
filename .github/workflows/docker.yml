@@ -22,7 +22,7 @@ jobs:
 
       - name: Docker build
         run: |
-          docker build BOOST_VERSION=1.88 -t osrm-backend-local -f docker/Dockerfile-${{ matrix.docker-base-image }} .
+          docker build -t osrm-backend-local -f docker/Dockerfile-${{ matrix.docker-base-image }} .
 
       - name: Test Docker image
         run: |

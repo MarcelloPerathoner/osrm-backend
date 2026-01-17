@@ -1,7 +1,7 @@
 FROM debian:trixie-slim AS builder
 ARG DOCKER_TAG
 ARG BUILD_CONCURRENCY
-ARG BOOST_VERSION
+ARG BOOST_VERSION=1.88
 
 RUN mkdir -p /src /opt && \
     apt-get update && \
