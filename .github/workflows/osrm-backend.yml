@@ -251,14 +251,14 @@ jobs:
 
       - name: Install Conan
         uses: conan-io/setup-conan@v1
-        if: ${{ env.ENABLE_CONAN == 'ON' }}
+        if: env.ENABLE_CONAN == 'ON'
         with:
           version: ${{ env.CONAN_VERSION }}
           cache_packages: true
           use_venv: true
 
       - name: Setup Conan environment
-        if: ${{ env.ENABLE_CONAN == 'ON' }}
+        if: env.ENABLE_CONAN == 'ON'
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::debug info"
@@ -286,7 +286,7 @@ jobs:
       - name: Restore CCache
         id: cache-ccache-restore
         uses: actions/cache/restore@v4
-        if: ${{ env.ENABLE_CCACHE == 'ON' }}
+        if: env.ENABLE_CCACHE == 'ON'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ matrix.name }}-${{ github.sha }}
@@ -300,7 +300,7 @@ jobs:
         run: sudo chown root /bin/tar && sudo chmod u+s /bin/tar
 
       - name: Install boost
-        if: ${{ env.ENABLE_CONAN != 'ON' }}
+        if: env.ENABLE_CONAN != 'ON'
         uses: MarkusJx/install-boost@v2
         id: install-boost
         with:
@@ -308,16 +308,7 @@ jobs:
           platform_version: ${{ matrix.BOOST_PLATFORM }}
 
       - name: Install dev dependencies
-        if: ${{ env.ENABLE_CONAN != 'ON' }}
         run: |
-          # workaround for issue that GitHub Actions seems to not adding it to PATH after https://github.com/actions/runner-images/pull/6499
-          # and that's why CI cannot find conan executable installed above
-          # if [[ "${RUNNER_OS}" == "macOS" ]]; then
-          #   echo "/Library/Frameworks/Python.framework/Versions/Current/bin" >> $GITHUB_PATH
-          # fi
-
-          echo "Boost_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> GITHUB_ENV
-
           # Install compiler and ccache
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
@@ -325,6 +316,17 @@ jobs:
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             brew install ccache
           fi
+
+      - name: Install dev dependencies
+        if: env.ENABLE_CONAN != 'ON'
+        run: |
+          # workaround for issue that GitHub Actions seems to not adding it to PATH after https://github.com/actions/runner-images/pull/6499
+          # and that's why CI cannot find conan executable installed above
+          # if [[ "${RUNNER_OS}" == "macOS" ]]; then
+          #   echo "/Library/Frameworks/Python.framework/Versions/Current/bin" >> $GITHUB_PATH
+          # fi
+
+          # echo "Boost_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
 
           # Linux dev packages
           sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev
@@ -408,22 +410,15 @@ jobs:
             echo "::endgroup::"
           fi
 
-      - name: Save Conan cache
-        uses: actions/cache/save@v4
-        if: ${{ always() && env.ENABLE_CONAN == 'ON' && steps.cache-conan-restore.outputs.cache-hit != 'true' }}
-        with:
-          path: ${{ env.CONAN_HOME }}
-          key: ${{ steps.cache-conan-restore.outputs.cache-primary-key }}
-
       - name: Save CCache
         uses: actions/cache/save@v4
-        if: ${{ always() && env.ENABLE_CCACHE == 'ON' && steps.cache-ccache-restore.outputs.cache-hit != 'true' }}
+        if: always() && env.ENABLE_CCACHE == 'ON' && steps.cache-ccache-restore.outputs.cache-hit != 'true'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.cache-ccache-restore.outputs.cache-primary-key }}
 
       - name: Show CCache statistics
-        if: ${{ always() && env.ENABLE_CCACHE == 'ON' }}
+        if: always() && env.ENABLE_CCACHE == 'ON'
         run: |
           ccache -s
           echo "::group::ccache -p"
@@ -431,7 +426,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Run unit tests
-        if: ${{ env.UNIT_TESTS == 'ON' }}
+        if: env.UNIT_TESTS == 'ON'
         run: |
           make -C ${TEST_DIR}/data
 
@@ -444,12 +439,12 @@ jobs:
           done
 
       - name: Run Cucumber tests
-        if: ${{ env.CUCUMBER_TESTS == 'ON' }}
+        if: env.CUCUMBER_TESTS == 'ON'
         run: |
           npm test -- --parallel $JOBS
 
       - name: Run Node package tests
-        if: ${{ env.NODE_PACKAGE_TESTS == 'ON' }}
+        if: env.NODE_PACKAGE_TESTS == 'ON'
         uses: ./.github/actions/node-package-tests
 
       - name: Upload test logs
@@ -461,11 +456,11 @@ jobs:
           path: ${{ env.LOG_DIR }}
 
       - name: Build Node package
-        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' }}
+        if: env.BUILD_NODE_PACKAGE == 'ON'
         run: ${{ env.CI_DIR }}/node_package.sh
 
       - name: Publish Node package
-        if: ${{ env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON' }}
+        if: env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON'
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
