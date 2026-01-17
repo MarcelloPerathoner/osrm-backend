@@ -258,6 +258,7 @@ jobs:
           use_venv: true
 
       - name: Setup Conan environment
+        if: ${{ env.ENABLE_CONAN == 'ON' }}
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::debug info"
