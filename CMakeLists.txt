@@ -427,12 +427,12 @@ include_directories(SYSTEM ${FMT_INCLUDE_DIR})
 
 # see https://stackoverflow.com/questions/70898030/boost-link-error-using-conan-find-package
 if (MSVC)
-  // BOOST_ALL_NO_LIB: Tells the config system not to automatically select
-  // which libraries to link against.
-  // Normally if a compiler supports #pragma lib, then the correct library
-  // build variant will be automatically selected and linked against,
-  // simply by the act of including one of that library's headers.
-  // This macro turns that feature off.
+  # BOOST_ALL_NO_LIB: Tells the config system not to automatically select
+  # which libraries to link against.
+  # Normally if a compiler supports #pragma lib, then the correct library
+  # build variant will be automatically selected and linked against,
+  # simply by the act of including one of that library's headers.
+  # This macro turns that feature off.
   add_definitions(-DBOOST_ALL_NO_LIB)
 endif()
 
