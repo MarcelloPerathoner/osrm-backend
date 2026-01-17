@@ -326,7 +326,7 @@ jobs:
           #   echo "/Library/Frameworks/Python.framework/Versions/Current/bin" >> $GITHUB_PATH
           # fi
 
-          # echo "Boost_ROOT=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
+          echo "Boost_DIR=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
 
           # Linux dev packages
           sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev

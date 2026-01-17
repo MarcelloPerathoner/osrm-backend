@@ -1,4 +1,8 @@
 cmake_minimum_required(VERSION 3.18)
+message(STATUS "CMake version: ${CMAKE_VERSION}")
+
+# find Boost the easy way
+cmake_policy(SET CMP0167 NEW)
 
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -41,25 +45,28 @@ if(ENABLE_CCACHE)
   endif()
 endif()
 
-if (ENABLE_CONAN AND NOT SKIP_CONAN_INSTALL)
-  message(STATUS "Installing Conan packages. It may take a while...")
-  find_program(CONAN_EXECUTABLE NAMES conan)
+if (ENABLE_CONAN)
+  message(STATUS "Using Conan")
+  if (NOT SKIP_CONAN_INSTALL)
+    message(STATUS "Installing Conan packages. It may take a while...")
+    find_program(CONAN_EXECUTABLE NAMES conan)
 
-  if (NOT CONAN_EXECUTABLE)
-    message(FATAL_ERROR "Conan not found! Please install Conan 2.x and try again.")
-  else()
-    set(CMAKE_TOOLCHAIN_FILE "./conan_toolchain.cmake")
+    if (NOT CONAN_EXECUTABLE)
+      message(FATAL_ERROR "Conan not found! Please install Conan 2.x and try again.")
+    else()
+      set(CMAKE_TOOLCHAIN_FILE "./conan_toolchain.cmake")
 
-    execute_process(
-      COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${CMAKE_BUILD_TYPE}
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      OUTPUT_VARIABLE conan_stdout
-      ERROR_VARIABLE conan_stderr
-      RESULT_VARIABLE conan_install_result
-    )
+      execute_process(
+        COMMAND ${CONAN_EXECUTABLE} install .. --output-folder=. --build=missing -s:a compiler.cppstd=20 -s:a build_type=${CMAKE_BUILD_TYPE}
+        WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+        OUTPUT_VARIABLE conan_stdout
+        ERROR_VARIABLE conan_stderr
+        RESULT_VARIABLE conan_install_result
+      )
 
-    if (NOT conan_install_result EQUAL 0)
-      message(FATAL_ERROR "Conan install failed: ${conan_install_result}. Stderr: ${conan_stderr}. Stdout: ${conan_stdout}")
+      if (NOT conan_install_result EQUAL 0)
+        message(FATAL_ERROR "Conan install failed: ${conan_install_result}. Stderr: ${conan_stderr}. Stdout: ${conan_stdout}")
+      endif()
     endif()
   endif()
 endif()
@@ -462,7 +469,7 @@ if (ENABLE_CONAN)
   # expat and bzip2 are used from conan rather than the system
   include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/third_party/libosmium/include)
 else()
-  find_package(Boost REQUIRED CONFIG COMPONENTS ${BOOST_COMPONENTS})
+  find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
   find_package(TBB REQUIRED)
   find_package(EXPAT REQUIRED)
   find_package(BZip2 REQUIRED)
