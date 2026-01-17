@@ -22,7 +22,6 @@ env:
   CONAN_HOME: ${{ github.workspace }}.conan2
 
   BOOST_VERSION: 1.88.0
-  CONAN_VERSION: 2.24.0
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: /tmp/.ccache-temp
   CCACHE_COMPRESS: 1
@@ -238,13 +237,13 @@ jobs:
 
       # Node
 
-      - name: Install node
+      - name: Install Node
         uses: actions/setup-node@v4
         with:
           node-version: ${{ matrix.node }}
           cache: npm
 
-      - name: Setup node environment
+      - name: Setup Node environment
         run: |
           PACKAGE_JSON_VERSION=$(node -e "console.log(require('./package.json').version)")
           echo PUBLISH=$([[ "${GITHUB_REF:-}" == "refs/tags/v${PACKAGE_JSON_VERSION}" ]] && echo "On" || echo "Off") >> $GITHUB_ENV
@@ -252,18 +251,16 @@ jobs:
       # Conan
 
       - name: Install Conan
-        uses: conan-io/setup-conan@v1
         if: env.ENABLE_CONAN == 'ON'
+        uses: actions/setup-python@v6
         with:
-          version: ${{ env.CONAN_VERSION }}
-          home: ${{ env.CONAN_HOME }}
-          cache_packages: true
-          use_venv: true
+          cache: 'pip'
+          pip-install: -r requirements-dev.txt
 
       - name: Restore Conan cache
-        id: conan-cache-restore
-        uses: actions/cache/restore@v4
         if: env.ENABLE_CONAN == 'ON'
+        uses: actions/cache/restore@v4
+        id: conan-cache-restore
         with:
           path: ${{ env.CONAN_HOME }}
           key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
