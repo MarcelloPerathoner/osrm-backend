@@ -202,8 +202,6 @@ include_directories(BEFORE ${CMAKE_CURRENT_SOURCE_DIR}/include/)
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/generated/include/)
 include_directories(SYSTEM ${CMAKE_CURRENT_SOURCE_DIR}/third_party/sol2/include)
 
-set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
-
 configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/version.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/include/util/version.hpp
@@ -428,9 +426,11 @@ include_directories(SYSTEM ${FMT_INCLUDE_DIR})
 
 
 # see https://stackoverflow.com/questions/70898030/boost-link-error-using-conan-find-package
-if (MSVC)
-  add_definitions(-DBOOST_ALL_NO_LIB)
-endif()
+# if (MSVC)
+#   add_definitions(-DBOOST_ALL_NO_LIB)
+# endif()
+
+set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
 
 find_package(Boost REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 find_package(TBB REQUIRED)

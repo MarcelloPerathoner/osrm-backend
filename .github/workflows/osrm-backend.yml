@@ -21,6 +21,7 @@ env:
   NAPI_DIR:   ${{ github.workspace }}/lib/binding_napi_v8
   CONAN_HOME: ${{ github.workspace }}.conan2
 
+  BOOST_VERSION: 1.88.0
   CONAN_VERSION: 2.24.0
   CCACHE_DIR: ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR: /tmp/.ccache-temp
@@ -323,7 +324,7 @@ jobs:
         uses: MarkusJx/install-boost@v2
         id: install-boost
         with:
-          boost_version: 1.88.0
+          boost_version: ${{ env.BOOST_VERSION }}
           platform_version: ${{ matrix.BOOST_PLATFORM }}
 
       - name: Install dev dependencies
@@ -377,6 +378,17 @@ jobs:
           fi
           echo "CC=${CCOMPILER}" >> $GITHUB_ENV
           echo "CXX=${CXXCOMPILER}" >> $GITHUB_ENV
+
+          if [[ "${RUNNER_OS}" == "Linux" ]]; then
+            if [[ "$ENABLE_ASAN" == 'ON' ]]; then
+              export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH
+            fi
+            if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
+              export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`):$LD_LIBRARY_PATH
+            fi
+            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
+          fi
+
           if [[ "${RUNNER_OS}" == "macOS" ]]; then
             # missing from GCC path, needed for conan builds of libiconv, for example.
             sudo xcode-select --switch /Library/Developer/CommandLineTools
@@ -399,7 +411,7 @@ jobs:
                    -DENABLE_LTO=${ENABLE_LTO:-ON} \
                    ${CMAKE_EXTRA_DEFS}
 
-      - name: Build
+      - name: Build core
         working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::make"
@@ -407,25 +419,17 @@ jobs:
           make --jobs=${JOBS}
           echo "::endgroup::"
 
-          if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            if [[ "$ENABLE_ASAN" == 'ON' ]]; then
-              export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH
-            fi
-            if [[ "$ENABLE_UBSAN" == 'ON' ]]; then
-              export LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`):$LD_LIBRARY_PATH
-            fi
-            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
-          fi
+      - name: Build unit tests
+        working-directory: ${{ env.BUILD_DIR }}
+        if: env.UNIT_TESTS == 'ON'
+        run: |
+          echo "::group::make tests"
+          make --jobs=${JOBS} tests
+          echo "::endgroup::"
 
-          if [[ "${UNIT_TESTS}" == "ON" ]]; then
-            echo "::group::make tests"
-            make --jobs=${JOBS} tests
-            echo "::endgroup::"
-
-            echo "::group::make benchmarks"
-            make --jobs=${JOBS} benchmarks
-            echo "::endgroup::"
-          fi
+          echo "::group::make benchmarks"
+          make --jobs=${JOBS} benchmarks
+          echo "::endgroup::"
 
       - name: Save CCache
         uses: actions/cache/save@v4
