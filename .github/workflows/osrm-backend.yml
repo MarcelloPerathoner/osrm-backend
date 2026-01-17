@@ -240,7 +240,7 @@ jobs:
       - name: Install node
         uses: actions/setup-node@v4
         with:
-          node-version: matrix.node
+          node-version: ${{ matrix.node }}
           cache: npm
 
       - name: Setup node environment
