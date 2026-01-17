@@ -19,7 +19,7 @@ env:
   CI_DIR:     ${{ github.workspace }}/scripts/ci
   NODE_DIR:   ${{ github.workspace }}/.npm
   NAPI_DIR:   ${{ github.workspace }}/lib/binding_napi_v8
-  CONAN_HOME: ${{ github.workspace }}.conan2
+  CONAN_HOME: ${{ github.workspace }}/.conan2
 
   BOOST_VERSION: 1.88.0
   CCACHE_DIR: ${{ github.workspace }}/.ccache
@@ -252,10 +252,11 @@ jobs:
 
       - name: Install Conan
         if: env.ENABLE_CONAN == 'ON'
-        uses: actions/setup-python@v6
-        with:
-          cache: 'pip'
-          pip-install: -r requirements-dev.txt
+        run: |
+          python -m venv .venv
+          source .venv/bin/activate
+          pip install -r requirements-dev.txt
+          echo "PATH=$PATH" >> $GITHUB_ENV
 
       - name: Restore Conan cache
         if: env.ENABLE_CONAN == 'ON'
@@ -269,6 +270,8 @@ jobs:
         if: env.ENABLE_CONAN == 'ON'
         working-directory: ${{ env.BUILD_DIR }}
         run: |
+          PATH=${{ steps.install-python.outputs.python-path }}:$PATH
+
           echo "::group::debug info"
           echo "PATH=$PATH"
           which conan
