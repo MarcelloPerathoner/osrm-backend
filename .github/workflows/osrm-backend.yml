@@ -264,12 +264,12 @@ jobs:
         uses: actions/cache/restore@v4
         if: env.ENABLE_CONAN == 'ON'
         with:
-          path: env.CONAN_HOME
+          path: ${{ env.CONAN_HOME }}
           key: conan-${{ matrix.runs-on }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
 
       - name: Setup Conan environment
         if: env.ENABLE_CONAN == 'ON'
-        working-directory: env.BUILD_DIR
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::debug info"
           echo "PATH=$PATH"
@@ -297,8 +297,8 @@ jobs:
         uses: actions/cache/save@v4
         if: always() && env.ENABLE_CONAN == 'ON' && steps.conan-cache-restore.outputs.cache-hit != 'true'
         with:
-          path: env.CONAN_HOME
-          key: steps.cache-conan-restore.outputs.cache-primary-key
+          path: ${{ env.CONAN_HOME }}
+          key: ${{ steps.conan-cache-restore.outputs.cache-primary-key }}
 
       # CCache
 
@@ -307,7 +307,7 @@ jobs:
         uses: actions/cache/restore@v4
         if: env.ENABLE_CCACHE == 'ON'
         with:
-          path: env.CCACHE_DIR
+          path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ matrix.name }}-${{ github.sha }}
           restore-keys: |
             ccache-${{ matrix.name }}-
@@ -324,7 +324,7 @@ jobs:
         id: install-boost
         with:
           boost_version: 1.88.0
-          platform_version: matrix.BOOST_PLATFORM
+          platform_version: ${{ matrix.BOOST_PLATFORM }}
 
       - name: Install dev dependencies
         run: |
@@ -385,7 +385,7 @@ jobs:
           fi
 
       - name: Cmake
-        working-directory: env.BUILD_DIR
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                    -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
@@ -400,7 +400,7 @@ jobs:
                    ${CMAKE_EXTRA_DEFS}
 
       - name: Build
-        working-directory: env.BUILD_DIR
+        working-directory: ${{ env.BUILD_DIR }}
         run: |
           echo "::group::make"
           mkdir -p ${OSRM_BUILD_DIR}
@@ -431,8 +431,8 @@ jobs:
         uses: actions/cache/save@v4
         if: always() && env.ENABLE_CCACHE == 'ON' && steps.cache-ccache-restore.outputs.cache-hit != 'true'
         with:
-          path: env.CCACHE_DIR
-          key: steps.cache-ccache-restore.outputs.cache-primary-key
+          path: ${{ env.CCACHE_DIR }}
+          key: ${{ steps.cache-ccache-restore.outputs.cache-primary-key }}
 
       - name: Show CCache statistics
         if: always() && env.ENABLE_CCACHE == 'ON'
@@ -470,7 +470,7 @@ jobs:
         with:
           if-no-files-found: ignore
           name: ${{ matrix.name }}-test-logs
-          path: env.LOG_DIR
+          path: ${{ env.LOG_DIR }}
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
