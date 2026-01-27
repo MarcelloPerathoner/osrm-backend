@@ -202,8 +202,8 @@ configure_file(
 file(GLOB UtilGlob        src/util/*.cpp src/util/*/*.cpp)
 file(GLOB ExtractorGlob   src/extractor/*.cpp src/extractor/*/*.cpp)
 file(GLOB GuidanceGlob    src/guidance/*.cpp src/extractor/intersection/*.cpp)
-file(GLOB PartitionerGlob src/partitioner/*.cpp)
-file(GLOB CustomizerGlob  src/customize/*.cpp)
+file(GLOB PartitionerGlob src/partitioner/*.cpp src/osrm/partitioner.cpp)
+file(GLOB CustomizerGlob  src/customize/*.cpp  src/osrm/customizer.cpp)
 file(GLOB ContractorGlob  src/contractor/*.cpp src/osrm/contractor.cpp)
 file(GLOB UpdaterGlob     src/updater/*.cpp)
 file(GLOB StorageGlob     src/storage/*.cpp)
@@ -511,14 +511,10 @@ add_library(osrm_store)
 target_link_libraries(osrm_utils     UTIL MICROTAR ${UTIL_LIBRARIES})
 target_link_libraries(osrm_store     STORAGE UPDATER osrm_utils)
 
-add_library(osrm_customize src/osrm/customizer.cpp  )
 add_library(osrm_extract   src/osrm/extractor.cpp   )
-add_library(osrm_partition src/osrm/partitioner.cpp )
 add_library(osrm_routed    src/osrm/osrm.cpp        )
 
-target_link_libraries(osrm_customize CUSTOMIZER osrm_store )
 target_link_libraries(osrm_extract   EXTRACTOR ${EXTRACTOR_LIBRARIES} osrm_utils )
-target_link_libraries(osrm_partition PARTITIONER osrm_utils )
 target_link_libraries(osrm_routed    ENGINE ${ENGINE_LIBRARIES} osrm_store )
 
 # Binaries
@@ -530,10 +526,10 @@ add_executable(osrm-partition src/tools/partition.cpp)
 add_executable(osrm-routed    src/tools/routed.cpp)
 
 target_link_libraries(osrm-contract  CONTRACTOR osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-customize osrm_customize ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-customize CUSTOMIZER osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-datastore osrm_store     ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-extract   osrm_extract   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-partition osrm_partition ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-partition PARTITIONER osrm_utils ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-routed    osrm_routed    ${BOOST_PROGRAM_OPTIONS_LIBRARIES} SERVER)
 
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
@@ -601,8 +597,6 @@ install(TARGETS osrm-routed DESTINATION bin)
 
 install(TARGETS osrm_routed DESTINATION lib)
 install(TARGETS osrm_extract DESTINATION lib)
-install(TARGETS osrm_partition DESTINATION lib)
-install(TARGETS osrm_customize DESTINATION lib)
 install(TARGETS osrm_store DESTINATION lib)
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default

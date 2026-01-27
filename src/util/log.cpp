@@ -63,12 +63,9 @@ std::string LogPolicy::GetLevels()
     return "NONE, ERROR, WARNING, INFO, DEBUG";
 }
 
-OSRM_UTILS_EXPORT Log::Log(LogLevel level_, std::ostream &ostream) : level(level_), stream(ostream)
-{
-    Init();
-}
+Log::Log(LogLevel level_, std::ostream &ostream) : level(level_), stream(ostream) { Init(); }
 
-OSRM_UTILS_EXPORT Log::Log(LogLevel level_) : level(level_), buffer{}, stream{buffer} { Init(); }
+Log::Log(LogLevel level_) : level(level_), buffer{}, stream{buffer} { Init(); }
 
 void Log::Init()
 {
@@ -130,7 +127,7 @@ std::mutex &Log::get_mutex()
  * Because sub-classes can replace the `stream` object - we need to verify whether
  * we're writing to std::cerr/cout, or whether we should write to the stream
  */
-OSRM_UTILS_EXPORT Log::~Log()
+Log::~Log()
 {
     const auto &policy = LogPolicy::GetInstance();
     if (!policy.IsMute() && level <= policy.GetLevel())
