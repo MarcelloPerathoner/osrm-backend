@@ -3,9 +3,9 @@
 
 #include "engine/algorithm.hpp"
 #include "engine/datafacade.hpp"
-#include "engine/datafacade/algorithm_datafacade.hpp"
 #include "engine/routing_algorithms/routing_base.hpp"
 #include "engine/search_engine_data.hpp"
+
 #include "util/typedefs.hpp"
 
 #include <boost/assert.hpp>
@@ -223,9 +223,7 @@ void unpackPath(const DataFacade<Algorithm> &facade,
 
         // Look for an edge on the forward CH graph (.forward)
         EdgeID smaller_edge_id = facade.FindSmallestEdge(
-            edge.first,
-            edge.second,
-            [](const DataFacade<Algorithm>::EdgeData &data) { return data.forward; });
+            edge.first, edge.second, [](const auto &data) { return data.forward; });
 
         // If we didn't find one there, the we might be looking at a part of the path that
         // was found using the backward search.  Here, we flip the node order (.second, .first)

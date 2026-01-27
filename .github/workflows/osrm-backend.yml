@@ -150,6 +150,7 @@ jobs:
             runs-on: ubuntu-22.04
             CCOMPILER: gcc-12
             CXXCOMPILER: g++-12
+            ENABLE_LTO: OFF
 
           - name: conan-linux-release-node
             node: 22
