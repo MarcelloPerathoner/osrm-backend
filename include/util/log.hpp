@@ -53,7 +53,7 @@ class Log
     OSRM_UTILS_EXPORT virtual ~Log();
     std::mutex &get_mutex();
 
-    template <typename T> OSRM_UTILS_EXPORT inline Log &operator<<(const T &data)
+    OSRM_UTILS_EXPORT Log &operator<<(const char *data)
     {
         const auto &policy = LogPolicy::GetInstance();
         if (!policy.IsMute() && level <= policy.GetLevel())
@@ -63,7 +63,17 @@ class Log
         return *this;
     }
 
-    template <typename T> OSRM_UTILS_EXPORT inline Log &operator<<(const std::atomic<T> &data)
+    template <typename T> inline Log &operator<<(const T &data)
+    {
+        const auto &policy = LogPolicy::GetInstance();
+        if (!policy.IsMute() && level <= policy.GetLevel())
+        {
+            stream << data;
+        }
+        return *this;
+    }
+
+    template <typename T> inline Log &operator<<(const std::atomic<T> &data)
     {
         const auto &policy = LogPolicy::GetInstance();
         if (!policy.IsMute() && level <= policy.GetLevel())
@@ -75,7 +85,7 @@ class Log
 
     using manip = std::ostream &(std::ostream &);
 
-    OSRM_UTILS_EXPORT inline Log &operator<<(manip &m)
+    OSRM_UTILS_EXPORT Log &operator<<(manip &m)
     {
         const auto &policy = LogPolicy::GetInstance();
         if (!policy.IsMute() && level <= policy.GetLevel())

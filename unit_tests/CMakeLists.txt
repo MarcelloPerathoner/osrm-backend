@@ -101,11 +101,11 @@ target_include_directories(storage-tests           PUBLIC ${CMAKE_CURRENT_SOURCE
 target_include_directories(updater-tests           PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(util-tests              PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(contractor-tests        osrm_contract  ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(contractor-tests        CONTRACTOR osrm_store  ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(customizer-tests        osrm_customize ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(engine-tests            osrm_routed    ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(extractor-tests         osrm_extract   ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(library-contract-tests  osrm_contract  ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(library-contract-tests  CONTRACTOR osrm_store  ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(library-customize-tests osrm_customize ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(library-extract-tests   osrm_extract   ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(library-partition-tests osrm_partition ${BOOST_UNIT_TEST_LIBRARIES})
@@ -113,7 +113,7 @@ target_link_libraries(library-tests           osrm_routed    ${BOOST_UNIT_TEST_L
 target_link_libraries(partitioner-tests       osrm_partition ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(server-tests            osrm_routed    ${BOOST_UNIT_TEST_LIBRARIES} $<TARGET_OBJECTS:SERVER>)
 target_link_libraries(storage-tests           osrm_store     ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(updater-tests           osrm_update    ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(updater-tests           osrm_store     ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(util-tests              osrm_utils     ${BOOST_UNIT_TEST_LIBRARIES})
 
 add_custom_target(tests

@@ -204,7 +204,7 @@ file(GLOB ExtractorGlob   src/extractor/*.cpp src/extractor/*/*.cpp)
 file(GLOB GuidanceGlob    src/guidance/*.cpp src/extractor/intersection/*.cpp)
 file(GLOB PartitionerGlob src/partitioner/*.cpp)
 file(GLOB CustomizerGlob  src/customize/*.cpp)
-file(GLOB ContractorGlob  src/contractor/*.cpp)
+file(GLOB ContractorGlob  src/contractor/*.cpp src/osrm/contractor.cpp)
 file(GLOB UpdaterGlob     src/updater/*.cpp)
 file(GLOB StorageGlob     src/storage/*.cpp)
 file(GLOB ServerGlob      src/server/*.cpp src/server/**/*.cpp)
@@ -227,7 +227,7 @@ set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
-  set_property(TARGET SERVER PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
+  set_target_properties(SERVER PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
 # Additional logic for the different build types
@@ -505,24 +505,21 @@ set(ENGINE_LIBRARIES
     ${MAYBE_SOCKET_LIBRARIES})
 
 # Libraries
-add_library(osrm_store)
-add_library(osrm_update)
 add_library(osrm_utils)
+add_library(osrm_store)
 
-add_library(osrm_contract  src/osrm/contractor.cpp  )
+target_link_libraries(osrm_utils     UTIL MICROTAR ${UTIL_LIBRARIES})
+target_link_libraries(osrm_store     STORAGE UPDATER osrm_utils)
+
 add_library(osrm_customize src/osrm/customizer.cpp  )
 add_library(osrm_extract   src/osrm/extractor.cpp   )
 add_library(osrm_partition src/osrm/partitioner.cpp )
 add_library(osrm_routed    src/osrm/osrm.cpp        )
 
-target_link_libraries(osrm_contract  CONTRACTOR osrm_store osrm_update osrm_utils )
-target_link_libraries(osrm_customize CUSTOMIZER osrm_store osrm_update osrm_utils )
+target_link_libraries(osrm_customize CUSTOMIZER osrm_store )
 target_link_libraries(osrm_extract   EXTRACTOR ${EXTRACTOR_LIBRARIES} osrm_utils )
 target_link_libraries(osrm_partition PARTITIONER osrm_utils )
-target_link_libraries(osrm_routed    ENGINE ${ENGINE_LIBRARIES} osrm_store osrm_utils )
-target_link_libraries(osrm_store     STORAGE osrm_utils )
-target_link_libraries(osrm_update    UPDATER osrm_utils )
-target_link_libraries(osrm_utils     UTIL MICROTAR ${UTIL_LIBRARIES})
+target_link_libraries(osrm_routed    ENGINE ${ENGINE_LIBRARIES} osrm_store )
 
 # Binaries
 add_executable(osrm-contract  src/tools/contract.cpp)
@@ -532,49 +529,20 @@ add_executable(osrm-extract   src/tools/extract.cpp)
 add_executable(osrm-partition src/tools/partition.cpp)
 add_executable(osrm-routed    src/tools/routed.cpp)
 
-target_link_libraries(osrm-contract  osrm_contract  ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-contract  CONTRACTOR osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-customize osrm_customize ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-datastore osrm_store     ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-extract   osrm_extract   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-partition osrm_partition ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-routed    osrm_routed    ${BOOST_PROGRAM_OPTIONS_LIBRARIES} SERVER)
 
-set(OSRM_LIBRARIES osrm_store osrm_update osrm_utils osrm_contract osrm_customize osrm_extract osrm_partition osrm_routed)
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 
-# FIXME gendef needs the functions already exported, so it is useless for us
-
+# try to build shared libs on windows
 include(GenerateExportHeader)
 generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp)
-
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
-
-function(create_def DLL OBJS)
-  add_custom_command(TARGET ${DLL} POST_BUILD
-    WORKING_DIRECTORY $<TARGET_FILE_DIR:${DLL}>
-    COMMAND echo dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${OBJS}>
-    COMMAND dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${OBJS}>
-    COMMAND ls -al
-    COMMAND cat ${DLL}.def || true
-    VERBATIM
-    COMMAND_EXPAND_LISTS
-  )
-endfunction()
-
-if(MSVC AND BUILD_SHARED_LIBS)
-  create_def(osrm_utils UTIL)
-  create_def(osrm_contract CONTRACTOR)
-
-  # create an import lib for each dll because we lack __declspec(dllexport) in our code
-  # foreach(DLL IN LISTS OSRM_LIBRARIES)
-  #   add_custom_command(TARGET ${DLL} POST_BUILD
-  #     WORKING_DIRECTORY $<TARGET_FILE_DIR:${DLL}>
-  #     COMMAND echo "dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${DLL}>"
-  #     COMMAND dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${DLL}>
-  #     VERBATIM
-  #   )
-  # endforeach()
-endif()
+# end try
 
 add_executable(osrm-components src/tools/components.cpp $<TARGET_OBJECTS:MICROTAR> $<TARGET_OBJECTS:UTIL>)
 target_link_libraries(osrm-components ${TBB_LIBRARIES} ${BOOST_BASE_LIBRARIES} ${UTIL_LIBRARIES})
@@ -635,8 +603,6 @@ install(TARGETS osrm_routed DESTINATION lib)
 install(TARGETS osrm_extract DESTINATION lib)
 install(TARGETS osrm_partition DESTINATION lib)
 install(TARGETS osrm_customize DESTINATION lib)
-install(TARGETS osrm_update DESTINATION lib)
-install(TARGETS osrm_contract DESTINATION lib)
 install(TARGETS osrm_store DESTINATION lib)
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default
