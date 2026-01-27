@@ -101,20 +101,20 @@ target_include_directories(storage-tests           PUBLIC ${CMAKE_CURRENT_SOURCE
 target_include_directories(updater-tests           PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(util-tests              PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(contractor-tests        CONTRACTOR osrm_store  ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(customizer-tests        CUSTOMIZER osrm_store  ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(engine-tests            osrm_routed    ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(extractor-tests         EXTRACTOR   osrm_utils ${EXTRACTOR_LIBRARIES} ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(library-contract-tests  CONTRACTOR  osrm_store  ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(library-customize-tests CUSTOMIZER  osrm_store  ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(library-extract-tests   EXTRACTOR   osrm_utils ${EXTRACTOR_LIBRARIES} ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(library-partition-tests PARTITIONER osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(library-tests           osrm_routed    ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(partitioner-tests       PARTITIONER osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(server-tests            osrm_routed    ${BOOST_UNIT_TEST_LIBRARIES} $<TARGET_OBJECTS:SERVER>)
-target_link_libraries(storage-tests           osrm_store     ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(updater-tests           osrm_store     ${BOOST_UNIT_TEST_LIBRARIES})
-target_link_libraries(util-tests              osrm_utils     ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(contractor-tests        CONTRACTOR    osrm_store ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(customizer-tests        CUSTOMIZER    osrm_store ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(engine-tests            ENGINE        osrm_store ${BOOST_UNIT_TEST_LIBRARIES} ${ENGINE_LIBRARIES})
+target_link_libraries(extractor-tests         EXTRACTOR     osrm_utils ${BOOST_UNIT_TEST_LIBRARIES} ${EXTRACTOR_LIBRARIES})
+target_link_libraries(library-contract-tests  CONTRACTOR    osrm_store ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(library-customize-tests CUSTOMIZER    osrm_store ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(library-extract-tests   EXTRACTOR     osrm_utils ${BOOST_UNIT_TEST_LIBRARIES} ${EXTRACTOR_LIBRARIES})
+target_link_libraries(library-partition-tests PARTITIONER   osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(library-tests           ENGINE        osrm_store ${BOOST_UNIT_TEST_LIBRARIES} ${ENGINE_LIBRARIES})
+target_link_libraries(partitioner-tests       PARTITIONER   osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(server-tests            ENGINE SERVER osrm_store ${BOOST_UNIT_TEST_LIBRARIES} ${ENGINE_LIBRARIES})
+target_link_libraries(storage-tests                         osrm_store ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(updater-tests                         osrm_store ${BOOST_UNIT_TEST_LIBRARIES})
+target_link_libraries(util-tests                            osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 
 add_custom_target(tests
   DEPENDS
@@ -133,9 +133,9 @@ add_custom_target(tests
     util-tests
 )
 
-if (NOT MSVC)
+#if (NOT MSVC)
   # FIXME: MSVC goes out of mem on github ci compiling target library-tests
   add_dependencies(tests library-tests)
-endif()
+#endif()
 
 post_build_dir("OSRM_UNIT_TESTS_BUILD_DIR")

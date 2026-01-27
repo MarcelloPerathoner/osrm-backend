@@ -72,7 +72,7 @@ class Env {
     // heuristically detect .so/.a/.dll/.lib suffix
     this.LIB = ['lib%s.a', 'lib%s.so', 'lib%s.dylib', '%s.dll', '%s.lib'].find((format) => {
       try {
-        const lib = path.join(wp.buildPath, util.format(format, 'osrm'));
+        const lib = path.join(wp.buildPath, util.format(format, 'osrm_utils'));
         fs.accessSync(lib, fs.constants.F_OK);
       } catch {
         return false;
@@ -101,7 +101,7 @@ class Env {
     for (const i of 'routed'.split()) {
       this.requiredBinaries.push(path.join(wp.buildPath, `osrm-${i}${this.EXE}`));
     }
-    for (const i of ['_store', '_utils', '']) {
+    for (const i of ['_store', '_utils']) {
       const lib = path.join(wp.buildPath, util.format(this.LIB, `osrm${i}`));
       this.libraries.push(lib);
     }
