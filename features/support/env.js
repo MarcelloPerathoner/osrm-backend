@@ -69,7 +69,7 @@ class Env {
       path.join(wp.logsPath, `cucumber-global-${this.CUCUMBER_WORKER_ID}.log`),
       'a');
 
-    // heuristically detect .so/.a/.dll/.lib suffix
+    // heuristically detect .so/.a/.dll/.lib/.dylib suffix
     this.LIB = ['lib%s.a', 'lib%s.so', 'lib%s.dylib', '%s.dll', '%s.lib'].find((format) => {
       try {
         const lib = path.join(wp.buildPath, util.format(format, 'osrm_utils'));

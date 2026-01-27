@@ -19,7 +19,7 @@ enum LogLevel
 namespace osrm::util
 {
 
-class LogPolicy
+class OSRM_UTILS_EXPORT LogPolicy
 {
   public:
     void Unmute();
@@ -44,16 +44,16 @@ class LogPolicy
     LogLevel m_level;
 };
 
-class Log
+class OSRM_UTILS_EXPORT Log
 {
   public:
-    OSRM_UTILS_EXPORT Log(LogLevel level_ = logINFO);
-    OSRM_UTILS_EXPORT Log(LogLevel level_, std::ostream &ostream);
+    Log(LogLevel level_ = logINFO);
+    Log(LogLevel level_, std::ostream &ostream);
 
-    OSRM_UTILS_EXPORT virtual ~Log();
+    virtual ~Log();
     std::mutex &get_mutex();
 
-    OSRM_UTILS_EXPORT Log &operator<<(const char *data)
+    Log &operator<<(const char *data)
     {
         const auto &policy = LogPolicy::GetInstance();
         if (!policy.IsMute() && level <= policy.GetLevel())
@@ -85,7 +85,7 @@ class Log
 
     using manip = std::ostream &(std::ostream &);
 
-    OSRM_UTILS_EXPORT Log &operator<<(manip &m)
+    Log &operator<<(manip &m)
     {
         const auto &policy = LogPolicy::GetInstance();
         if (!policy.IsMute() && level <= policy.GetLevel())
@@ -109,7 +109,7 @@ class Log
  * and the final newline is only printed when the object is destructed.
  * Useful for logging situations where you don't want to newline right away
  */
-class UnbufferedLog : public Log
+class OSRM_UTILS_EXPORT UnbufferedLog : public Log
 {
   public:
     UnbufferedLog(LogLevel level_ = logINFO);
