@@ -5,6 +5,8 @@
 #include <mutex>
 #include <sstream>
 
+#include "osrm_utils_export.hpp"
+
 enum LogLevel
 {
     logNONE,
@@ -42,7 +44,7 @@ class LogPolicy
     LogLevel m_level;
 };
 
-class Log
+class OSRM_UTILS_EXPORT Log
 {
   public:
     Log(LogLevel level_ = logINFO);

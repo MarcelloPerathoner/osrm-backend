@@ -224,8 +224,11 @@ add_library(SERVER      OBJECT ${ServerGlob})
 add_library(UTIL        OBJECT ${UtilGlob})
 
 set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
-# We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
-set_property(TARGET SERVER PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
+
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
+  set_property(TARGET SERVER PROPERTY INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
 
 # Additional logic for the different build types
 if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
@@ -540,6 +543,21 @@ set(OSRM_LIBRARIES osrm_store osrm_update osrm_utils osrm_contract osrm_customiz
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 
 # FIXME gendef needs the functions already exported, so it is useless for us
+
+include(GenerateExportHeader)
+generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp)
+
+include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
+
+target_sources(
+  osrm_utils
+  PUBLIC
+    FILE_SET generated_headers
+      TYPE HEADERS
+      BASE_DIRS $<TARGET_PROPERTY:osrm_utils,BINARY_DIR>
+      FILES ${CMAKE_CURRENT_BINARY_DIR}/osrm_utils_export.h
+)
+target_include_directories(osrm_utils PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
 
 function(create_def DLL OBJS)
   add_custom_command(TARGET ${DLL} POST_BUILD
