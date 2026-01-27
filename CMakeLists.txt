@@ -549,16 +549,6 @@ generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp
 
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
 
-target_sources(
-  osrm_utils
-  PUBLIC
-    FILE_SET generated_headers
-      TYPE HEADERS
-      BASE_DIRS $<TARGET_PROPERTY:osrm_utils,BINARY_DIR>
-      FILES ${CMAKE_CURRENT_BINARY_DIR}/osrm_utils_export.h
-)
-target_include_directories(osrm_utils PRIVATE ${CMAKE_CURRENT_BINARY_DIR})
-
 function(create_def DLL OBJS)
   add_custom_command(TARGET ${DLL} POST_BUILD
     WORKING_DIRECTORY $<TARGET_FILE_DIR:${DLL}>
