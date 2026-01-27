@@ -544,8 +544,10 @@ set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 function(create_def DLL OBJS)
   add_custom_command(TARGET ${DLL} POST_BUILD
     WORKING_DIRECTORY $<TARGET_FILE_DIR:${DLL}>
-    COMMAND echo "dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${OBJS}>"
+    COMMAND echo dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${OBJS}>
     COMMAND dlltool --export-all-symbols -z ${DLL}.def -l ${DLL}.lib $<TARGET_OBJECTS:${OBJS}>
+    COMMAND ls -al
+    COMMAND cat ${DLL}.def || true
     VERBATIM
     COMMAND_EXPAND_LISTS
   )
