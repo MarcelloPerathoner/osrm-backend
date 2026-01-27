@@ -200,7 +200,7 @@ configure_file(
   ${CMAKE_CURRENT_BINARY_DIR}/include/util/version.hpp
 )
 file(GLOB UtilGlob        src/util/*.cpp src/util/*/*.cpp)
-file(GLOB ExtractorGlob   src/extractor/*.cpp src/extractor/*/*.cpp)
+file(GLOB ExtractorGlob   src/extractor/*.cpp src/extractor/*/*.cpp src/osrm/extractor.cpp)
 file(GLOB GuidanceGlob    src/guidance/*.cpp src/extractor/intersection/*.cpp)
 file(GLOB PartitionerGlob src/partitioner/*.cpp src/osrm/partitioner.cpp)
 file(GLOB CustomizerGlob  src/customize/*.cpp  src/osrm/customizer.cpp)
@@ -508,13 +508,11 @@ set(ENGINE_LIBRARIES
 add_library(osrm_utils)
 add_library(osrm_store)
 
-target_link_libraries(osrm_utils     UTIL MICROTAR ${UTIL_LIBRARIES})
-target_link_libraries(osrm_store     STORAGE UPDATER osrm_utils)
+target_link_libraries(osrm_utils UTIL MICROTAR ${UTIL_LIBRARIES})
+target_link_libraries(osrm_store STORAGE UPDATER osrm_utils)
 
-add_library(osrm_extract   src/osrm/extractor.cpp   )
 add_library(osrm_routed    src/osrm/osrm.cpp        )
 
-target_link_libraries(osrm_extract   EXTRACTOR ${EXTRACTOR_LIBRARIES} osrm_utils )
 target_link_libraries(osrm_routed    ENGINE ${ENGINE_LIBRARIES} osrm_store )
 
 # Binaries
@@ -525,12 +523,12 @@ add_executable(osrm-extract   src/tools/extract.cpp)
 add_executable(osrm-partition src/tools/partition.cpp)
 add_executable(osrm-routed    src/tools/routed.cpp)
 
-target_link_libraries(osrm-contract  CONTRACTOR osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-customize CUSTOMIZER osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-datastore osrm_store     ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-extract   osrm_extract   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-contract  CONTRACTOR  osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-customize CUSTOMIZER  osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-datastore osrm_store             ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-extract   EXTRACTOR   osrm_utils ${EXTRACTOR_LIBRARIES} ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm-partition PARTITIONER osrm_utils ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-routed    osrm_routed    ${BOOST_PROGRAM_OPTIONS_LIBRARIES} SERVER)
+target_link_libraries(osrm-routed    osrm_routed SERVER     ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 
@@ -538,6 +536,7 @@ set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 include(GenerateExportHeader)
 generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp)
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
+target_compile_definitions(osrm_utils PRIVATE osrm_utils_EXPORTS)
 # end try
 
 add_executable(osrm-components src/tools/components.cpp $<TARGET_OBJECTS:MICROTAR> $<TARGET_OBJECTS:UTIL>)
@@ -596,7 +595,6 @@ install(TARGETS osrm-datastore DESTINATION bin)
 install(TARGETS osrm-routed DESTINATION bin)
 
 install(TARGETS osrm_routed DESTINATION lib)
-install(TARGETS osrm_extract DESTINATION lib)
 install(TARGETS osrm_store DESTINATION lib)
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default
