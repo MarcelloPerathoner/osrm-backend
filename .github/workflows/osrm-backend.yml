@@ -49,11 +49,11 @@ jobs:
     strategy:
       matrix:
         include:
-          - name: clang-21-release
-            node: 24
-            runs-on: ubuntu-24.04
-            CCOMPILER: clang-21
-            CXXCOMPILER: clang++-21
+          # - name: clang-21-release
+          #   node: 24
+          #   runs-on: ubuntu-26.04
+          #   CCOMPILER: clang-21
+          #   CXXCOMPILER: clang++-21
 
           - name: clang-20-release
             node: 24
@@ -120,11 +120,11 @@ jobs:
             CCOMPILER: clang-16
             CXXCOMPILER: clang++-16
 
-          - name: gcc-15-release
-            node: 24
-            runs-on: ubuntu-24.04
-            CCOMPILER: gcc-15
-            CXXCOMPILER: g++-15
+          # - name: gcc-15-release
+          #   node: 24
+          #   runs-on: ubuntu-26.04
+          #   CCOMPILER: gcc-15
+          #   CXXCOMPILER: g++-15
 
           - name: gcc-14-release
             node: 24
