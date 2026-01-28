@@ -23,34 +23,31 @@ class XORFastHash
   public:
     XORFastHash()
     {
-        union
-        {
-            std::uint64_t u64;
-            std::uint16_t u16[4];
-        } tmp;
-
         std::mt19937_64 generator(69); // impl. defined but deterministic default seed
 
         for (size_t i = 0; i < 0x100; ++i)
         {
-            tmp.u64 = generator();
-            tab[0][i] = tmp.u16[0];
-            tab[1][i] = tmp.u16[1];
-            tab[2][i] = tmp.u16[2];
-            tab[3][i] = tmp.u16[3];
+            std::uint64_t rnd = generator();
+            tab[0][i] = rnd & 0xFFFF;
+            rnd >>= 16;
+            tab[1][i] = rnd & 0xFFFF;
+            rnd >>= 16;
+            tab[2][i] = rnd & 0xFFFF;
+            rnd >>= 16;
+            tab[3][i] = rnd & 0xFFFF;
         }
     }
 
-    inline std::uint16_t operator()(const std::uint32_t input) const
+    inline std::uint16_t operator()(std::uint32_t input) const
     {
-        union
-        {
-            std::uint32_t u32;
-            std::uint8_t u8[4];
-        } in;
-
-        in.u32 = input;
-        return tab[0][in.u8[0]] ^ tab[1][in.u8[1]] ^ tab[2][in.u8[2]] ^ tab[3][in.u8[3]];
+        std::uint16_t hash = tab[0][input & 0xFF];
+        input >>= 8;
+        hash ^= tab[1][input & 0xFF];
+        input >>= 8;
+        hash ^= tab[2][input & 0xFF];
+        input >>= 8;
+        hash ^= tab[3][input & 0xFF];
+        return hash;
     }
 };
 } // namespace osrm::util
