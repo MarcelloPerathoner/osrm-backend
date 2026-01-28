@@ -1,12 +1,13 @@
 #include "contractor/graph_contractor.hpp"
-#include <contractor/contract_excludable_graph.hpp>
 
 #include "../common/range_tools.hpp"
+#include "contractor/contractor_graph.hpp"
 #include "helper.hpp"
 
 #include <boost/test/unit_test.hpp>
 
 #include <tbb/global_control.h>
+#include <tuple>
 
 using namespace osrm;
 using namespace osrm::contractor;
@@ -28,17 +29,14 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
      *  v          v
      * (3) <--2-- (2)
      */
-    const std::vector edges = {TestEdge{1, 0, 1}, // start, target, weight
-                               TestEdge{0, 3, 1},
-                               TestEdge{1, 2, 2},
-                               TestEdge{2, 3, 2}};
+    const ContractorGraph g = makeGraph({TestEdge{1, 0, 1}, // start, target, weight
+                                         TestEdge{0, 3, 1},
+                                         TestEdge{1, 2, 2},
+                                         TestEdge{2, 3, 2}});
     QueryGraph query_graph;
-    std::vector<std::vector<bool>> edge_filters;
 
-    std::tie(query_graph, edge_filters) =
-        contractExcludableGraph(makeGraph(edges),
-                                {{1}, {1}, {1}, {1}},
-                                {{true, true, true, true}, {false, true, true, true}});
+    std::tie(query_graph, std::ignore) = contractExcludableGraph(
+        g, {{1}, {1}, {1}, {1}}, {{true, true, true, true}, {false, true, true, true}});
     REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
     BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
     BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
@@ -64,10 +62,8 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
      *  v          v
      * (3) <--2-- (2)
      */
-    std::tie(query_graph, edge_filters) =
-        contractExcludableGraph(makeGraph(edges),
-                                {{1}, {1}, {1}, {1}},
-                                {{true, true, true, true}, {true, true, true, true}});
+    std::tie(query_graph, std::ignore) = contractExcludableGraph(
+        g, {{1}, {1}, {1}, {1}}, {{true, true, true, true}, {true, true, true, true}});
 
     REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
     BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
