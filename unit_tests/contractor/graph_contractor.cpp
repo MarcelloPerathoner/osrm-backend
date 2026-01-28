@@ -17,7 +17,6 @@ BOOST_AUTO_TEST_SUITE(graph_contractor)
 
 BOOST_AUTO_TEST_CASE(contract_exclude_graph)
 {
-    tbb::global_control scheduler(tbb::global_control::max_allowed_parallelism, 1);
     const ContractorGraph g = makeGraph({TestEdge{1, 0, 1}, // start, target, weight
                                          TestEdge{0, 3, 1},
                                          TestEdge{1, 2, 2},
@@ -87,7 +86,6 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
 
 BOOST_AUTO_TEST_CASE(contract_graph)
 {
-    tbb::global_control scheduler(tbb::global_control::max_allowed_parallelism, 1);
     /*
      *                 <--1--<
      * (0) >--3--> (1) >--3--> (3)

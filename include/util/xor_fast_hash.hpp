@@ -32,34 +32,34 @@ namespace osrm::util
     10: ret
 
 */
-template <std::size_t MaxNumElements = (1u << 16u)> class XORFastHash
-{
-    static_assert(MaxNumElements <= (1u << 16u), "only 65536 elements indexable with uint16_t");
 
-    std::array<std::uint16_t, MaxNumElements> table1;
-    std::array<std::uint16_t, MaxNumElements> table2;
+constexpr size_t SIZE = 0x10000;
+class XORFastHash
+{
+    std::array<std::uint32_t, SIZE> table;
 
   public:
     XORFastHash()
     {
-        std::mt19937 generator(1); // impl. defined but deterministic default seed
+        std::mt19937 generator(69); // impl. defined but deterministic default seed
 
-        std::iota(begin(table1), end(table1), std::uint16_t{0});
-        std::shuffle(begin(table1), end(table1), generator);
-
-        std::iota(begin(table2), end(table2), std::uint16_t{0});
-        std::shuffle(begin(table2), end(table2), generator);
+        for (size_t i = 0; i < SIZE; ++i)
+        {
+            table[i] = generator();
+        }
     }
 
     inline std::uint16_t operator()(const std::uint32_t originalValue) const
     {
-        std::uint16_t lsb = originalValue & 0xffffu;
-        std::uint16_t msb = originalValue >> 16u;
+        union
+        {
+            std::uint32_t u32;
+            std::uint16_t u16[2];
+        } u;
 
-        BOOST_ASSERT(lsb < table1.size());
-        BOOST_ASSERT(msb < table2.size());
+        u.u32 = originalValue;
 
-        return table1[lsb] ^ table2[msb];
+        return table[u.u16[0]] ^ table[u.u16[1]];
     }
 };
 } // namespace osrm::util
