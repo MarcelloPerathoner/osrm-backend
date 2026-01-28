@@ -502,11 +502,6 @@ jobs:
         run: |
           make -C ${TEST_DIR}/data
 
-          if [[ "${RUNNER_OS}" == "Windows" ]]; then
-            # Windows flunks a test
-            set +o errexit
-          fi
-
           cd ${OSRM_UNIT_TESTS_BUILD_DIR}
           for i in *-tests${EXECUTABLE_SUFFIX}; do
             echo "::group::Running $i"

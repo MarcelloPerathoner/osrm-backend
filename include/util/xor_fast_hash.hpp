@@ -3,10 +3,6 @@
 
 #include <boost/assert.hpp>
 
-#include <algorithm>
-#include <array>
-#include <iterator>
-#include <numeric>
 #include <random>
 
 #include <cstdint>
@@ -14,52 +10,47 @@
 namespace osrm::util
 {
 
-/*
-    This is an implementation of Tabulation hashing, which has suprising properties like
-   universality.
-    The space requirement is 2*2^16 = 256 kb of memory, which fits into L2 cache.
-    Evaluation boils down to 10 or less assembly instruction on any recent X86 CPU:
+/**
+ * Tabulation Hashing, see:
+ * https://opendatastructures.org/ods-cpp/5_2_Linear_Probing.html#SECTION00923000000000000000
+ */
 
-    1: movq    table2(%rip), %rdx
-    2: movl    %edi, %eax
-    3: movzwl  %di, %edi
-    4: shrl    $16, %eax
-    5: movzwl  %ax, %eax
-    6: movzbl  (%rdx,%rax), %eax
-    7: movq    table1(%rip), %rdx
-    8: xorb    (%rdx,%rdi), %al
-    9: movzbl  %al, %eax
-    10: ret
-
-*/
-
-constexpr size_t SIZE = 0x10000;
 class XORFastHash
 {
-    std::array<std::uint32_t, SIZE> table;
+    // 2KB which should comfortably fit into L1 cache
+    std::uint16_t tab[4][0x100];
 
   public:
     XORFastHash()
     {
-        std::mt19937 generator(69); // impl. defined but deterministic default seed
-
-        for (size_t i = 0; i < SIZE; ++i)
+        union
         {
-            table[i] = generator();
+            std::uint64_t u64;
+            std::uint16_t u16[4];
+        } tmp;
+
+        std::mt19937_64 generator(69); // impl. defined but deterministic default seed
+
+        for (size_t i = 0; i < 0x100; ++i)
+        {
+            tmp.u64 = generator();
+            tab[0][i] = tmp.u16[0];
+            tab[1][i] = tmp.u16[1];
+            tab[2][i] = tmp.u16[2];
+            tab[3][i] = tmp.u16[3];
         }
     }
 
-    inline std::uint16_t operator()(const std::uint32_t originalValue) const
+    inline std::uint16_t operator()(const std::uint32_t input) const
     {
         union
         {
             std::uint32_t u32;
-            std::uint16_t u16[2];
-        } u;
+            std::uint8_t u8[4];
+        } in;
 
-        u.u32 = originalValue;
-
-        return table[u.u16[0]] ^ table[u.u16[1]];
+        in.u32 = input;
+        return tab[0][in.u8[0]] ^ tab[1][in.u8[1]] ^ tab[2][in.u8[2]] ^ tab[3][in.u8[3]];
     }
 };
 } // namespace osrm::util
