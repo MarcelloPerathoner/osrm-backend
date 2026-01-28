@@ -60,16 +60,6 @@ if(ENABLE_SCCACHE)
   set(USE_CCACHE "sccache")
 endif()
 
-if(ENABLE_CLANG_TIDY)
-  find_program(CLANG_TIDY_COMMAND NAMES clang-tidy)
-  if(NOT CLANG_TIDY_COMMAND)
-    message(FATAL_ERROR "ENABLE_CLANG_TIDY is ON but clang-tidy is not found!")
-  else()
-    message(STATUS "Found clang-tidy at ${CLANG_TIDY_COMMAND}")
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};--warnings-as-errors=*;--header-filter=.*")
-  endif()
-endif()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(OSRM C CXX)
@@ -117,6 +107,16 @@ if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES 
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION "ON")
   else()
     message(FATAL_ERROR "IPO / LTO not supported: <${error}>")
+  endif()
+endif()
+
+if(ENABLE_CLANG_TIDY)
+  find_program(CLANG_TIDY_COMMAND NAMES clang-tidy)
+  if(NOT CLANG_TIDY_COMMAND)
+    message(FATAL_ERROR "ENABLE_CLANG_TIDY is ON but clang-tidy is not found!")
+  else()
+    message(STATUS "Found clang-tidy at ${CLANG_TIDY_COMMAND}")
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};--warnings-as-errors=*;--header-filter=.*")
   endif()
 endif()
 
@@ -172,7 +172,9 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
-function(post_build_dir var)
+# disclose to the afterworld the directory the built artifacts are in
+# usage: disclose_build_dir("OSRM_BUILD_DIR")
+function(disclose_build_dir var)
   if(MSVC)
     cmake_path(APPEND dir "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_BUILD_TYPE}")
   else()
@@ -199,28 +201,28 @@ configure_file(
   ${CMAKE_CURRENT_SOURCE_DIR}/include/util/version.hpp.in
   ${CMAKE_CURRENT_BINARY_DIR}/include/util/version.hpp
 )
-file(GLOB UtilGlob        src/util/*.cpp src/util/*/*.cpp)
+file(GLOB ContractorGlob  src/contractor/*.cpp src/osrm/contractor.cpp)
+file(GLOB CustomizerGlob  src/customize/*.cpp  src/osrm/customizer.cpp)
+file(GLOB EngineGlob      src/engine/*.cpp src/engine/**/*.cpp src/osrm/osrm.cpp)
 file(GLOB ExtractorGlob   src/extractor/*.cpp src/extractor/*/*.cpp src/osrm/extractor.cpp)
 file(GLOB GuidanceGlob    src/guidance/*.cpp src/extractor/intersection/*.cpp)
 file(GLOB PartitionerGlob src/partitioner/*.cpp src/osrm/partitioner.cpp)
-file(GLOB CustomizerGlob  src/customize/*.cpp  src/osrm/customizer.cpp)
-file(GLOB ContractorGlob  src/contractor/*.cpp src/osrm/contractor.cpp)
-file(GLOB UpdaterGlob     src/updater/*.cpp)
-file(GLOB StorageGlob     src/storage/*.cpp)
 file(GLOB ServerGlob      src/server/*.cpp src/server/**/*.cpp)
-file(GLOB EngineGlob      src/engine/*.cpp src/engine/**/*.cpp src/osrm/osrm.cpp)
+file(GLOB StorageGlob     src/storage/*.cpp)
+file(GLOB UpdaterGlob     src/updater/*.cpp)
+file(GLOB UtilGlob        src/util/*.cpp src/util/*/*.cpp)
 
 # OBJECT libraries are just collections of *o files
 # For historical reason the guidance and extract code are separate.
 # They are so entangled though (circular dependencies) that separate libraries are not feasible.
+add_library(CONTRACTOR  OBJECT ${ContractorGlob})
+add_library(CUSTOMIZER  OBJECT ${CustomizerGlob})
+add_library(ENGINE      OBJECT ${EngineGlob})
 add_library(EXTRACTOR   OBJECT ${ExtractorGlob} ${GuidanceGlob})
 add_library(PARTITIONER OBJECT ${PartitionerGlob})
-add_library(CUSTOMIZER  OBJECT ${CustomizerGlob})
-add_library(CONTRACTOR  OBJECT ${ContractorGlob})
-add_library(UPDATER     OBJECT ${UpdaterGlob})
-add_library(STORAGE     OBJECT ${StorageGlob})
-add_library(ENGINE      OBJECT ${EngineGlob})
 add_library(SERVER      OBJECT ${ServerGlob})
+add_library(STORAGE     OBJECT ${StorageGlob})
+add_library(UPDATER     OBJECT ${UpdaterGlob})
 add_library(UTIL        OBJECT ${UtilGlob})
 
 set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
@@ -454,7 +456,7 @@ add_dependency_includes(${LUA_INCLUDE_DIR})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/third_party/libosmium/cmake")
 if(NOT OSMIUM_INCLUDE_DIR)
-  # Osmium is too dumb to look for Osmium in the parent dir of FindOsmium.cmake ...
+  # FindOsmium is too dumb to look for Osmium in its very own parent dir ...
   set(OSMIUM_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/third_party/libosmium/include")
 endif()
 find_package(Osmium REQUIRED COMPONENTS io)
@@ -519,7 +521,7 @@ add_library(osrm_utils)
 add_library(osrm_routed)  # also used by nodejs and subprojects
 
 target_link_libraries(osrm_utils  UTIL STORAGE UPDATER MICROTAR ${UTIL_LIBRARIES})
-target_link_libraries(osrm_routed ENGINE SERVER osrm_utils ${ENGINE_LIBRARIES})
+target_link_libraries(osrm_routed ENGINE SERVER ${ENGINE_LIBRARIES})
 
 # Binaries
 add_executable(osrm-components   src/tools/components.cpp)
@@ -538,7 +540,7 @@ target_link_libraries(osrm-datastore    osrm_utils               ${BOOST_PROGRAM
 target_link_libraries(osrm-extract      osrm_utils EXTRACTOR     ${BOOST_PROGRAM_OPTIONS_LIBRARIES} ${EXTRACTOR_LIBRARIES})
 target_link_libraries(osrm-io-benchmark osrm_utils)
 target_link_libraries(osrm-partition    osrm_utils PARTITIONER   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-routed       osrm_routed              ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-routed       osrm_utils osrm_routed   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 
 # try to build shared libs on windows
 include(GenerateExportHeader)
@@ -618,7 +620,7 @@ if(BUILD_AS_SUBPROJECT)
   set(LibOSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}" PARENT_SCOPE)
   set(LibOSRM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
   set(LibOSRM_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PARENT_SCOPE)
-  set(LibOSRM_LIBRARIES "osrm_routed" PARENT_SCOPE)
+  set(LibOSRM_LIBRARIES "osrm_routed;osrm_utils" PARENT_SCOPE)
   set(LibOSRM_DEPENDENT_LIBRARIES "${ENGINE_LIBRARIES}" PARENT_SCOPE)
   set(LibOSRM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            "${CMAKE_CURRENT_SOURCE_DIR}/include/osrm"
@@ -711,7 +713,7 @@ endforeach()
 add_library(check-headers STATIC EXCLUDE_FROM_ALL ${sources})
 set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_headers_dir})
 
-post_build_dir("OSRM_BUILD_DIR")
+disclose_build_dir("OSRM_BUILD_DIR")
 
 message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")

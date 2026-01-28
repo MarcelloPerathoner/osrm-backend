@@ -138,4 +138,4 @@ add_custom_target(tests
   add_dependencies(tests library-tests)
 #endif()
 
-post_build_dir("OSRM_UNIT_TESTS_BUILD_DIR")
+disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR")

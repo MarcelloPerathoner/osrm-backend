@@ -31,7 +31,7 @@ string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 
 target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
 
-target_link_libraries(node_osrm osrm_routed)
+target_link_libraries(node_osrm osrm_utils osrm_routed)
 
 # node_osrm artifacts in ${BINDING_DIR} to depend targets on
 set(ARTIFACTS "")
@@ -76,4 +76,4 @@ list(APPEND ARTIFACTS "${BINDING_DIR}/node_osrm.node")
 message(STATUS "node_osrm artifacts will be copied to: ${BINDING_DIR}")
 add_custom_target(copy_artifacts ALL DEPENDS ${ARTIFACTS})
 
-post_build_dir("OSRM_NODEJS_BUILD_DIR")
+disclose_build_dir("OSRM_NODEJS_BUILD_DIR")

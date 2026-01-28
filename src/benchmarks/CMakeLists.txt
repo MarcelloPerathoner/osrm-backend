@@ -26,4 +26,4 @@ add_custom_target(benchmarks
     json-render-bench
     alias-bench)
 
-post_build_dir("OSRM_BENCHMARKS_BUILD_DIR")
+disclose_build_dir("OSRM_BENCHMARKS_BUILD_DIR")
