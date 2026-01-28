@@ -18,37 +18,10 @@ BOOST_AUTO_TEST_SUITE(graph_contractor)
 BOOST_AUTO_TEST_CASE(contract_exclude_graph)
 {
     tbb::global_control scheduler(tbb::global_control::max_allowed_parallelism, 1);
-    /* Edge 0 is labeled with toll,
-     * no edge will be contracted
-     *
-     * toll
-     * (0) <--1-- (1)
-     *  |          |
-     *  1          2 (== weight)
-     *  |          |
-     *  v          v
-     * (3) <--2-- (2)
-     */
     const ContractorGraph g = makeGraph({TestEdge{1, 0, 1}, // start, target, weight
                                          TestEdge{0, 3, 1},
                                          TestEdge{1, 2, 2},
                                          TestEdge{2, 3, 2}});
-
-    auto [query_graph, ignore] = contractExcludableGraph(
-        g, {{1}, {1}, {1}, {1}}, {{true, true, true, true}, {false, true, true, true}});
-
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
-    BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 2);
-    BOOST_CHECK(query_graph.FindEdge(1, 0) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(1, 2) != SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 0);
-    BOOST_CHECK(query_graph.FindEdge(2, 1) == SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(2, 3) == SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 2);
-    BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(3, 2) != SPECIAL_EDGEID);
 
     /* All edges are normal edges,
      * edge 2 will be contracted
@@ -63,21 +36,53 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
      * (3) <--2-- (2)
      */
 
-    std::tie(query_graph, ignore) = contractExcludableGraph(
-        g, {{1}, {1}, {1}, {1}}, {{true, true, true, true}, {true, true, true, true}});
+    {
+        auto [query_graph, ignore] = contractExcludableGraph(
+            g, {{1}, {1}, {1}, {1}}, {{true, true, true, true}, {true, true, true, true}});
 
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
-    BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 1);
-    BOOST_CHECK(query_graph.FindEdge(1, 0) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(1, 2) == SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 2);
-    BOOST_CHECK(query_graph.FindEdge(2, 1) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(2, 3) != SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 1);
-    BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph.FindEdge(3, 2) == SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
+        BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 1);
+        BOOST_CHECK(query_graph.FindEdge(1, 0) != SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(1, 2) == SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 2);
+        BOOST_CHECK(query_graph.FindEdge(2, 1) != SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(2, 3) != SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 1);
+        BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(3, 2) == SPECIAL_EDGEID);
+    }
+
+    /* Edge 0 is labeled with toll,
+     * no edge will be contracted
+     *
+     * toll
+     * (0) <--1-- (1)
+     *  |          |
+     *  1          2 (== weight)
+     *  |          |
+     *  v          v
+     * (3) <--2-- (2)
+     */
+
+    {
+        auto [query_graph, ignore] = contractExcludableGraph(
+            g, {{1}, {1}, {1}, {1}}, {{true, true, true, true}, {false, true, true, true}});
+
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
+        BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 2);
+        BOOST_CHECK(query_graph.FindEdge(1, 0) != SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(1, 2) != SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 0);
+        BOOST_CHECK(query_graph.FindEdge(2, 1) == SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(2, 3) == SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 2);
+        BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(3, 2) != SPECIAL_EDGEID);
+    }
 }
 
 BOOST_AUTO_TEST_CASE(contract_graph)
