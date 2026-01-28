@@ -79,7 +79,7 @@ endmacro ()
 
 if(MSVC)
   # Set warning level 3 (default level with reasonable warnings)
-  msvc_warning_level(2)
+  msvc_warning_level(3)
   # set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
 else()
   add_warning(all)
