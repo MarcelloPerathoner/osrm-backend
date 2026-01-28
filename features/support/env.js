@@ -101,7 +101,7 @@ class Env {
     for (const i of 'routed'.split()) {
       this.requiredBinaries.push(path.join(wp.buildPath, `osrm-${i}${this.EXE}`));
     }
-    for (const i of ['_store', '_utils']) {
+    for (const i of ['_routed', '_utils']) {
       const lib = path.join(wp.buildPath, util.format(this.LIB, `osrm${i}`));
       this.libraries.push(lib);
     }

@@ -60,8 +60,8 @@ void test_route_same_coordinates_fixture(bool use_json_only_api)
 
     const auto location = json::Array{{{7.437070}, {43.749248}}};
 
-    // object creation in two phases because MSVC went out of heap space trying to grok
-    // this in one peace
+    // object creation in two phases because MSVC goes out of heap space when trying to
+    // grok this in one piece
     const auto steps = json::Array{
         {{json::Object{{{"duration", 0.},
                         {"distance", 0.},

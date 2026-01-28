@@ -74,17 +74,15 @@ CMakeUserPresets.json
 
 # Compiled Binary Files #
 ####################################
-/osrm-extract
-/osrm-io-benchmark
-/osrm-components
-/osrm-routed
-/osrm-datastore
-/osrm-prepare
-/osrm-unlock-all
-/osrm-cli
-/osrm-check-hsgr
-/osrm-springclean
-/nohup.out
+osrm-components
+osrm-contract
+osrm-customize
+osrm-datastore
+osrm-extract
+osrm-io-benchmark
+osrm-partition
+osrm-routed
+nohup.out
 
 # Sandbox folder #
 ###################

@@ -237,6 +237,16 @@ if(CMAKE_BUILD_TYPE MATCHES Debug OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
   set(ENABLE_DEBUG_LOGGING ON)
 endif()
 
+if(ENABLE_ASSERTIONS)
+  message(STATUS "Enabling assertions")
+  add_definitions(-DBOOST_ENABLE_ASSERT_HANDLER)
+endif()
+
+if(ENABLE_DEBUG_LOGGING)
+  message(STATUS "Enabling debug logging")
+  add_definitions(-DENABLE_DEBUG_LOGGING)
+endif()
+
 if(NOT MSVC)
   set(CMAKE_CXX_FLAGS_RELWITHDEBINFO "${CMAKE_C_FLAGS_RELWITHDEBINFO} -fno-inline -fno-omit-frame-pointer")
   set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fno-inline -fno-omit-frame-pointer")
@@ -506,59 +516,48 @@ set(ENGINE_LIBRARIES
 
 # Libraries
 add_library(osrm_utils)
-add_library(osrm_store)
+add_library(osrm_routed)  # also used by nodejs and subprojects
 
-target_link_libraries(osrm_utils UTIL MICROTAR ${UTIL_LIBRARIES})
-target_link_libraries(osrm_store STORAGE UPDATER osrm_utils)
+target_link_libraries(osrm_utils  UTIL STORAGE UPDATER MICROTAR ${UTIL_LIBRARIES})
+target_link_libraries(osrm_routed ENGINE SERVER osrm_utils ${ENGINE_LIBRARIES})
 
 # Binaries
-add_executable(osrm-contract  src/tools/contract.cpp)
-add_executable(osrm-customize src/tools/customize.cpp)
-add_executable(osrm-datastore src/tools/store.cpp)
-add_executable(osrm-extract   src/tools/extract.cpp)
-add_executable(osrm-partition src/tools/partition.cpp)
-add_executable(osrm-routed    src/tools/routed.cpp)
+add_executable(osrm-components   src/tools/components.cpp)
+add_executable(osrm-contract     src/tools/contract.cpp)
+add_executable(osrm-customize    src/tools/customize.cpp)
+add_executable(osrm-datastore    src/tools/store.cpp)
+add_executable(osrm-extract      src/tools/extract.cpp)
+add_executable(osrm-io-benchmark src/tools/io-benchmark.cpp)
+add_executable(osrm-partition    src/tools/partition.cpp)
+add_executable(osrm-routed       src/tools/routed.cpp)
 
-target_link_libraries(osrm-contract  CONTRACTOR    osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-customize CUSTOMIZER    osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-datastore               osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-extract   EXTRACTOR     osrm_utils ${BOOST_PROGRAM_OPTIONS_LIBRARIES} ${EXTRACTOR_LIBRARIES})
-target_link_libraries(osrm-partition PARTITIONER   osrm_utils ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-routed    ENGINE SERVER osrm_store ${BOOST_PROGRAM_OPTIONS_LIBRARIES} ${ENGINE_LIBRARIES})
+target_link_libraries(osrm-components   osrm_utils)
+target_link_libraries(osrm-contract     osrm_utils CONTRACTOR    ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-customize    osrm_utils CUSTOMIZER    ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-datastore    osrm_utils               ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-extract      osrm_utils EXTRACTOR     ${BOOST_PROGRAM_OPTIONS_LIBRARIES} ${EXTRACTOR_LIBRARIES})
+target_link_libraries(osrm-io-benchmark osrm_utils)
+target_link_libraries(osrm-partition    osrm_utils PARTITIONER   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-routed       osrm_routed              ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 
 # try to build shared libs on windows
 include(GenerateExportHeader)
+include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
 generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp)
 target_compile_definitions(UTIL PRIVATE osrm_utils_EXPORTS)
-include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
 # end try
-
-add_executable(osrm-components src/tools/components.cpp $<TARGET_OBJECTS:MICROTAR> $<TARGET_OBJECTS:UTIL>)
-target_link_libraries(osrm-components ${TBB_LIBRARIES} ${BOOST_BASE_LIBRARIES} ${UTIL_LIBRARIES})
-install(TARGETS osrm-components DESTINATION bin)
-
-add_executable(osrm-io-benchmark src/tools/io-benchmark.cpp $<TARGET_OBJECTS:UTIL>)
-target_link_libraries(osrm-io-benchmark ${BOOST_BASE_LIBRARIES} ${TBB_LIBRARIES})
-install(TARGETS osrm-io-benchmark DESTINATION bin)
-
-if(ENABLE_ASSERTIONS)
-  message(STATUS "Enabling assertions")
-  add_definitions(-DBOOST_ENABLE_ASSERT_HANDLER)
-endif()
-
-if(ENABLE_DEBUG_LOGGING)
-  message(STATUS "Enabling debug logging")
-  add_definitions(-DENABLE_DEBUG_LOGGING)
-endif()
 
 # Add RPATH info to executables so that when they are run after being installed
 # (i.e., from /usr/local/bin/) the linker can find library dependencies. For
-# more info see http://www.cmake.org/Wiki/CMake_RPATH_handling
-set_property(TARGET osrm-extract   PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-partition PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-contract  PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-datastore PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-routed    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# more info see https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
+set_property(TARGET osrm-components   PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-contract     PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-customize    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-datastore    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-extract      PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-io-benchmark PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-partition    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+set_property(TARGET osrm-routed       PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 file(GLOB FlatbuffersGlob third_party/flatbuffers/include/flatbuffers/*.h)
 file(GLOB LibraryGlob include/osrm/*.hpp)
@@ -581,14 +580,17 @@ install(FILES ${ParametersGlob} DESTINATION include/osrm/engine/api)
 install(FILES ${ApiHeader} DESTINATION include/osrm/engine/api)
 install(FILES ${FlatbuffersGlob} DESTINATION include/flatbuffers)
 
-install(TARGETS osrm-extract DESTINATION bin)
-install(TARGETS osrm-partition DESTINATION bin)
-install(TARGETS osrm-customize DESTINATION bin)
+install(TARGETS osrm-components DESTINATION bin)
 install(TARGETS osrm-contract DESTINATION bin)
+install(TARGETS osrm-customize DESTINATION bin)
 install(TARGETS osrm-datastore DESTINATION bin)
+install(TARGETS osrm-extract DESTINATION bin)
+install(TARGETS osrm-io-benchmark DESTINATION bin)
+install(TARGETS osrm-partition DESTINATION bin)
 install(TARGETS osrm-routed DESTINATION bin)
 
-install(TARGETS osrm_store DESTINATION lib)
+install(TARGETS osrm_utils DESTINATION lib)
+install(TARGETS osrm_routed DESTINATION lib)
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default
 set(DefaultProfilesDir profiles)
@@ -616,7 +618,7 @@ if(BUILD_AS_SUBPROJECT)
   set(LibOSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}" PARENT_SCOPE)
   set(LibOSRM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
   set(LibOSRM_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PARENT_SCOPE)
-  set(LibOSRM_LIBRARIES "osrm" PARENT_SCOPE)
+  set(LibOSRM_LIBRARIES "osrm_routed" PARENT_SCOPE)
   set(LibOSRM_DEPENDENT_LIBRARIES "${ENGINE_LIBRARIES}" PARENT_SCOPE)
   set(LibOSRM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            "${CMAKE_CURRENT_SOURCE_DIR}/include/osrm"

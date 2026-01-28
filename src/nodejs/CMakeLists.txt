@@ -31,7 +31,7 @@ string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
 
 target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
 
-target_link_libraries(node_osrm ENGINE osrm_store ${ENGINE_LIBRARIES})
+target_link_libraries(node_osrm osrm_routed)
 
 # node_osrm artifacts in ${BINDING_DIR} to depend targets on
 set(ARTIFACTS "")
