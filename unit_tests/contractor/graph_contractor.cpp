@@ -21,24 +21,22 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
      * no edge will be contracted
      *
      * toll
-     * (0)  <--1--< (1)
-     *  v             v
-     *  |              \
-     *  1               2
-     *  |                \
-     *  > (3) <--2--< (2) <
+     * (0) <--1-- (1)
+     *  |          |
+     *  1          2 (== weight)
+     *  |          |
+     *  v          v
+     * (3) <--2-- (2)
      */
-    std::vector edges = {TestEdge{1, 0, 1},
-                         TestEdge{0, 3, 1},
-
-                         TestEdge{1, 2, 2},
-                         TestEdge{2, 3, 2}};
-    auto reference_graph = makeGraph(edges);
-
+    const std::vector edges = {TestEdge{1, 0, 1}, // start, target, weight
+                               TestEdge{0, 3, 1},
+                               TestEdge{1, 2, 2},
+                               TestEdge{2, 3, 2}};
     QueryGraph query_graph;
     std::vector<std::vector<bool>> edge_filters;
+
     std::tie(query_graph, edge_filters) =
-        contractExcludableGraph(reference_graph,
+        contractExcludableGraph(makeGraph(edges),
                                 {{1}, {1}, {1}, {1}},
                                 {{true, true, true, true}, {false, true, true, true}});
     REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
@@ -54,39 +52,35 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
     BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
     BOOST_CHECK(query_graph.FindEdge(3, 2) != SPECIAL_EDGEID);
 
-    auto reference_graph2 = makeGraph(edges);
-
     /* All edges are normal edges,
      * edge 2 will be contracted
      *
      * Deleted edge_based_edges 1 -> 2, 3 -> 2
      *
-     * (0)  <--1--< (1)
-     *  v             v
-     *  |              \
-     *  1               2
-     *  |                \
-     *  > (3) <--2--< (2) <
+     * (0) <--1-- (1)
+     *  |          |
+     *  1          2 (== weight)
+     *  |          |
+     *  v          v
+     * (3) <--2-- (2)
      */
-    QueryGraph query_graph2;
-    std::vector<std::vector<bool>> edge_filters2;
-    std::tie(query_graph2, edge_filters2) =
-        contractExcludableGraph(reference_graph2,
+    std::tie(query_graph, edge_filters) =
+        contractExcludableGraph(makeGraph(edges),
                                 {{1}, {1}, {1}, {1}},
                                 {{true, true, true, true}, {true, true, true, true}});
 
-    REQUIRE_SIZE_RANGE(query_graph2.GetAdjacentEdgeRange(0), 0);
-    BOOST_CHECK(query_graph2.FindEdge(0, 1) == SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph2.FindEdge(0, 3) == SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph2.GetAdjacentEdgeRange(1), 1);
-    BOOST_CHECK(query_graph2.FindEdge(1, 0) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph2.FindEdge(1, 2) == SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph2.GetAdjacentEdgeRange(2), 2);
-    BOOST_CHECK(query_graph2.FindEdge(2, 1) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph2.FindEdge(2, 3) != SPECIAL_EDGEID);
-    REQUIRE_SIZE_RANGE(query_graph2.GetAdjacentEdgeRange(3), 1);
-    BOOST_CHECK(query_graph2.FindEdge(3, 0) != SPECIAL_EDGEID);
-    BOOST_CHECK(query_graph2.FindEdge(3, 2) == SPECIAL_EDGEID);
+    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
+    BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
+    BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
+    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 1);
+    BOOST_CHECK(query_graph.FindEdge(1, 0) != SPECIAL_EDGEID);
+    BOOST_CHECK(query_graph.FindEdge(1, 2) == SPECIAL_EDGEID);
+    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 2);
+    BOOST_CHECK(query_graph.FindEdge(2, 1) != SPECIAL_EDGEID);
+    BOOST_CHECK(query_graph.FindEdge(2, 3) != SPECIAL_EDGEID);
+    REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 1);
+    BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
+    BOOST_CHECK(query_graph.FindEdge(3, 2) == SPECIAL_EDGEID);
 }
 
 BOOST_AUTO_TEST_CASE(contract_graph)
