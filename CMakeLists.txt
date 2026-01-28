@@ -517,11 +517,13 @@ set(ENGINE_LIBRARIES
     ${MAYBE_SOCKET_LIBRARIES})
 
 # Libraries
-add_library(osrm_utils)
-add_library(osrm_routed)  # also used by nodejs and subprojects
+add_library(osrm_utils)   # used by osrm tools
+add_library(osrm_routed)  # used by osrm-routed, node and subprojects
+
+set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 
 target_link_libraries(osrm_utils  UTIL STORAGE UPDATER MICROTAR ${UTIL_LIBRARIES})
-target_link_libraries(osrm_routed ENGINE SERVER ${ENGINE_LIBRARIES})
+target_link_libraries(osrm_routed ENGINE SERVER osrm_utils ${ENGINE_LIBRARIES})
 
 # Binaries
 add_executable(osrm-components   src/tools/components.cpp)
@@ -540,14 +542,20 @@ target_link_libraries(osrm-datastore    osrm_utils               ${BOOST_PROGRAM
 target_link_libraries(osrm-extract      osrm_utils EXTRACTOR     ${BOOST_PROGRAM_OPTIONS_LIBRARIES} ${EXTRACTOR_LIBRARIES})
 target_link_libraries(osrm-io-benchmark osrm_utils)
 target_link_libraries(osrm-partition    osrm_utils PARTITIONER   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm-routed       osrm_utils osrm_routed   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm-routed       osrm_routed              ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 
-# try to build shared libs on windows
-include(GenerateExportHeader)
-include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
-generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp)
-target_compile_definitions(UTIL PRIVATE osrm_utils_EXPORTS)
-# end try
+# to build a shared osrm_utils lib on Windows
+#
+# - insert #include "osrm_utils_export.hpp" into all UTIL headers
+# - put 'OSRM_UTILS_EXPORT' in front of *every* exported function
+#   in the UTIL source. (left as exercise)
+# - uncomment the following lines:
+#
+# include(GenerateExportHeader)
+# include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
+# generate_export_header(osrm_utils EXPORT_FILE_NAME include/osrm_utils_export.hpp)
+# target_compile_definitions(UTIL PRIVATE osrm_utils_EXPORTS)
+# end build shared libs on Windows
 
 # Add RPATH info to executables so that when they are run after being installed
 # (i.e., from /usr/local/bin/) the linker can find library dependencies. For
@@ -620,7 +628,7 @@ if(BUILD_AS_SUBPROJECT)
   set(LibOSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}" PARENT_SCOPE)
   set(LibOSRM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
   set(LibOSRM_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PARENT_SCOPE)
-  set(LibOSRM_LIBRARIES "osrm_routed;osrm_utils" PARENT_SCOPE)
+  set(LibOSRM_LIBRARIES "osrm_routed" PARENT_SCOPE)
   set(LibOSRM_DEPENDENT_LIBRARIES "${ENGINE_LIBRARIES}" PARENT_SCOPE)
   set(LibOSRM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
                            "${CMAKE_CURRENT_SOURCE_DIR}/include/osrm"

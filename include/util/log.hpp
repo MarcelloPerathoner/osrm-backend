@@ -5,8 +5,6 @@
 #include <mutex>
 #include <sstream>
 
-#include "osrm_utils_export.hpp"
-
 enum LogLevel
 {
     logNONE,
@@ -19,7 +17,7 @@ enum LogLevel
 namespace osrm::util
 {
 
-class OSRM_UTILS_EXPORT LogPolicy
+class LogPolicy
 {
   public:
     void Unmute();
@@ -44,7 +42,7 @@ class OSRM_UTILS_EXPORT LogPolicy
     LogLevel m_level;
 };
 
-class OSRM_UTILS_EXPORT Log
+class Log
 {
   public:
     Log(LogLevel level_ = logINFO);
@@ -109,7 +107,7 @@ class OSRM_UTILS_EXPORT Log
  * and the final newline is only printed when the object is destructed.
  * Useful for logging situations where you don't want to newline right away
  */
-class OSRM_UTILS_EXPORT UnbufferedLog : public Log
+class UnbufferedLog : public Log
 {
   public:
     UnbufferedLog(LogLevel level_ = logINFO);

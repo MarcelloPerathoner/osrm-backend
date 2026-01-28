@@ -205,15 +205,20 @@ jobs:
             CXXCOMPILER: clang++
             ENABLE_ASSERTIONS: ON
 
+          - name: conan-windows-2022-x64-release-node
+            node: 24
+            runs-on: windows-2022 # x64
+            USE_CCACHE: sccache
+
           - name: conan-windows-2025-x64-release-node
             node: 24
             runs-on: windows-2025 # x64
             USE_CCACHE: sccache
 
-          - name: conan-windows-2025-x64-release-shared-node
-            node: 24
-            runs-on: windows-2025 # x64
-            USE_CCACHE: sccache
+          # - name: conan-windows-2025-x64-release-shared-node
+          #   node: 24
+          #   runs-on: windows-2025 # x64
+          #   USE_CCACHE: sccache
 
     name: ${{ matrix.name }}
     continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
