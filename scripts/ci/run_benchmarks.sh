@@ -44,17 +44,22 @@ fi
 function measure_peak_ram_and_time {
     COMMAND=$1
     OUTPUT_FILE=$2
-    if [ "$(uname)" == "Darwin" ]; then
+    case $(uname) in
+    Windows)
+        $COMMAND > /dev/null 2>&1
+    ;;
+    Darwin)
         # on macOS time has different parameters, so simply run command on macOS
         $COMMAND > /dev/null 2>&1
-    else
+    ;;
+    Linux)
         OUTPUT=$(/usr/bin/time -f "%e %M" $COMMAND 2>&1 | tail -n 1)
 
         TIME=$(echo $OUTPUT | awk '{print $1}')
         PEAK_RAM_KB=$(echo $OUTPUT | awk '{print $2}')
         PEAK_RAM_MB=$(echo "scale=2; $PEAK_RAM_KB / 1024" | bc)
         echo "Time: ${TIME}s Peak RAM: ${PEAK_RAM_MB}MB" > $OUTPUT_FILE
-    fi
+    ;;
 }
 
 function run_benchmarks_for_folder {
@@ -80,9 +85,10 @@ function run_benchmarks_for_folder {
     $BENCHMARKS_FOLDER/rtree-bench "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
     pushd $TMP_FOLDER
+    ln -s $TEST_DATA_FOLDER/monaco.osm.pbf data.osm.pbf
 
     echo "Running osrm-extract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract -p $ROOT_FOLDER/profiles/car.lua $TEST_DATA_FOLDER/data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
     echo "Running osrm-partition"
     measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition data.osrm" "$RESULTS_FOLDER/osrm_partition.bench"
     echo "Running osrm-customize"

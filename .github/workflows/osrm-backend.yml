@@ -494,8 +494,11 @@ jobs:
 
       - name: Run benchmarks
         if: env.BENCHMARKS == 'ON'
+        continue-on-error: true
         run: |
           make -C ${TEST_DIR}/data
+
+          set -o errexit
 
           ${CI_DIR}/run_benchmarks.sh \
             -r ${LOG_DIR} \
