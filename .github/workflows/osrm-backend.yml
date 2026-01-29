@@ -497,7 +497,7 @@ jobs:
         run: |
           make -C ${TEST_DIR}/data
 
-          ${CI_DIR)/run_benchmarks.sh \
+          ${CI_DIR}/run_benchmarks.sh \
             -r ${LOG_DIR} \
             -o ${TEST_DIR}/data/monaco.osm.pbf \
             -g ${TEST_DIR}/data/berlin_gps_traces.csv.gz
