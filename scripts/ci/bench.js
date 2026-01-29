@@ -1,7 +1,8 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import seedrandom from 'seedrandom';
+import zlib from 'node:zlib';
 
+import seedrandom from 'seedrandom';
 
 let RNG;
 
@@ -15,7 +16,14 @@ class GPSData {
 
   _loadGPSTraces(gpsTracesFilePath) {
     const expandedPath = path.resolve(gpsTracesFilePath);
-    const data = fs.readFileSync(expandedPath, 'utf-8');
+    let data;
+
+    if (gpsTracesFilePath.endsWith('.gz')) {
+      data = zlib.gunzipSync(fs.readFileSync(expandedPath)).toString('utf-8');
+    } else {
+      data = fs.readFileSync(expandedPath, 'utf-8');
+    }
+
     const lines = data.split('\n');
     const headers = lines[0].split(',');
 
@@ -58,7 +66,6 @@ class GPSData {
 async function runOSRMMethod(osrm, method, coordinates) {
   const time = await new Promise((resolve, reject) => {
     const startTime = process.hrtime();
-    console.log(coordinates);
     osrm[method]({coordinates}, (err, _result) => {
       if (err) {
         if (['NoSegment', 'NoMatch', 'NoRoute', 'NoTrips'].includes(err.message)) {
