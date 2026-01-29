@@ -50,32 +50,27 @@ jobs:
       matrix:
         include:
           # - name: clang-21-release
-          #   node: 24
           #   runs-on: ubuntu-26.04
           #   CCOMPILER: clang-21
           #   CXXCOMPILER: clang++-21
 
           - name: clang-20-release
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: clang-20
             CXXCOMPILER: clang++-20
 
           - name: clang-19-release
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
 
           - name: clang-19-release-shared
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
 
           - name: clang-19-debug-asan
             continue-on-error: true
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
@@ -84,7 +79,6 @@ jobs:
 
           - name: clang-19-debug-ubsan
             continue-on-error: true
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
@@ -93,12 +87,12 @@ jobs:
 
           - name: clang-19-debug-tidy
             continue-on-error: true
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
             ENABLE_CLANG_TIDY: ON
             UNIT_TESTS: OFF
+            BENCHMARKS: OFF
             CUCUMBER_TESTS: OFF
             ENABLE_LTO: OFF
 
@@ -121,13 +115,11 @@ jobs:
             CXXCOMPILER: clang++-16
 
           # - name: gcc-15-release
-          #   node: 24
           #   runs-on: ubuntu-26.04
           #   CCOMPILER: gcc-15
           #   CXXCOMPILER: g++-15
 
           - name: gcc-14-release
-            node: 24
             runs-on: ubuntu-24.04
             CCOMPILER: gcc-14
             CXXCOMPILER: g++-14
@@ -153,82 +145,65 @@ jobs:
             ENABLE_LTO: OFF
 
           - name: conan-linux-release-node
-            node: 22
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
 
           - name: conan-linux-release-shared-node
-            node: 22
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
 
           - name: conan-linux-debug-node
-            node: 22
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
+
+          - name: conan-macos-26-arm64-release-node
+            runs-on: macos-26 # arm64
+            CCOMPILER: clang
+            CXXCOMPILER: clang++
+
+          - name: conan-macos-15-arm64-release-node
+            runs-on: macos-15 # arm64
+            CCOMPILER: clang
+            CXXCOMPILER: clang++
+
+          - name: conan-macos-15-x64-release-node
+            runs-on: macos-15-intel # x86_64
+            CCOMPILER: clang
+            CXXCOMPILER: clang++
+
+          - name: conan-macos-15-arm64-release-shared-node
+            runs-on: macos-15 # arm64
+            CCOMPILER: clang
+            CXXCOMPILER: clang++
 
           - name: conan-macos-14-arm64-release-node
             node: 22
             runs-on: macos-14 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
-            ENABLE_ASSERTIONS: ON
-
-          - name: conan-macos-15-x64-release-node
-            node: 22
-            runs-on: macos-15-intel # x86_64
-            CCOMPILER: clang
-            CXXCOMPILER: clang++
-            ENABLE_ASSERTIONS: ON
-
-          - name: conan-macos-15-arm64-release-node
-            node: 22
-            runs-on: macos-15 # arm64
-            CCOMPILER: clang
-            CXXCOMPILER: clang++
-            ENABLE_ASSERTIONS: ON
-
-          - name: conan-macos-15-arm64-release-shared-node
-            node: 22
-            runs-on: macos-15 # arm64
-            CCOMPILER: clang
-            CXXCOMPILER: clang++
-            ENABLE_ASSERTIONS: ON
-
-          - name: conan-macos-26-arm64-release-node
-            node: 24
-            runs-on: macos-26 # arm64
-            CCOMPILER: clang
-            CXXCOMPILER: clang++
-            ENABLE_ASSERTIONS: ON
-
-          - name: conan-windows-2022-x64-release-node
-            node: 24
-            runs-on: windows-2022 # x64
-            USE_CCACHE: sccache
 
           - name: conan-windows-2025-x64-release-node
-            node: 24
             runs-on: windows-2025 # x64
             USE_CCACHE: sccache
 
-          # - name: conan-windows-2025-x64-release-shared-node
-          #   node: 24
-          #   runs-on: windows-2025 # x64
-          #   USE_CCACHE: sccache
+          - name: conan-windows-2022-x64-release-node
+            node: 22
+            runs-on: windows-2022 # x64
+            USE_CCACHE: sccache
 
     name: ${{ matrix.name }}
-    continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
+    continue-on-error: ${{ (matrix.continue-on-error == null) && false || matrix.continue-on-error }}
     runs-on: ${{ matrix.runs-on }}
     env:
-      PUBLISH: OFF
+      PUBLISH: OFF # set later
 
       BUILD_TYPE:           ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
-      BUILD_SHARED_LIBS:    ${{ contains(matrix.name, 'shared') && 'ON' || 'OFF' }}
-      BUILD_NODE_BINDINGS:  ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
+      BUILD_SHARED_LIBS:    ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
+      BUILD_NODE_BINDINGS:  ${{ contains(matrix.name, 'node')   && 'ON'    || 'OFF' }}
+      NODE_VERSION:         ${{ (matrix.node == null)           && 24      || matrix.node }}
 
       ENABLE_CONAN:         ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
       NODE_PACKAGE_TESTS:   ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
@@ -240,17 +215,18 @@ jobs:
       CXXFLAGS:          ${{ matrix.CXXFLAGS }}
 
       # default OFF
-      ENABLE_ASSERTIONS: ${{ matrix.ENABLE_ASSERTIONS }}
-      ENABLE_CLANG_TIDY: ${{ matrix.ENABLE_CLANG_TIDY }}
-      ENABLE_COVERAGE:   ${{ matrix.ENABLE_COVERAGE }}
-      ENABLE_ASAN:       ${{ matrix.ENABLE_ASAN }}
-      ENABLE_UBSAN:      ${{ matrix.ENABLE_UBSAN }}
+      ENABLE_ASSERTIONS: ${{ (matrix.ENABLE_ASSERTIONS == null) && 'OFF' || 'ON' }}
+      ENABLE_CLANG_TIDY: ${{ (matrix.ENABLE_CLANG_TIDY == null) && 'OFF' || 'ON' }}
+      ENABLE_COVERAGE:   ${{ (matrix.ENABLE_COVERAGE   == null) && 'OFF' || 'ON' }}
+      ENABLE_ASAN:       ${{ (matrix.ENABLE_ASAN       == null) && 'OFF' || 'ON' }}
+      ENABLE_UBSAN:      ${{ (matrix.ENABLE_UBSAN      == null) && 'OFF' || 'ON' }}
       # default ON
-      ENABLE_LTO:        ${{ (matrix.ENABLE_LTO     != 'OFF') && 'ON' || 'OFF' }}
-      UNIT_TESTS:        ${{ (matrix.UNIT_TESTS     != 'OFF') && 'ON' || 'OFF' }}
-      CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS != 'OFF') && 'ON' || 'OFF' }}
-      # default ccache
-      USE_CCACHE:        ${{ (matrix.USE_CCACHE == null) && 'ccache' || matrix.USE_CCACHE }}
+      ENABLE_LTO:        ${{ (matrix.ENABLE_LTO        == null) && 'ON' || 'OFF' }}
+      UNIT_TESTS:        ${{ (matrix.UNIT_TESTS        == null) && 'ON' || 'OFF' }}
+      BENCHMARKS:        ${{ (matrix.BENCHMARKS        == null) && 'ON' || 'OFF' }}
+      CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS    == null) && 'ON' || 'OFF' }}
+      # default 'ccache'
+      USE_CCACHE:        ${{ (matrix.USE_CCACHE        == null) && 'ccache' || matrix.USE_CCACHE }}
 
     steps:
       - name: Checkout repository
@@ -443,9 +419,12 @@ jobs:
       - name: Cmake build unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          echo "::group::make tests"
-          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target tests benchmarks
-          echo "::endgroup::"
+          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target tests
+
+      - name: Cmake build benchmarks
+        if: env.BENCHMARKS == 'ON'
+        run: |
+          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
 
       # Save compiler cache
 
@@ -506,6 +485,22 @@ jobs:
           for i in *-tests${EXECUTABLE_SUFFIX}; do
             echo "::group::Running $i"
             ./$i
+            echo "::endgroup::"
+          done
+
+      - name: Run benchmarks
+        if: env.BENCHMARKS == 'ON'
+        run: |
+          make -C ${TEST_DIR}/data
+
+          ./scripts/ci/run_benchmarks.sh \
+            -r ${LOG_DIR} \
+            -o ${TEST_DIR}/data/monaco.osm.pbf \
+            -g ${TEST_DIR}/data/berlin_gps_traces.csv.gz
+
+          for i in ${LOG_DIR}/*.bench; do
+            echo "::group::$i"
+            cat $i
             echo "::endgroup::"
           done
 

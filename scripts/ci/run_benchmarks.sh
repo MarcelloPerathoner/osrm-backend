@@ -6,9 +6,17 @@ function usage {
     exit 1
 }
 
+ROOT_FOLDER=.
+BINARIES_FOLDER=${OSRM_BUILD_DIR:-${ROOT_FOLDER}/build}
+RESULTS_FOLDER=/test/logs
+TMP_FOLDER=/tmp
+SCRIPTS_FOLDER=${ROOT_FOLDER}/scripts/ci
+TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
+NAPI_FOLDER=${ROOT_FOLDER}/lib/binding_napi_v8
+
 while getopts ":f:r:s:b:o:g:" opt; do
   case $opt in
-    f) FOLDER="$OPTARG"
+    f) ROOT_FOLDER="$OPTARG"
     ;;
     r) RESULTS_FOLDER="$OPTARG"
     ;;
@@ -29,7 +37,7 @@ while getopts ":f:r:s:b:o:g:" opt; do
   esac
 done
 
-if [ -z "${FOLDER:-}" ] || [ -z "${RESULTS_FOLDER:-}" ] || [ -z "${SCRIPTS_FOLDER:-}" ] || [ -z "${BINARIES_FOLDER:-}" ] || [ -z "${OSM_PBF:-}" ] || [ -z "${GPS_TRACES:-}" ]; then
+if [ -z "${ROOT_FOLDER:-}" ] || [ -z "${RESULTS_FOLDER:-}" ] || [ -z "${SCRIPTS_FOLDER:-}" ] || [ -z "${BINARIES_FOLDER:-}" ] || [ -z "${OSM_PBF:-}" ] || [ -z "${GPS_TRACES:-}" ]; then
     usage
 fi
 
@@ -55,39 +63,40 @@ function run_benchmarks_for_folder {
     BENCHMARKS_FOLDER="$BINARIES_FOLDER/src/benchmarks"
 
     echo "Running match-bench MLD"
-    $BENCHMARKS_FOLDER/match-bench "$FOLDER/test/data/mld/monaco.osrm" mld > "$RESULTS_FOLDER/match_mld.bench"
+    $BENCHMARKS_FOLDER/match-bench "$TEST_DATA_FOLDER/mld/monaco.osrm" mld > "$RESULTS_FOLDER/match_mld.bench"
     echo "Running match-bench CH"
-    $BENCHMARKS_FOLDER/match-bench "$FOLDER/test/data/ch/monaco.osrm" ch > "$RESULTS_FOLDER/match_ch.bench"
+    $BENCHMARKS_FOLDER/match-bench "$TEST_DATA_FOLDER/ch/monaco.osrm" ch > "$RESULTS_FOLDER/match_ch.bench"
     echo "Running route-bench MLD"
-    $BENCHMARKS_FOLDER/route-bench "$FOLDER/test/data/mld/monaco.osrm" mld > "$RESULTS_FOLDER/route_mld.bench"
+    $BENCHMARKS_FOLDER/route-bench "$TEST_DATA_FOLDER/mld/monaco.osrm" mld > "$RESULTS_FOLDER/route_mld.bench"
     echo "Running route-bench CH"
-    $BENCHMARKS_FOLDER/route-bench "$FOLDER/test/data/ch/monaco.osrm" ch > "$RESULTS_FOLDER/route_ch.bench"
+    $BENCHMARKS_FOLDER/route-bench "$TEST_DATA_FOLDER/ch/monaco.osrm" ch > "$RESULTS_FOLDER/route_ch.bench"
     echo "Running alias"
     $BENCHMARKS_FOLDER/alias-bench > "$RESULTS_FOLDER/alias.bench"
     echo "Running json-render-bench"
-    $BENCHMARKS_FOLDER/json-render-bench  "$FOLDER/test/data/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
+    $BENCHMARKS_FOLDER/json-render-bench  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
     echo "Running packedvector-bench"
     $BENCHMARKS_FOLDER/packedvector-bench > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
-    $BENCHMARKS_FOLDER/rtree-bench "$FOLDER/test/data/monaco.osrm.ramIndex" "$FOLDER/test/data/monaco.osrm.fileIndex" "$FOLDER/test/data/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
+    $BENCHMARKS_FOLDER/rtree-bench "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
-    cp -rf $OSM_PBF $FOLDER/data.osm.pbf
+    pushd $TMP_FOLDER
 
     echo "Running osrm-extract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract -p $FOLDER/profiles/car.lua $FOLDER/data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract -p $ROOT_FOLDER/profiles/car.lua $TEST_DATA_FOLDER/data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
     echo "Running osrm-partition"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition $FOLDER/data.osrm" "$RESULTS_FOLDER/osrm_partition.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition data.osrm" "$RESULTS_FOLDER/osrm_partition.bench"
     echo "Running osrm-customize"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize $FOLDER/data.osrm" "$RESULTS_FOLDER/osrm_customize.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize data.osrm" "$RESULTS_FOLDER/osrm_customize.bench"
     echo "Running osrm-contract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract $FOLDER/data.osrm" "$RESULTS_FOLDER/osrm_contract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract data.osrm" "$RESULTS_FOLDER/osrm_contract.bench"
 
+    popd
 
     for ALGORITHM in ch mld; do
         for BENCH in nearest table trip route match; do
             echo "Running node $BENCH $ALGORITHM"
             START=$(date +%s.%N)
-            node $SCRIPTS_FOLDER/scripts/ci/bench.js $FOLDER/lib/binding_napi_v8/node_osrm.node $FOLDER/data.osrm $ALGORITHM $BENCH $GPS_TRACES > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5
+            node $SCRIPTS_FOLDER/bench.js ../../lib/index.js $TMP_FOLDER/data.osrm $ALGORITHM $BENCH $GPS_TRACES > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5
             END=$(date +%s.%N)
             DIFF=$(echo "$END - $START" | bc)
             echo "Took: ${DIFF}s"
@@ -98,7 +107,7 @@ function run_benchmarks_for_folder {
         for BENCH in nearest table trip route match; do
             echo "Running random $BENCH $ALGORITHM"
             START=$(date +%s.%N)
-            $BENCHMARKS_FOLDER/bench "$FOLDER/data.osrm" $ALGORITHM $GPS_TRACES ${BENCH} > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" 5 || true
+            $BENCHMARKS_FOLDER/bench "$TMP_FOLDER/data.osrm" $ALGORITHM $GPS_TRACES ${BENCH} > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" 5 || true
             END=$(date +%s.%N)
             DIFF=$(echo "$END - $START" | bc)
             echo "Took: ${DIFF}s"
@@ -107,7 +116,7 @@ function run_benchmarks_for_folder {
 
 
     for ALGORITHM in ch mld; do
-        $BINARIES_FOLDER/osrm-routed --algorithm $ALGORITHM $FOLDER/data.osrm > /dev/null 2>&1 &
+        $BINARIES_FOLDER/osrm-routed --algorithm $ALGORITHM $TMP_FOLDER/data.osrm > /dev/null 2>&1 &
         OSRM_ROUTED_PID=$!
 
         # wait for osrm-routed to start
@@ -120,7 +129,7 @@ function run_benchmarks_for_folder {
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
             START=$(date +%s.%N)
-            python3 $SCRIPTS_FOLDER/scripts/ci/e2e_benchmark.py --host http://localhost:5000 --method $METHOD --iterations 5 --num_requests 1000 --gps_traces_file_path $GPS_TRACES > $RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench
+            python3 $SCRIPTS_FOLDER/e2e_benchmark.py --host http://localhost:5000 --method $METHOD --iterations 5 --num_requests 1000 --gps_traces_file_path $GPS_TRACES > $RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench
             END=$(date +%s.%N)
             DIFF=$(echo "$END - $START" | bc)
             echo "Took: ${DIFF}s"
@@ -131,4 +140,3 @@ function run_benchmarks_for_folder {
 }
 
 run_benchmarks_for_folder
-
