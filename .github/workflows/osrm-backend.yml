@@ -511,6 +511,8 @@ jobs:
             echo "::endgroup::"
           done
 
+          python ${CI_DIR}/benchmark_github_summary.py ${LOG_DIR}
+
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'
         run: |

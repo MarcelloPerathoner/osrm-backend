@@ -8,11 +8,11 @@ function usage {
 
 ROOT_FOLDER=.
 BINARIES_FOLDER=${OSRM_BUILD_DIR:-${ROOT_FOLDER}/build}
-RESULTS_FOLDER=/test/logs
-TMP_FOLDER=/tmp
 SCRIPTS_FOLDER=${ROOT_FOLDER}/scripts/ci
+RESULTS_FOLDER=${ROOT_FOLDER}/test/logs
 TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
 NAPI_FOLDER=${ROOT_FOLDER}/lib/binding_napi_v8
+TMP_FOLDER=/tmp
 
 while getopts ":f:r:s:b:o:g:" opt; do
   case $opt in
@@ -45,21 +45,22 @@ function measure_peak_ram_and_time {
     COMMAND=$1
     OUTPUT_FILE=$2
     case $(uname) in
-    Windows)
-        $COMMAND > /dev/null 2>&1
-    ;;
-    Darwin)
-        # on macOS time has different parameters, so simply run command on macOS
-        $COMMAND > /dev/null 2>&1
-    ;;
-    Linux)
-        OUTPUT=$(/usr/bin/time -f "%e %M" $COMMAND 2>&1 | tail -n 1)
+      Windows)
+          $COMMAND > /dev/null 2>&1
+      ;;
+      Darwin)
+          # on macOS time has different parameters, so simply run command on macOS
+          $COMMAND > /dev/null 2>&1
+      ;;
+      Linux)
+          OUTPUT=$(/usr/bin/time -f "%e %M" $COMMAND 2>&1 | tail -n 1)
 
-        TIME=$(echo $OUTPUT | awk '{print $1}')
-        PEAK_RAM_KB=$(echo $OUTPUT | awk '{print $2}')
-        PEAK_RAM_MB=$(echo "scale=2; $PEAK_RAM_KB / 1024" | bc)
-        echo "Time: ${TIME}s Peak RAM: ${PEAK_RAM_MB}MB" > $OUTPUT_FILE
-    ;;
+          TIME=$(echo $OUTPUT | awk '{print $1}')
+          PEAK_RAM_KB=$(echo $OUTPUT | awk '{print $2}')
+          PEAK_RAM_MB=$(echo "scale=2; $PEAK_RAM_KB / 1024" | bc)
+          echo "Time: ${TIME}s Peak RAM: ${PEAK_RAM_MB}MB" > $OUTPUT_FILE
+      ;;
+    esac
 }
 
 function run_benchmarks_for_folder {
