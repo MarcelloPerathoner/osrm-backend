@@ -17,8 +17,8 @@ runs:
       if: ${{ steps.berlin-cache-restore.outputs.cache-hit != true }}
       shell: bash
       run: |
-        wget https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf \
-            -O ${TEST_DIR}/data/berlin.osm.pbf --quiet
+        curl https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf \
+            -o ${TEST_DIR}/data/berlin.osm.pbf --follow --silent
 
     - name: Run benchmarks
       continue-on-error: true

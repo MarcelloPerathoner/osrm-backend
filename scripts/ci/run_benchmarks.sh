@@ -76,7 +76,7 @@ function run_benchmarks_for_folder {
     echo "Running json-render-bench"
     $BENCHMARKS_FOLDER/json-render-bench  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
     echo "Running packedvector-bench"
-    $BENCHMARKS_FOLDER/packedvector-bench > "$RESULTS_FOLDER/packedvector.bench"
+    # $BENCHMARKS_FOLDER/packedvector-bench > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
     $BENCHMARKS_FOLDER/rtree-bench "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
@@ -136,8 +136,8 @@ function run_benchmarks_for_folder {
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
             START=$(date +%s.%N)
-            python3 $SCRIPTS_FOLDER/e2e_benchmark.py --host http://localhost:5000 --method $METHOD --iterations 5 \
-                --num_requests 1000 --gps_traces_file_path $GPS_TRACES > $RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench
+            python3 $SCRIPTS_FOLDER/e2e_benchmark.py --host http://localhost:5000 --method $METHOD --iterations 5000 \
+                --gps_traces $GPS_TRACES > $RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench
             END=$(date +%s.%N)
             DIFF=$(echo "$END - $START" | bc)
             echo "Took: ${DIFF}s"

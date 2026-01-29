@@ -506,7 +506,7 @@ jobs:
         if: env.NODE_PACKAGE_TESTS == 'ON'
         uses: ./.github/actions/node-package-tests
 
-      - name: Run Benchmarks
+      - name: Run benchmarks
         if: env.BENCHMARKS == 'ON'
         uses: ./.github/actions/benchmarks
 
