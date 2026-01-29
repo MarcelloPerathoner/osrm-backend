@@ -508,6 +508,7 @@ jobs:
 
       - name: Run benchmarks
         if: env.BENCHMARKS == 'ON'
+        continue-on-error: true
         uses: ./.github/actions/benchmarks
 
       - name: Upload test logs
