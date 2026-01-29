@@ -492,27 +492,6 @@ jobs:
             echo "::endgroup::"
           done
 
-      - name: Run benchmarks
-        if: env.BENCHMARKS == 'ON'
-        continue-on-error: true
-        run: |
-          make -C ${TEST_DIR}/data
-
-          set -o errexit
-
-          ${CI_DIR}/run_benchmarks.sh \
-            -r ${LOG_DIR} \
-            -o ${TEST_DIR}/data/monaco.osm.pbf \
-            -g ${TEST_DIR}/data/berlin_gps_traces.csv.gz
-
-          for i in ${LOG_DIR}/*.bench; do
-            echo "::group::$i"
-            cat $i
-            echo "::endgroup::"
-          done
-
-          python ${CI_DIR}/benchmark_github_summary.py ${LOG_DIR}
-
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'
         run: |
@@ -521,6 +500,10 @@ jobs:
       - name: Run Node package tests
         if: env.NODE_PACKAGE_TESTS == 'ON'
         uses: ./.github/actions/node-package-tests
+
+      - name: Run Benchmarks
+        if: env.BENCHMARKS == 'ON'
+        uses: ./.github/actions/benchmarks
 
       - name: Upload test logs
         uses: actions/upload-artifact@v4

@@ -1,0 +1,50 @@
+---
+name: "Run benchmarks"
+description: |
+  Runs the benchmarks
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Restore benchmark cache
+      uses: actions/cache/restore@v4
+      id: berlin-cache-restore
+      with:
+        path: ${{ env.TEST_DIR }}/data/berlin.osm.pbf
+        key: berlin-osm-pbf
+
+    - name: Download benchmark data
+      if: ${{ steps.berlin-cache-restore.outputs.cache-hit != true }}
+      shell: bash
+      run: |
+        wget https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf -O ${TEST_DIR}/data/berlin.osm.pbf
+
+    - name: Run benchmarks
+      continue-on-error: true
+      shell: bash
+      run: |
+        make -C ${TEST_DIR}/data
+
+        set -o errexit
+
+        ${CI_DIR}/run_benchmarks.sh \
+          -r ${LOG_DIR} \
+          -o ${TEST_DIR}/data/berlin.osm.pbf \
+          -g ${TEST_DIR}/data/berlin_gps_traces.csv.gz
+
+        for i in ${LOG_DIR}/*.bench; do
+          echo "::group::$i"
+          cat $i
+          echo "::endgroup::"
+        done
+
+        python ${CI_DIR}/benchmark_github_summary.py ${LOG_DIR}
+
+        killall -9 osrm-routed || true
+
+    - name: Save benchmark cache
+      if: ${{ always() && steps.berlin-cache-restore.outputs.cache-hit != true }}
+      uses: actions/cache/restore@v4
+      with:
+        path: ${{ env.TEST_DIR }}/data/berlin.osm.pbf
+        key: ${{ steps.berlin-cache-restore.outputs.cache-primary-key }}
