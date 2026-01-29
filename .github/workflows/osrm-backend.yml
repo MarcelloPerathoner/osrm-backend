@@ -97,20 +97,20 @@ jobs:
             ENABLE_LTO: OFF
 
           - name: clang-18-release
-            node: 22
             runs-on: ubuntu-24.04
+            NODE_VERSION: 22
             CCOMPILER: clang-18
             CXXCOMPILER: clang++-18
 
           - name: clang-17-release
-            node: 22
             runs-on: ubuntu-24.04
+            NODE_VERSION: 22
             CCOMPILER: clang-17
             CXXCOMPILER: clang++-17
 
           - name: clang-16-release
-            node: 20
             runs-on: ubuntu-24.04
+            NODE_VERSION: 20
             CCOMPILER: clang-16
             CXXCOMPILER: clang++-16
 
@@ -125,21 +125,21 @@ jobs:
             CXXCOMPILER: g++-14
 
           - name: gcc-13-release
-            node: 22
             runs-on: ubuntu-24.04
+            NODE_VERSION: 22
             CCOMPILER: gcc-13
             CXXCOMPILER: g++-13
 
           - name: gcc-13-debug-cov
-            node: 22
             runs-on: ubuntu-24.04
+            NODE_VERSION: 22
             CCOMPILER: gcc-13
             CXXCOMPILER: g++-13
             ENABLE_COVERAGE: ON
 
           - name: gcc-12-release
-            node: 20
             runs-on: ubuntu-22.04
+            NODE_VERSION: 20
             CCOMPILER: gcc-12
             CXXCOMPILER: g++-12
             ENABLE_LTO: OFF
@@ -180,8 +180,8 @@ jobs:
             CXXCOMPILER: clang++
 
           - name: conan-macos-14-arm64-release-node
-            node: 22
             runs-on: macos-14 # arm64
+            NODE_VERSION: 22
             CCOMPILER: clang
             CXXCOMPILER: clang++
 
@@ -190,12 +190,14 @@ jobs:
             USE_CCACHE: sccache
 
           - name: conan-windows-2022-x64-release-node
-            node: 22
             runs-on: windows-2022 # x64
+            NODE_VERSION: 22
             USE_CCACHE: sccache
 
     name: ${{ matrix.name }}
-    continue-on-error: ${{ (matrix.continue-on-error == null) && false || matrix.continue-on-error }}
+    # default true
+    continue-on-error: ${{ (matrix.continue-on-error == null) && true || matrix.continue-on-error }}
+    # continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
     runs-on: ${{ matrix.runs-on }}
     env:
       PUBLISH: OFF # set later
@@ -203,7 +205,6 @@ jobs:
       BUILD_TYPE:           ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
       BUILD_SHARED_LIBS:    ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
       BUILD_NODE_BINDINGS:  ${{ contains(matrix.name, 'node')   && 'ON'    || 'OFF' }}
-      NODE_VERSION:         ${{ (matrix.node == null)           && 24      || matrix.node }}
 
       ENABLE_CONAN:         ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
       NODE_PACKAGE_TESTS:   ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
@@ -214,17 +215,20 @@ jobs:
       CXX:               ${{ matrix.CXXCOMPILER }}
       CXXFLAGS:          ${{ matrix.CXXFLAGS }}
 
+      # default 24
+      NODE_VERSION:      ${{ (matrix.NODE_VERSION == null)      && 24    || matrix.NODE_VERSION }}
+
       # default OFF
-      ENABLE_ASSERTIONS: ${{ (matrix.ENABLE_ASSERTIONS == null) && 'OFF' || 'ON' }}
-      ENABLE_CLANG_TIDY: ${{ (matrix.ENABLE_CLANG_TIDY == null) && 'OFF' || 'ON' }}
-      ENABLE_COVERAGE:   ${{ (matrix.ENABLE_COVERAGE   == null) && 'OFF' || 'ON' }}
-      ENABLE_ASAN:       ${{ (matrix.ENABLE_ASAN       == null) && 'OFF' || 'ON' }}
-      ENABLE_UBSAN:      ${{ (matrix.ENABLE_UBSAN      == null) && 'OFF' || 'ON' }}
+      ENABLE_ASSERTIONS: ${{ (matrix.ENABLE_ASSERTIONS == null) && 'OFF' || matrix.ENABLE_ASSERTIONS }}
+      ENABLE_CLANG_TIDY: ${{ (matrix.ENABLE_CLANG_TIDY == null) && 'OFF' || matrix.ENABLE_CLANG_TIDY }}
+      ENABLE_COVERAGE:   ${{ (matrix.ENABLE_COVERAGE   == null) && 'OFF' || matrix.ENABLE_COVERAGE   }}
+      ENABLE_ASAN:       ${{ (matrix.ENABLE_ASAN       == null) && 'OFF' || matrix.ENABLE_ASAN       }}
+      ENABLE_UBSAN:      ${{ (matrix.ENABLE_UBSAN      == null) && 'OFF' || matrix.ENABLE_UBSAN      }}
       # default ON
-      ENABLE_LTO:        ${{ (matrix.ENABLE_LTO        == null) && 'ON' || 'OFF' }}
-      UNIT_TESTS:        ${{ (matrix.UNIT_TESTS        == null) && 'ON' || 'OFF' }}
-      BENCHMARKS:        ${{ (matrix.BENCHMARKS        == null) && 'ON' || 'OFF' }}
-      CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS    == null) && 'ON' || 'OFF' }}
+      ENABLE_LTO:        ${{ (matrix.ENABLE_LTO        == null) && 'ON'  || matrix.ENABLE_LTO     }}
+      UNIT_TESTS:        ${{ (matrix.UNIT_TESTS        == null) && 'ON'  || matrix.UNIT_TESTS     }}
+      BENCHMARKS:        ${{ (matrix.BENCHMARKS        == null) && 'ON'  || matrix.BENCHMARKS     }}
+      CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS    == null) && 'ON'  || matrix.CUCUMBER_TESTS }}
       # default 'ccache'
       USE_CCACHE:        ${{ (matrix.USE_CCACHE        == null) && 'ccache' || matrix.USE_CCACHE }}
 
@@ -257,7 +261,7 @@ jobs:
       - name: Install Node
         uses: actions/setup-node@v4
         with:
-          node-version: ${{ matrix.node }}
+          node-version: ${{ env.NODE_VERSION }}
           cache: npm
 
       - name: Setup Node environment
@@ -493,7 +497,7 @@ jobs:
         run: |
           make -C ${TEST_DIR}/data
 
-          ./scripts/ci/run_benchmarks.sh \
+          ${CI_DIR)/run_benchmarks.sh \
             -r ${LOG_DIR} \
             -o ${TEST_DIR}/data/monaco.osm.pbf \
             -g ${TEST_DIR}/data/berlin_gps_traces.csv.gz
