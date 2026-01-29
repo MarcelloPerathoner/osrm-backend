@@ -273,9 +273,14 @@ jobs:
           fi
           npm ci --ignore-scripts
 
+      # Python
+
+      - name: Install Python
+        uses: ./.github/actions/install-python
+
       # Conan
 
-      - name: Run Conan install
+      - name: Install Conan
         if: env.ENABLE_CONAN == 'ON'
         uses: ./.github/actions/install-conan
 

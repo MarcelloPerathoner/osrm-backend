@@ -1,0 +1,58 @@
+---
+name: "Install Python"
+description: |
+  Installs python dependencies from requirements*.txt.
+
+  Prepends .venv/bin to PATH, so there is no need to activate at every step.
+
+  Output environment variables:
+
+  PATH will contain the Python venv.
+  VIRTUAL_ENV the Python venv.
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Restore Pip cache
+      uses: actions/cache/restore@v4
+      id: pip-cache-restore
+      with:
+        path: .venv
+        key: pip-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('requirements*.txt') }}
+        restore-keys: pip-${{ runner.os }}-${{ runner.arch }}-
+
+    - name: Install Python dependencies
+      if: steps.pip-cache-restore.outputs.cache-hit != 'true'
+      id: install-conan
+      shell: bash
+      run: |
+        python -m venv .venv
+        if [[ ${{ runner.os }} == 'Windows' ]]; then
+          source .venv/Scripts/activate
+          python.exe -m pip install --upgrade pip
+        else
+          source .venv/bin/activate
+          python -m pip install --upgrade pip
+        fi
+        pip install -r requirements*.txt
+
+    - name: Activate Python Venv
+      id: activate-venv
+      shell: bash
+      run: |
+        if [[ ${{ runner.os }} == 'Windows' ]]; then
+          source .venv/Scripts/activate
+          echo "$VIRTUAL_ENV/Scripts" >> $GITHUB_PATH
+        else
+          source .venv/bin/activate
+          echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
+        fi
+        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
+        echo "venv=$VIRTUAL_ENV"        >> $GITHUB_OUTPUT
+
+    - name: Save Pip cache
+      if: steps.pip-cache-restore.outputs.cache-hit != 'true'
+      uses: actions/cache/save@v4
+      with:
+        path: .venv
+        key: ${{ steps.pip-cache-restore.outputs.cache-primary-key }}

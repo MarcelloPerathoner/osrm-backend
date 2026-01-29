@@ -17,7 +17,8 @@ runs:
       if: ${{ steps.berlin-cache-restore.outputs.cache-hit != true }}
       shell: bash
       run: |
-        wget https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf -O ${TEST_DIR}/data/berlin.osm.pbf
+        wget https://download.geofabrik.de/europe/germany/berlin-latest.osm.pbf \
+            -O ${TEST_DIR}/data/berlin.osm.pbf --quiet
 
     - name: Run benchmarks
       continue-on-error: true
@@ -44,7 +45,7 @@ runs:
 
     - name: Save benchmark cache
       if: ${{ always() && steps.berlin-cache-restore.outputs.cache-hit != true }}
-      uses: actions/cache/restore@v4
+      uses: actions/cache/save@v4
       with:
         path: ${{ env.TEST_DIR }}/data/berlin.osm.pbf
         key: ${{ steps.berlin-cache-restore.outputs.cache-primary-key }}
