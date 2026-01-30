@@ -360,7 +360,7 @@ void runRouteBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iterati
                       if (benchmark.radius)
                       {
                           params.radiuses = std::vector<std::optional<double>>(
-                              params.coordinates.size(), std::make_optional(*benchmark.radius));
+                              params.coordinates.size(), benchmark.radius);
                       }
 
                       engine::api::ResultT result = json::Object();
@@ -411,13 +411,10 @@ void runMatchBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iterati
 
                       engine::api::MatchParameters params;
                       params.coordinates = gpsTraces.getRandomTrace();
-                      params.radiuses = {};
                       if (benchmark.radius)
                       {
-                          for (size_t index = 0; index < params.coordinates.size(); ++index)
-                          {
-                              params.radiuses.emplace_back(*benchmark.radius);
-                          }
+                          params.radiuses = std::vector<std::optional<double>>(
+                              params.coordinates.size(), benchmark.radius);
                       }
 
                       TIMER_START(match);

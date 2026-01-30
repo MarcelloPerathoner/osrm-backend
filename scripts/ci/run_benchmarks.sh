@@ -6,15 +6,10 @@ function usage {
     exit 1
 }
 
-ROOT_FOLDER=${GITHUB_WORKSPACE:-`pwd`}
+ROOT_FOLDER=`pwd`
 BINARIES_FOLDER=${OSRM_BUILD_DIR:-${ROOT_FOLDER}/build}
-BENCHMARKS_FOLDER=${OSRM_BENCHMARKS_BUILD_DIR:-${BINARIES_FOLDER}/src/benchmarks}
 SCRIPTS_FOLDER=${ROOT_FOLDER}/scripts/ci
 RESULTS_FOLDER=${ROOT_FOLDER}/test/logs
-TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
-LIB_FOLDER=${ROOT_FOLDER}/lib
-TMP_FOLDER=/tmp
-EXE=${EXE:-}
 
 while getopts ":f:r:s:b:o:g:" opt; do
   case $opt in
@@ -38,6 +33,12 @@ while getopts ":f:r:s:b:o:g:" opt; do
     ;;
   esac
 done
+
+TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
+LIB_FOLDER=${ROOT_FOLDER}/lib
+TMP_FOLDER=/tmp
+EXE=${EXE:-}
+BENCHMARKS_FOLDER=${OSRM_BENCHMARKS_BUILD_DIR:-${BINARIES_FOLDER}/src/benchmarks}
 
 if [ -z "${ROOT_FOLDER:-}" ] || [ -z "${RESULTS_FOLDER:-}" ] || [ -z "${SCRIPTS_FOLDER:-}" ] || [ -z "${BINARIES_FOLDER:-}" ] || [ -z "${OSM_PBF:-}" ] || [ -z "${GPS_TRACES:-}" ]; then
     usage
@@ -74,15 +75,17 @@ function run_benchmarks_for_folder {
     "$BENCHMARKS_FOLDER/alias-bench${EXE}" > "$RESULTS_FOLDER/alias.bench"
     echo "Running json-render-bench"
     "$BENCHMARKS_FOLDER/json-render-bench${EXE}"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
-    # echo "Running packedvector-bench"
-    # "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
+    echo "Running packedvector-bench"
+    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
     "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
+    ln -sf `realpath $OSM_PBF` "$TMP_FOLDER/data.osm.pbf"
+
     pushd $TMP_FOLDER
-    ln -sf $TEST_DATA_FOLDER/monaco.osm.pbf data.osm.pbf
 
     echo "Running osrm-extract"
+    $BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf
     measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
     echo "Running osrm-partition"
     measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" "$RESULTS_FOLDER/osrm_partition.bench"
@@ -99,7 +102,7 @@ function run_benchmarks_for_folder {
               echo "Running node $BENCH $ALGORITHM"
               START=$(date +%s.%N)
               node $SCRIPTS_FOLDER/bench.js $LIB_FOLDER/index.js $TMP_FOLDER/data.osrm $ALGORITHM $BENCH $GPS_TRACES \
-                  > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5
+                  > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5 || true
               END=$(date +%s.%N)
               DIFF=$(echo "$END - $START" | bc)
               echo "Took: ${DIFF}s"
@@ -136,7 +139,6 @@ function run_benchmarks_for_folder {
         fi
 
         if [ -n "$GITHUB_STEP_SUMMARY" ]; then
-            echo "### e2e benchmarks"           >> $GITHUB_STEP_SUMMARY
             echo "#### Algorithm: ${ALGORITHM}" >> $GITHUB_STEP_SUMMARY
             python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --headers
         fi

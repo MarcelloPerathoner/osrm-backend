@@ -72,14 +72,14 @@ class BenchmarkRunner:
             track_id = random.choice(self.track_ids)
             coords = self.tracks[track_id][:num_coords]
             radiuses_str = ";".join(
-                [f"{random.randint(20, 100)}" for _ in range(len(coords))]
+                [f"{random.randint(10, 20)}" for _ in range(len(coords))]
             )
             return f"{url}/{toString(coords)}?steps=true&radiuses={radiuses_str}"
         else:
             raise Exception(f"Unknown benchmark: {benchmark_name}")
 
 
-def conf(data, unit: str, confidence=0.95):
+def conf(data, confidence=0.95):
     """Calculate the confidence interval for the given confidence.
 
     Example: If `confidence` is given as 0.95, then we expect that 95% of the values
@@ -88,7 +88,7 @@ def conf(data, unit: str, confidence=0.95):
     dist = NormalDist.from_samples(data)
     z = NormalDist().inv_cdf((1 + confidence) / 2.0)
     h = dist.stdev * z / ((len(data) - 1) ** 0.5)
-    return f"{dist.mean:.2f}{unit} ± {h:.3f}{unit}"
+    return f"{dist.mean:.2f} ± {h:.3f}"
 
 
 def main():
@@ -97,7 +97,7 @@ def main():
     parser.add_argument(
         "--host",
         type=str,
-        default="http://localhost:5000/",
+        default="http://localhost:5000",
         help="Host URL (localhost:5000)",
     )
     parser.add_argument(
@@ -108,7 +108,7 @@ def main():
         help="Benchmark method",
     )
     parser.add_argument(
-        "--requests", type=int, help="Number of requests per sample (100)", default=100
+        "--requests", type=int, help="Number of requests per sample (50)", default=50
     )
     parser.add_argument(
         "--samples", type=int, help="Number of samples to take (100)", default=100
@@ -125,19 +125,18 @@ def main():
     args = parser.parse_args()
 
     headers = [
-        "Ops/s:          ",
-        "Min time:       ",
-        "Median time:    ",
-        "Mean time:      ",
-        "95th percentile:",
-        "99th percentile:",
-        "Max time:       ",
+        "Ops/s",
+        "Min time (ms)",
+        "Median time (ms)",
+        "Mean time (ms)",
+        "95th percentile (ms)",
+        "99th percentile (ms)",
+        "Max time (ms)",
     ]
 
     if args.headers:
         if "GITHUB_STEP_SUMMARY" in os.environ:
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-                headers = [h.strip(": ") for h in headers]
                 summary.write("| Method  | ")
                 summary.write(" | ".join(headers))
                 summary.write(" |\n| ------- | ")
@@ -157,16 +156,16 @@ def main():
     ops = 1.0 / samples
 
     values = [
-        conf(np.mean(ops, 1), ""),
-        conf(np.min(ms, 1), "ms"),
-        conf(np.median(ms, 1), "ms"),
-        conf(np.mean(ms, 1), "ms"),
-        conf(np.percentile(ms, 95, 1), "ms"),
-        conf(np.percentile(ms, 99, 1), "ms"),
-        conf(np.max(ms, 1), "ms"),
+        conf(np.mean(ops, 1)),
+        conf(np.min(ms, 1)),
+        conf(np.median(ms, 1)),
+        conf(np.mean(ms, 1)),
+        conf(np.percentile(ms, 95, 1)),
+        conf(np.percentile(ms, 99, 1)),
+        conf(np.max(ms, 1)),
     ]
     for h, v in zip(headers, values):
-        print(h, v)
+        print(f"{h + ":":21} {v}")
 
     # running on github ci
     if "GITHUB_STEP_SUMMARY" in os.environ:
