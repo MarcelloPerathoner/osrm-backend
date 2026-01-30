@@ -7,6 +7,8 @@ function usage {
 }
 
 ROOT_FOLDER=`pwd`
+echo $ROOT_FOLDER
+
 BINARIES_FOLDER=${OSRM_BUILD_DIR:-${ROOT_FOLDER}/build}
 SCRIPTS_FOLDER=${ROOT_FOLDER}/scripts/ci
 RESULTS_FOLDER=${ROOT_FOLDER}/test/logs
@@ -75,8 +77,8 @@ function run_benchmarks_for_folder {
     "$BENCHMARKS_FOLDER/alias-bench${EXE}" > "$RESULTS_FOLDER/alias.bench"
     echo "Running json-render-bench"
     "$BENCHMARKS_FOLDER/json-render-bench${EXE}"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
-    echo "Running packedvector-bench"
-    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
+    # echo "Running packedvector-bench"
+    # "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
     "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
@@ -100,12 +102,11 @@ function run_benchmarks_for_folder {
       for ALGORITHM in ch mld; do
           for BENCH in nearest table trip route match; do
               echo "Running node $BENCH $ALGORITHM"
-              START=$(date +%s.%N)
+              START=$(date +%s%N)
               node $SCRIPTS_FOLDER/bench.js $LIB_FOLDER/index.js $TMP_FOLDER/data.osrm $ALGORITHM $BENCH $GPS_TRACES \
                   > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5 || true
-              END=$(date +%s.%N)
-              DIFF=$(echo "$END - $START" | bc)
-              echo "Took: ${DIFF}s"
+              END=$(date +%s%N)
+              echo "Took: $(((END - START) / 1000000))ms"
           done
       done
     fi
@@ -113,12 +114,11 @@ function run_benchmarks_for_folder {
     for ALGORITHM in ch mld; do
         for BENCH in nearest table trip route match; do
             echo "Running random $BENCH $ALGORITHM"
-            START=$(date +%s.%N)
+            START=$(date +%s%N)
             "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM "$GPS_TRACES" ${BENCH} \
                 > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" 5 || true
-            END=$(date +%s.%N)
-            DIFF=$(echo "$END - $START" | bc)
-            echo "Took: ${DIFF}s"
+            END=$(date +%s%N)
+            echo "Took: $(((END - START) / 1000000))ms"
         done
     done
 
@@ -140,17 +140,16 @@ function run_benchmarks_for_folder {
 
         if [ -n "$GITHUB_STEP_SUMMARY" ]; then
             echo "#### Algorithm: ${ALGORITHM}" >> $GITHUB_STEP_SUMMARY
-            python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --headers
+            python3 "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --headers
         fi
 
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
-            START=$(date +%s.%N)
-            python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --method $METHOD \
+            START=$(date +%s%N)
+            python3 "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --method $METHOD \
                 --gps_traces "$GPS_TRACES" > "$RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench"
-            END=$(date +%s.%N)
-            DIFF=$(echo "$END - $START" | bc)
-            echo "Took: ${DIFF}s"
+            END=$(date +%s%N)
+            echo "Took: $(((END - START) / 1000000))ms"
         done
 
         kill -9 $OSRM_ROUTED_PID

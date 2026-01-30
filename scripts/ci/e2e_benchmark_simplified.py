@@ -4,7 +4,6 @@ import csv
 import gzip
 import os
 import random
-from statistics import NormalDist
 import time
 import sys
 
@@ -31,21 +30,6 @@ class BenchmarkRunner:
                 self.coordinates.append(coord)
                 self.tracks[row["TrackID"]].append(coord)
         self.track_ids = list(self.tracks.keys())
-
-    def run(
-        self, samples: np.ndarray, benchmark_name, host, warmup_requests=50
-    ) -> list[float]:
-        for i in range(-warmup_requests, samples.size):
-            url = self.make_url(host, benchmark_name)
-            start_time = time.time()
-            response = requests.get(url)
-            end_time = time.time()
-            if response.status_code != 200:
-                code = response.json()["code"]
-                if code not in ["NoSegment", "NoMatch", "NoRoute", "NoTrips"]:
-                    raise Exception(f"Error: {response.status_code} {response.text}")
-            if i >= 0:
-                samples.flat[i] = end_time - start_time
 
     def make_url(self, host, benchmark_name):
         def toString(coords) -> str:
@@ -78,17 +62,20 @@ class BenchmarkRunner:
         else:
             raise Exception(f"Unknown benchmark: {benchmark_name}")
 
-
-def conf(data, confidence=0.95):
-    """Calculate the confidence interval for the given confidence.
-
-    Example: If `confidence` is given as 0.95, then we expect that 95% of the values
-    will fall into the calculated interval."""
-
-    dist = NormalDist.from_samples(data)
-    z = NormalDist().inv_cdf((1 + confidence) / 2.0)
-    h = dist.stdev * z / ((len(data) - 1) ** 0.5)
-    return f"{dist.mean:.2f} ± {h:.3f}"
+    def run(
+        self, samples: np.ndarray, benchmark_name, host, warmup_requests=50
+    ) -> list[float]:
+        for i in range(-warmup_requests, samples.size):
+            url = self.make_url(host, benchmark_name)
+            start_time = time.time()
+            response = requests.get(url)
+            end_time = time.time()
+            if response.status_code != 200:
+                code = response.json()["code"]
+                if code not in ["NoSegment", "NoMatch", "NoRoute", "NoTrips"]:
+                    raise Exception(f"Error: {response.status_code} {response.text}")
+            if i >= 0:
+                samples.flat[i] = end_time - start_time
 
 
 def main():
@@ -108,10 +95,7 @@ def main():
         help="Benchmark method",
     )
     parser.add_argument(
-        "--requests", type=int, help="Number of requests per sample (50)", default=50
-    )
-    parser.add_argument(
-        "--samples", type=int, help="Number of samples to take (100)", default=100
+        "--samples", type=int, help="Number of samples to take (1000)", default=1000
     )
     parser.add_argument(
         "--gps_traces",
@@ -125,13 +109,9 @@ def main():
     args = parser.parse_args()
 
     headers = [
-        "Ops/s",
-        "Min time (ms)",
-        "Median time (ms)",
-        "Mean time (ms)",
-        "95th percentile (ms)",
-        "99th percentile (ms)",
-        "Max time (ms)",
+        "0.05 q (ms)",
+        "Median (ms)",
+        "0.95 q (ms)",
     ]
 
     if args.headers:
@@ -144,34 +124,28 @@ def main():
                 summary.write("|\n")
         sys.exit()
 
-    np.random.seed(42)
     random.seed(42)
+    samples = np.ndarray(args.samples)
 
     runner = BenchmarkRunner(args.gps_traces)
-
-    samples = np.ndarray((args.samples, args.requests))
     runner.run(samples, args.method, args.host)
 
     ms = samples * 1000.0
-    ops = 1.0 / samples
 
     values = [
-        conf(np.mean(ops, 1)),
-        conf(np.min(ms, 1)),
-        conf(np.median(ms, 1)),
-        conf(np.mean(ms, 1)),
-        conf(np.percentile(ms, 95, 1)),
-        conf(np.percentile(ms, 99, 1)),
-        conf(np.max(ms, 1)),
+        np.quantile(ms, 0.05),
+        np.median(ms),
+        np.quantile(ms, 0.95),
     ]
     for h, v in zip(headers, values):
-        print(f"{h + ':':21} {v}")
+        print(f"{h + ':':21} {v:.2f}")
 
     # running on github ci
     if "GITHUB_STEP_SUMMARY" in os.environ:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-            summary.write(f"| {args.method:7} | ")
-            summary.write(" | ".join(values))
+            summary.write(f"| {args.method:7} ")
+            for v in values:
+                summary.write(f" | {v:.2f}")
             summary.write(" |\n")
 
 
