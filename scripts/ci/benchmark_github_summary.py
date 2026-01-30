@@ -4,15 +4,16 @@ import sys
 
 def create_markdown_table(results):
     results = sorted(results, key=lambda x: x["name"])
-    header = "| Benchmark    | Result |\n| ------------ | ------ |\n"
     rows = []
+    rows.append("| Benchmark    | Result |")
+    rows.append("| ------------ | ------ |")
     for result in results:
         name = result["name"]
         base = result["base"]
         base = base.replace("\n", "<br/>")
         row = f"| {name:12} | {base} |"
         rows.append(row)
-    return header + "\n".join(rows)
+    return "\n".join(rows)
 
 
 def collect_benchmark_results(results_folder):
@@ -41,7 +42,7 @@ def main():
 
     if "GITHUB_STEP_SUMMARY" in os.environ:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-            summary.write("### Benchmark Results")
+            summary.write("### Benchmark Results\n\n")
             summary.write(markdown_table)
     else:
         print(markdown_table)

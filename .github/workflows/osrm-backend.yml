@@ -491,7 +491,7 @@ jobs:
           make -C ${TEST_DIR}/data
 
           cd ${OSRM_UNIT_TESTS_BUILD_DIR}
-          for i in *-tests${EXECUTABLE_SUFFIX}; do
+          for i in *-tests${EXE}; do
             echo "::group::Running $i"
             ./$i
             echo "::endgroup::"

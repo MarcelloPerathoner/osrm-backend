@@ -744,5 +744,5 @@ message(STATUS "-----------------------------")
 if(DEFINED ENV{GITHUB_ENV})
   # build/Release/ in make, build/ in MSBuild
   file(APPEND "$ENV{GITHUB_ENV}" "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}\n")
-  file(APPEND "$ENV{GITHUB_ENV}" "EXECUTABLE_SUFFIX=${CMAKE_EXECUTABLE_SUFFIX}\n")
+  file(APPEND "$ENV{GITHUB_ENV}" "EXE=${CMAKE_EXECUTABLE_SUFFIX}\n")
 endif()
