@@ -46,14 +46,13 @@ function measure_peak_ram_and_time {
     OUTPUT_FILE=$2
     case $(uname) in
       Windows)
-          $COMMAND > /dev/null 2>&1
+        $COMMAND > /dev/null 2>&1
       ;;
       Darwin)
-          # on macOS time has different parameters, so simply run command on macOS
-          $COMMAND > /dev/null 2>&1
+        gtime -f "Time: %es Peak RAM: %MKB" $COMMAND 2>$OUTPUT_FILE >/dev/null
       ;;
       Linux)
-          /usr/bin/time -f "%e %M" $COMMAND 2>&1 > $OUTPUT_FILE
+        /usr/bin/time -f "Time: %es Peak RAM: %MKB" $COMMAND 2>$OUTPUT_FILE >/dev/null
       ;;
     esac
 }

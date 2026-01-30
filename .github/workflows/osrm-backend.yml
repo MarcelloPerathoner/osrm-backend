@@ -247,7 +247,7 @@ jobs:
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a version of bash that can do string lowercasing
-            brew install bash ccache
+            brew install bash ccache gnu-time
             bash --version
             echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then

@@ -39,8 +39,8 @@ def main():
     benchmark_results = collect_benchmark_results(results_folder)
     markdown_table = create_markdown_table(benchmark_results)
 
-    if "GITHUB_SUMMARY" in os.environ:
-        with open(os.environ["GITHUB_SUMMARY"], "a") as summary:
+    if "GITHUB_STEP_SUMMARY" in os.environ:
+        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
             summary.write("### Benchmark Results")
             summary.write(markdown_table)
     else:
