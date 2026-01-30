@@ -1,23 +1,19 @@
-#include "osrm/match_parameters.hpp"
+#include "engine/api/match_parameters.hpp"
+#include "engine/engine_config.hpp"
+#include "osrm/engine_config.hpp"
 #include "osrm/nearest_parameters.hpp"
+#include "osrm/osrm.hpp"
+#include "osrm/route_parameters.hpp"
+#include "osrm/status.hpp"
 #include "osrm/table_parameters.hpp"
 #include "osrm/trip_parameters.hpp"
-
-#include "engine/engine_config.hpp"
 #include "util/coordinate.hpp"
+#include "util/meminfo.hpp"
 #include "util/timing_util.hpp"
 
-#include "osrm/route_parameters.hpp"
+#include <boost/iostreams/filter/gzip.hpp>
+#include <boost/iostreams/filtering_stream.hpp>
 
-#include "osrm/coordinate.hpp"
-#include "osrm/engine_config.hpp"
-#include "osrm/json_container.hpp"
-
-#include "osrm/osrm.hpp"
-#include "osrm/status.hpp"
-
-#include "util/meminfo.hpp"
-#include <boost/optional/optional.hpp>
 #include <cstdlib>
 #include <exception>
 #include <fstream>
@@ -54,17 +50,19 @@ class GPSTraces
 
     bool readCSV(const std::string &filename)
     {
-        std::ifstream file(filename);
-        if (!file.is_open())
+        std::ifstream file(filename, std::ios_base::in | std::ios_base::binary);
+        boost::iostreams::filtering_istream in;
+
+        if (filename.ends_with(".gz"))
         {
-            std::cerr << "Error opening file: " << filename << std::endl;
-            return false;
+            in.push(boost::iostreams::gzip_decompressor());
         }
+        in.push(file);
 
         std::string line;
-        std::getline(file, line);
+        std::getline(in, line);
 
-        while (std::getline(file, line))
+        while (std::getline(in, line))
         {
             std::istringstream ss(line);
             std::string token;
@@ -149,6 +147,7 @@ ConfidenceInterval confidenceInterval(const std::vector<double> &data,
     for (int i = 0; i < num_samples; ++i)
     {
         std::vector<double> sample;
+        sample.reserve(data.size());
         for (size_t j = 0; j < data.size(); ++j)
         {
             sample.push_back(data[distribution(generator)]);
@@ -253,7 +252,7 @@ class Statistics
 
 std::ostream &operator<<(std::ostream &os, Statistics &statistics)
 {
-    os << std::fixed << std::setprecision(2);
+    os << std::fixed << std::setprecision(3);
 
     ConfidenceInterval mean_ci = statistics.mean();
     ConfidenceInterval total_ci = statistics.total();
@@ -370,8 +369,7 @@ void runRouteBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iterati
                       TIMER_STOP(routes);
 
                       auto &json_result = std::get<json::Object>(result);
-                      if (rc != Status::Ok ||
-                          json_result.values.find("routes") == json_result.values.end())
+                      if (rc != Status::Ok || !json_result.values.contains("routes"))
                       {
                           auto code = std::get<json::String>(json_result.values["code"]).value;
                           if (code != "NoSegment" && code != "NoRoute")
@@ -381,7 +379,6 @@ void runRouteBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iterati
                       }
                       else
                       {
-
                           statistics.push(TIMER_MSEC(routes), iteration);
                       }
                   });
@@ -428,8 +425,7 @@ void runMatchBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iterati
                       TIMER_STOP(match);
 
                       auto &json_result = std::get<json::Object>(result);
-                      if (rc != Status::Ok ||
-                          json_result.values.find("matchings") == json_result.values.end())
+                      if (rc != Status::Ok || !json_result.values.contains("matchings"))
                       {
                           auto code = std::get<json::String>(json_result.values["code"]).value;
                           if (code != "NoSegment" && code != "NoMatch")
@@ -481,8 +477,7 @@ void runNearestBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int itera
                       TIMER_STOP(nearest);
 
                       auto &json_result = std::get<json::Object>(result);
-                      if (rc != Status::Ok ||
-                          json_result.values.find("waypoints") == json_result.values.end())
+                      if (rc != Status::Ok || !json_result.values.contains("waypoints"))
                       {
                           auto code = std::get<json::String>(json_result.values["code"]).value;
                           if (code != "NoSegment")
@@ -535,8 +530,7 @@ void runTripBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iteratio
                       TIMER_STOP(trip);
 
                       auto &json_result = std::get<json::Object>(result);
-                      if (rc != Status::Ok ||
-                          json_result.values.find("trips") == json_result.values.end())
+                      if (rc != Status::Ok || !json_result.values.contains("trips"))
                       {
                           auto code = std::get<json::String>(json_result.values["code"]).value;
                           if (code != "NoSegment")
@@ -588,8 +582,7 @@ void runTableBenchmark(const OSRM &osrm, const GPSTraces &gpsTraces, int iterati
                       statistics.push(TIMER_MSEC(table), iteration);
 
                       auto &json_result = std::get<json::Object>(result);
-                      if (rc != Status::Ok ||
-                          json_result.values.find("durations") == json_result.values.end())
+                      if (rc != Status::Ok || !json_result.values.contains("durations"))
                       {
                           auto code = std::get<json::String>(json_result.values["code"]).value;
                           if (code != "NoSegment")

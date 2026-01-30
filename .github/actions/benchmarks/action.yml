@@ -39,8 +39,6 @@ runs:
           echo "::endgroup::"
         done
 
-        python ${CI_DIR}/benchmark_github_summary.py ${LOG_DIR}
-
         killall -9 osrm-routed || true
 
     - name: Save benchmark cache

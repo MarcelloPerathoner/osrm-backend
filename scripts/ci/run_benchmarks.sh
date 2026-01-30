@@ -74,8 +74,8 @@ function run_benchmarks_for_folder {
     "$BENCHMARKS_FOLDER/alias-bench${EXE}" > "$RESULTS_FOLDER/alias.bench"
     echo "Running json-render-bench"
     "$BENCHMARKS_FOLDER/json-render-bench${EXE}"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
-    echo "Running packedvector-bench"
-    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
+    # echo "Running packedvector-bench"
+    # "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
     "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
@@ -111,7 +111,7 @@ function run_benchmarks_for_folder {
         for BENCH in nearest table trip route match; do
             echo "Running random $BENCH $ALGORITHM"
             START=$(date +%s.%N)
-            "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM $GPS_TRACES ${BENCH} \
+            "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM "$GPS_TRACES" ${BENCH} \
                 > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" 5 || true
             END=$(date +%s.%N)
             DIFF=$(echo "$END - $START" | bc)
@@ -119,6 +119,7 @@ function run_benchmarks_for_folder {
         done
     done
 
+    python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --headers
 
     for ALGORITHM in ch mld; do
         "$BINARIES_FOLDER/osrm-routed${EXE}" --algorithm $ALGORITHM "$TMP_FOLDER/data.osrm" > /dev/null 2>&1 &
@@ -135,7 +136,7 @@ function run_benchmarks_for_folder {
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
             START=$(date +%s.%N)
-            python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --host http://localhost:5000 --method $METHOD --iterations 5000 \
+            python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --method $METHOD \
                 --gps_traces "$GPS_TRACES" > "$RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench"
             END=$(date +%s.%N)
             DIFF=$(echo "$END - $START" | bc)
