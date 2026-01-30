@@ -119,7 +119,9 @@ function run_benchmarks_for_folder {
         done
     done
 
-    python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --headers
+    if [ -n "$GITHUB_STEP_SUMMARY" ]; then
+        echo "### e2e benchmarks" >> $GITHUB_STEP_SUMMARY
+    fi
 
     for ALGORITHM in ch mld; do
         "$BINARIES_FOLDER/osrm-routed${EXE}" --algorithm $ALGORITHM "$TMP_FOLDER/data.osrm" > /dev/null 2>&1 &
@@ -131,6 +133,12 @@ function run_benchmarks_for_folder {
             echo "osrm-routed failed to start for algorithm $ALGORITHM"
             kill -9 $OSRM_ROUTED_PID
             continue
+        fi
+
+        if [ -n "$GITHUB_STEP_SUMMARY" ]; then
+            echo "### e2e benchmarks"           >> $GITHUB_STEP_SUMMARY
+            echo "#### Algorithm: ${ALGORITHM}" >> $GITHUB_STEP_SUMMARY
+            python3 "$SCRIPTS_FOLDER/e2e_benchmark.py" --headers
         fi
 
         for METHOD in route nearest trip table match; do

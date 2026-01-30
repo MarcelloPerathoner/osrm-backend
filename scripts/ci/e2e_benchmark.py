@@ -137,9 +137,12 @@ def main():
     if args.headers:
         if "GITHUB_STEP_SUMMARY" in os.environ:
             with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-                summary.write("| ")
-                summary.write(" | ".join([h.strip(" :") for h in headers]))
-                summary.write(" |\n")
+                headers = [h.strip(": ") for h in headers]
+                summary.write("| Method  | ")
+                summary.write(" | ".join(headers))
+                summary.write(" |\n| ------- | ")
+                summary.write("| ".join([("-" * len(h) + ":") for h in headers]))
+                summary.write("|\n")
         sys.exit()
 
     np.random.seed(42)
@@ -168,9 +171,7 @@ def main():
     # running on github ci
     if "GITHUB_STEP_SUMMARY" in os.environ:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-            summary.write("| ")
-            summary.write(" | ".join([h.strip(" :") for h in headers]))
-            summary.write(" |\n| ")
+            summary.write(f"| {args.method:7} | ")
             summary.write(" | ".join(values))
             summary.write(" |\n")
 
