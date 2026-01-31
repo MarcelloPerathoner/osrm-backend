@@ -81,7 +81,7 @@ class BenchmarkRunner:
             raise Exception(f"Unknown benchmark: {benchmark_name}")
 
     def run(
-        self, samples: np.ndarray, benchmark_name, host, warmup_requests=5
+        self, samples: np.ndarray, benchmark_name, host, warmup_requests=2
     ) -> list[float]:
 
         t = (
@@ -90,15 +90,12 @@ class BenchmarkRunner:
             if platform.system() == "Windows"
             else time.process_time_ns
         )
-        for i in range(warmup_requests):
-            url = self.make_url(host, benchmark_name)
-            response = requests.get(url)
 
-        for i in range(-warmup_requests, samples[0].size):
+        for i in range(-warmup_requests, samples.shape[0]):
             # each iteration has to get the same queries, or we will compare apples with
             # oranges!
             random.seed(42)
-            for j in range(samples[1].size):
+            for j in range(samples.shape[1]):
                 url = self.make_url(host, benchmark_name)
                 gc.collect()
                 gc.disable()
@@ -143,32 +140,15 @@ def main():
         "--samples", type=int, help="Number of samples to take (100)", default=100
     )
     parser.add_argument(
-        "--iterations", type=int, help="Number of iterations to make (100)", default=100
+        "--iterations", type=int, help="Number of iterations to make (20)", default=20
     )
     parser.add_argument(
         "--gps_traces",
         type=str,
         help="Path to the GPS traces file",
     )
-    parser.add_argument(
-        "--headers", help="Write table headers only", action="store_true"
-    )
 
     args = parser.parse_args()
-
-    headers = [
-        "Mean (ms)",
-    ]
-
-    if args.headers:
-        if "GITHUB_STEP_SUMMARY" in os.environ:
-            with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-                summary.write("| Method  | ")
-                summary.write(" | ".join(headers))
-                summary.write(" |\n| ------- | ")
-                summary.write("| ".join([("-" * len(h) + ":") for h in headers]))
-                summary.write("|\n")
-        sys.exit()
 
     samples = np.ndarray((args.iterations, args.samples))
 
@@ -178,19 +158,9 @@ def main():
     samples = np.sum(samples, 1)
 
     ms = samples / 1e6
-
     mean, h = confidence_interval(ms)
-    values = [f"{mean:.2f} ± {h:.2f}"]
-    for header, v in zip(headers, values):
-        print(f"{header + ':':12} {v}")
 
-    # running on github ci
-    if "GITHUB_STEP_SUMMARY" in os.environ:
-        with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-            summary.write(f"| {args.method:7}")
-            for v in values:
-                summary.write(f" | {v}")
-            summary.write(" |\n")
+    print(f"{mean:.2f} ± {h:.2f}")
 
 
 if __name__ == "__main__":

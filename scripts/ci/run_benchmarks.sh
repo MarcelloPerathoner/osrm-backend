@@ -61,6 +61,12 @@ function measure_peak_ram_and_time {
     esac
 }
 
+function summary {
+    if [ -n "$GITHUB_STEP_SUMMARY" ]; then
+        printf '%b' "$1" >> $GITHUB_STEP_SUMMARY
+    fi
+}
+
 function run_benchmarks_for_folder {
     mkdir -p $RESULTS_FOLDER
 
@@ -99,27 +105,28 @@ function run_benchmarks_for_folder {
 
     popd
 
-    if [[ -f "$LIB_FOLDER/binding_napi_v8/node_osrm.node" ]]; then
-      for ALGORITHM in ch mld; do
-          for BENCH in nearest table trip route match; do
-              echo "Running node $BENCH $ALGORITHM"
-              node "$SCRIPTS_FOLDER/bench.js" "$LIB_FOLDER/index.js" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
-                  > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" || true
-          done
-      done
-    fi
+    # if [[ -f "$LIB_FOLDER/binding_napi_v8/node_osrm.node" ]]; then
+    #   for ALGORITHM in ch mld; do
+    #       for BENCH in nearest table trip route match; do
+    #           echo "Running node $BENCH $ALGORITHM"
+    #           node "$SCRIPTS_FOLDER/bench.js" "$LIB_FOLDER/index.js" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
+    #               > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" || true
+    #       done
+    #   done
+    # fi
+    #
+    # for ALGORITHM in ch mld; do
+    #     for BENCH in nearest table trip route match; do
+    #         echo "Running random $BENCH $ALGORITHM"
+    #         "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
+    #             > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" || true
+    #     done
+    # done
 
-    for ALGORITHM in ch mld; do
-        for BENCH in nearest table trip route match; do
-            echo "Running random $BENCH $ALGORITHM"
-            "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
-                > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" || true
-        done
-    done
-
-    if [ -n "$GITHUB_STEP_SUMMARY" ]; then
-        echo "### e2e benchmarks" >> $GITHUB_STEP_SUMMARY
-    fi
+    summary "### e2e benchmarks\n"
+    summary "Mean time for answering 100 randomly generated requests, in ms.\n"
+    summary "| Algorithm | Route | Nearest | Trip | Table | Match |\n"
+    summary "| --------- | -----:| -------:| ----:| -----:| -----:|\n"
 
     for ALGORITHM in ch mld; do
         "$BINARIES_FOLDER/osrm-routed${EXE}" --algorithm $ALGORITHM "$TMP_FOLDER/data.osrm" > /dev/null 2>&1 &
@@ -133,17 +140,16 @@ function run_benchmarks_for_folder {
             continue
         fi
 
-        if [ -n "$GITHUB_STEP_SUMMARY" ]; then
-            echo "#### Algorithm: ${ALGORITHM}" >> $GITHUB_STEP_SUMMARY
-            python3 "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --headers
-        fi
+        summary "| ${ALGORITHM}"
 
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
-            python3 "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --method $METHOD \
-                --gps_traces "$GPS_TRACES" > "$RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench"
+            TIME=`python "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --method $METHOD --gps_traces "$GPS_TRACES"`
+            echo $TIME > "$RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench"
+            summary " | $TIME"
         done
 
+        summary " |\n"
         kill -9 $OSRM_ROUTED_PID
     done
 
