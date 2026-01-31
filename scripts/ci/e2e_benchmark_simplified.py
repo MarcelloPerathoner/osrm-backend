@@ -143,7 +143,7 @@ def main():
     # running on github ci
     if "GITHUB_STEP_SUMMARY" in os.environ:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
-            summary.write(f"| {args.method:7} ")
+            summary.write(f"| {args.method:7}")
             for v in values:
                 summary.write(f" | {v:.2f}")
             summary.write(" |\n")

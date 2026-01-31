@@ -58,6 +58,7 @@ jobs:
             runs-on: ubuntu-24.04
             CCOMPILER: clang-20
             CXXCOMPILER: clang++-20
+            ENABLE_BENCHMARKS: ON
 
           - name: clang-19-release
             runs-on: ubuntu-24.04
@@ -92,7 +93,6 @@ jobs:
             CXXCOMPILER: clang++-19
             ENABLE_CLANG_TIDY: ON
             UNIT_TESTS: OFF
-            BENCHMARKS: OFF
             CUCUMBER_TESTS: OFF
             ENABLE_LTO: OFF
 
@@ -168,6 +168,7 @@ jobs:
             runs-on: macos-15 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
+            ENABLE_BENCHMARKS: ON
 
           - name: conan-macos-15-x64-release-node
             runs-on: macos-15-intel # x86_64
@@ -187,6 +188,7 @@ jobs:
 
           - name: conan-windows-2025-x64-release-node
             runs-on: windows-2025 # x64
+            ENABLE_BENCHMARKS: ON
             USE_CCACHE: sccache
 
           - name: conan-windows-2022-x64-release-node
@@ -224,10 +226,10 @@ jobs:
       ENABLE_COVERAGE:   ${{ (matrix.ENABLE_COVERAGE   == null) && 'OFF' || matrix.ENABLE_COVERAGE   }}
       ENABLE_ASAN:       ${{ (matrix.ENABLE_ASAN       == null) && 'OFF' || matrix.ENABLE_ASAN       }}
       ENABLE_UBSAN:      ${{ (matrix.ENABLE_UBSAN      == null) && 'OFF' || matrix.ENABLE_UBSAN      }}
+      ENABLE_BENCHMARKS: ${{ (matrix.ENABLE_BENCHMARKS == null) && 'OFF' || matrix.ENABLE_BENCHMARKS }}
       # default ON
       ENABLE_LTO:        ${{ (matrix.ENABLE_LTO        == null) && 'ON'  || matrix.ENABLE_LTO     }}
       UNIT_TESTS:        ${{ (matrix.UNIT_TESTS        == null) && 'ON'  || matrix.UNIT_TESTS     }}
-      BENCHMARKS:        ${{ (matrix.BENCHMARKS        == null) && 'ON'  || matrix.BENCHMARKS     }}
       CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS    == null) && 'ON'  || matrix.CUCUMBER_TESTS }}
       # default 'ccache'
       USE_CCACHE:        ${{ (matrix.USE_CCACHE        == null) && 'ccache' || matrix.USE_CCACHE }}
@@ -431,7 +433,7 @@ jobs:
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target tests
 
       - name: Cmake build benchmarks
-        if: env.BENCHMARKS == 'ON'
+        if: env.ENABLE_BENCHMARKS == 'ON'
         run: |
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
 
@@ -507,7 +509,7 @@ jobs:
         uses: ./.github/actions/node-package-tests
 
       - name: Run benchmarks
-        if: env.BENCHMARKS == 'ON'
+        if: env.ENABLE_BENCHMARKS == 'ON'
         continue-on-error: true
         uses: ./.github/actions/benchmarks
 

@@ -35,15 +35,17 @@ while getopts ":f:r:s:b:o:g:" opt; do
   esac
 done
 
-TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
-LIB_FOLDER=${ROOT_FOLDER}/lib
-TMP_FOLDER=/tmp
-EXE=${EXE:-}
-BENCHMARKS_FOLDER=${OSRM_BENCHMARKS_BUILD_DIR:-${BINARIES_FOLDER}/src/benchmarks}
-
 if [ -z "${ROOT_FOLDER:-}" ] || [ -z "${RESULTS_FOLDER:-}" ] || [ -z "${SCRIPTS_FOLDER:-}" ] || [ -z "${BINARIES_FOLDER:-}" ] || [ -z "${OSM_PBF:-}" ] || [ -z "${GPS_TRACES:-}" ]; then
     usage
 fi
+
+BENCHMARKS_FOLDER=${OSRM_BENCHMARKS_BUILD_DIR:-${BINARIES_FOLDER}/src/benchmarks}
+TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
+LIB_FOLDER=${ROOT_FOLDER}/lib
+TMP_FOLDER=${ROOT_FOLDER}/tmp
+EXE=${EXE:-}
+
+mkdir -p $TMP_FOLDER
 
 function measure_peak_ram_and_time {
     COMMAND=$1
@@ -77,7 +79,7 @@ function run_benchmarks_for_folder {
     echo "Running json-render-bench"
     "$BENCHMARKS_FOLDER/json-render-bench${EXE}"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
     echo "Running packedvector-bench"
-    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
+    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" 10 100000 > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
     "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
@@ -100,11 +102,8 @@ function run_benchmarks_for_folder {
       for ALGORITHM in ch mld; do
           for BENCH in nearest table trip route match; do
               echo "Running node $BENCH $ALGORITHM"
-              START=$(date +%s%N)
               node $SCRIPTS_FOLDER/bench.js $LIB_FOLDER/index.js $TMP_FOLDER/data.osrm $ALGORITHM $BENCH $GPS_TRACES \
                   > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5 || true
-              END=$(date +%s%N)
-              echo "Took: $(((END - START) / 1000000))ms"
           done
       done
     fi
@@ -112,11 +111,8 @@ function run_benchmarks_for_folder {
     for ALGORITHM in ch mld; do
         for BENCH in nearest table trip route match; do
             echo "Running random $BENCH $ALGORITHM"
-            START=$(date +%s%N)
             "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM "$GPS_TRACES" ${BENCH} \
                 > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" 5 || true
-            END=$(date +%s%N)
-            echo "Took: $(((END - START) / 1000000))ms"
         done
     done
 
@@ -143,11 +139,8 @@ function run_benchmarks_for_folder {
 
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
-            START=$(date +%s%N)
             python3 "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --method $METHOD \
                 --gps_traces "$GPS_TRACES" > "$RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench"
-            END=$(date +%s%N)
-            echo "Took: $(((END - START) / 1000000))ms"
         done
 
         kill -9 $OSRM_ROUTED_PID
