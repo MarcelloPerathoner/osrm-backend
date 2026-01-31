@@ -7,10 +7,9 @@ function usage {
 }
 
 ROOT_FOLDER=`pwd`
-
-BINARIES_FOLDER=${OSRM_BUILD_DIR:-${ROOT_FOLDER}/build}
 SCRIPTS_FOLDER=${ROOT_FOLDER}/scripts/ci
 RESULTS_FOLDER=${ROOT_FOLDER}/test/logs
+BINARIES_FOLDER=${OSRM_BUILD_DIR}
 
 while getopts ":f:r:s:b:o:g:" opt; do
   case $opt in
@@ -50,14 +49,14 @@ mkdir -p $TMP_FOLDER
 function measure_peak_ram_and_time {
     COMMAND=$1
     case $(uname) in
-      Windows)
-        $COMMAND > /dev/null
-      ;;
       Darwin)
-        gtime -f "Time: %es Peak RAM: %MKB" $COMMAND > /dev/null
+        gtime -f "Time: %es Peak RAM: %MKB" $COMMAND
       ;;
       Linux)
-        /usr/bin/time -f "Time: %es Peak RAM: %MKB" $COMMAND > /dev/null
+        /usr/bin/time -f "Time: %es Peak RAM: %MKB" $COMMAND
+      ;;
+      *)
+        $COMMAND
       ;;
     esac
 }
@@ -87,13 +86,13 @@ function run_benchmarks_for_folder {
     pushd $TMP_FOLDER
 
     echo "Running osrm-extract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" 2> "$RESULTS_FOLDER/osrm_extract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" > "$RESULTS_FOLDER/osrm_extract.bench" 2>&1
     echo "Running osrm-partition"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" 2> "$RESULTS_FOLDER/osrm_partition.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" > "$RESULTS_FOLDER/osrm_partition.bench" 2>&1
     echo "Running osrm-customize"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize${EXE} data.osrm" 2> "$RESULTS_FOLDER/osrm_customize.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize${EXE} data.osrm" > "$RESULTS_FOLDER/osrm_customize.bench" 2>&1
     echo "Running osrm-contract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract${EXE}  data.osrm" 2> "$RESULTS_FOLDER/osrm_contract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract${EXE}  data.osrm" > "$RESULTS_FOLDER/osrm_contract.bench" 2>&1
 
     pwd
     ls -al
@@ -147,7 +146,8 @@ function run_benchmarks_for_folder {
 
         kill -9 $OSRM_ROUTED_PID
     done
-    rm "$TMP_FOLDER/data.osm.pbf" "$TMP_FOLDER/data.osrm.*"
+
+    rm -f "$TMP_FOLDER/data.osm.pbf" "$TMP_FOLDER"/data.osrm.*
 }
 
 run_benchmarks_for_folder

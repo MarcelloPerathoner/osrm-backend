@@ -1,10 +1,28 @@
+"""This is a simplified version of e2e_benchmark.py.
+
+e2e_benchmark.py uses bootstrapping, which is a procedure that obtains new data sets by
+resampling an old data set, when obtaining new data sets may be hard or expensive. But
+since we can obtain as many data sets as we like, bootstrapping makes no sense.
+
+Resampling is crazy because we have observed random queries: very long ones and very
+short ones.
+
+We run N random queries against the server. Since the queries are randomly generated the
+response times obtained are meaningless except to compare them against the times
+obtained by other PRs.
+
+"""
+
 import argparse
 from collections import defaultdict
 import csv
+import gc
 import gzip
 import os
+import platform
 import random
 import time
+from statistics import NormalDist
 import sys
 
 import numpy as np
@@ -63,19 +81,46 @@ class BenchmarkRunner:
             raise Exception(f"Unknown benchmark: {benchmark_name}")
 
     def run(
-        self, samples: np.ndarray, benchmark_name, host, warmup_requests=50
+        self, samples: np.ndarray, benchmark_name, host, warmup_requests=5
     ) -> list[float]:
-        for i in range(-warmup_requests, samples.size):
+
+        t = (
+            # See: https://peps.python.org/pep-0564/#windows
+            time.perf_counter_ns
+            if platform.system() == "Windows"
+            else time.process_time_ns
+        )
+        for i in range(warmup_requests):
             url = self.make_url(host, benchmark_name)
-            start_time = time.time()
             response = requests.get(url)
-            end_time = time.time()
-            if response.status_code != 200:
-                code = response.json()["code"]
-                if code not in ["NoSegment", "NoMatch", "NoRoute", "NoTrips"]:
-                    raise Exception(f"Error: {response.status_code} {response.text}")
-            if i >= 0:
-                samples.flat[i] = end_time - start_time
+
+        for i in range(-warmup_requests, samples[0].size):
+            # each iteration has to get the same queries, or we will compare apples with
+            # oranges!
+            random.seed(42)
+            for j in range(samples[1].size):
+                url = self.make_url(host, benchmark_name)
+                gc.collect()
+                gc.disable()
+                start_time = t()
+                response = requests.get(url)
+                end_time = t()
+                gc.enable()
+                if response.status_code != 200:
+                    code = response.json()["code"]
+                    if code not in ["NoSegment", "NoMatch", "NoRoute", "NoTrips"]:
+                        raise Exception(
+                            f"Error: {response.status_code} {response.text}"
+                        )
+                if i >= 0:
+                    samples[i:j] = end_time - start_time
+
+
+def confidence_interval(data, confidence=0.95):
+    dist = NormalDist.from_samples(data)
+    z = NormalDist().inv_cdf((1 + confidence) / 2.0)
+    h = dist.stdev * z / ((len(data) - 1) ** 0.5)
+    return dist.mean, h
 
 
 def main():
@@ -95,7 +140,10 @@ def main():
         help="Benchmark method",
     )
     parser.add_argument(
-        "--samples", type=int, help="Number of samples to take (1000)", default=1000
+        "--samples", type=int, help="Number of samples to take (100)", default=100
+    )
+    parser.add_argument(
+        "--iterations", type=int, help="Number of iterations to make (100)", default=100
     )
     parser.add_argument(
         "--gps_traces",
@@ -109,9 +157,7 @@ def main():
     args = parser.parse_args()
 
     headers = [
-        "0.05 q (ms)",
-        "Median (ms)",
-        "0.95 q (ms)",
+        "Mean (ms)",
     ]
 
     if args.headers:
@@ -124,28 +170,26 @@ def main():
                 summary.write("|\n")
         sys.exit()
 
-    random.seed(42)
-    samples = np.ndarray(args.samples)
+    samples = np.ndarray((args.iterations, args.samples))
 
     runner = BenchmarkRunner(args.gps_traces)
     runner.run(samples, args.method, args.host)
 
-    ms = samples * 1000.0
+    samples = np.sum(samples, 1)
 
-    values = [
-        np.quantile(ms, 0.05),
-        np.median(ms),
-        np.quantile(ms, 0.95),
-    ]
-    for h, v in zip(headers, values):
-        print(f"{h + ':':21} {v:.2f}")
+    ms = samples / 1e6
+
+    mean, h = confidence_interval(ms)
+    values = [f"{mean:.2f} ± {h:.2f}"]
+    for header, v in zip(headers, values):
+        print(f"{header + ':':12} {v}")
 
     # running on github ci
     if "GITHUB_STEP_SUMMARY" in os.environ:
         with open(os.environ["GITHUB_STEP_SUMMARY"], "a") as summary:
             summary.write(f"| {args.method:7}")
             for v in values:
-                summary.write(f" | {v:.2f}")
+                summary.write(f" | {v}")
             summary.write(" |\n")
 
 

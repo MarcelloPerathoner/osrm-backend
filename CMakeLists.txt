@@ -172,6 +172,8 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
+file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/cmake-build-env.sh")
+
 # disclose to the afterworld the directory the built artifacts are in
 # usage: disclose_build_dir("OSRM_BUILD_DIR")
 function(disclose_build_dir var)
@@ -180,7 +182,7 @@ function(disclose_build_dir var)
   else()
     cmake_path(SET dir "${CMAKE_CURRENT_BINARY_DIR}")
   endif()
-  file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/cmake-build-env.sh" "${var}=${dir}\n")
+  file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/cmake-build-env.sh" "export ${var}=${dir}\n")
   set(ENV{${var}} "${dir}")
   if(DEFINED ENV{GITHUB_ENV})
     file(APPEND "$ENV{GITHUB_ENV}" "${var}=${dir}\n")
