@@ -49,16 +49,15 @@ mkdir -p $TMP_FOLDER
 
 function measure_peak_ram_and_time {
     COMMAND=$1
-    OUTPUT_FILE=$2
     case $(uname) in
       Windows)
-        $COMMAND > /dev/null 2>&1
+        $COMMAND > /dev/null
       ;;
       Darwin)
-        gtime -f "Time: %es Peak RAM: %MKB" $COMMAND 2>$OUTPUT_FILE >/dev/null
+        gtime -f "Time: %es Peak RAM: %MKB" $COMMAND > /dev/null
       ;;
       Linux)
-        /usr/bin/time -f "Time: %es Peak RAM: %MKB" $COMMAND 2>$OUTPUT_FILE >/dev/null
+        /usr/bin/time -f "Time: %es Peak RAM: %MKB" $COMMAND > /dev/null
       ;;
     esac
 }
@@ -88,13 +87,16 @@ function run_benchmarks_for_folder {
     pushd $TMP_FOLDER
 
     echo "Running osrm-extract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" 2> "$RESULTS_FOLDER/osrm_extract.bench"
     echo "Running osrm-partition"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" "$RESULTS_FOLDER/osrm_partition.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" 2> "$RESULTS_FOLDER/osrm_partition.bench"
     echo "Running osrm-customize"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize${EXE} data.osrm" "$RESULTS_FOLDER/osrm_customize.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize${EXE} data.osrm" 2> "$RESULTS_FOLDER/osrm_customize.bench"
     echo "Running osrm-contract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract${EXE} data.osrm" "$RESULTS_FOLDER/osrm_contract.bench"
+    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract${EXE}  data.osrm" 2> "$RESULTS_FOLDER/osrm_contract.bench"
+
+    pwd
+    ls -al
 
     popd
 
@@ -102,8 +104,8 @@ function run_benchmarks_for_folder {
       for ALGORITHM in ch mld; do
           for BENCH in nearest table trip route match; do
               echo "Running node $BENCH $ALGORITHM"
-              node $SCRIPTS_FOLDER/bench.js $LIB_FOLDER/index.js $TMP_FOLDER/data.osrm $ALGORITHM $BENCH $GPS_TRACES \
-                  > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" 5 || true
+              node "$SCRIPTS_FOLDER/bench.js" "$LIB_FOLDER/index.js" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
+                  > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" || true
           done
       done
     fi
@@ -111,8 +113,8 @@ function run_benchmarks_for_folder {
     for ALGORITHM in ch mld; do
         for BENCH in nearest table trip route match; do
             echo "Running random $BENCH $ALGORITHM"
-            "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM "$GPS_TRACES" ${BENCH} \
-                > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" 5 || true
+            "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
+                > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" || true
         done
     done
 
@@ -145,6 +147,7 @@ function run_benchmarks_for_folder {
 
         kill -9 $OSRM_ROUTED_PID
     done
+    rm "$TMP_FOLDER/data.osm.pbf" "$TMP_FOLDER/data.osrm.*"
 }
 
 run_benchmarks_for_folder

@@ -598,8 +598,8 @@ try
     if (argc < 6)
     {
         std::cerr << "Usage: " << argv[0]
-                  << " data.osrm <mld|ch> <path to GPS traces.csv> "
-                     "<route|match|trip|table|nearest> <number_of_iterations>\n";
+                  << " data.osrm <mld|ch> <route|match|trip|table|nearest>"
+                     " <number_of_iterations> <path to GPS traces.csv>\n";
         return EXIT_FAILURE;
     }
 
@@ -614,11 +614,10 @@ try
     OSRM osrm{config};
 
     GPSTraces gpsTraces{42};
-    gpsTraces.readCSV(argv[3]);
 
-    int iterations = std::stoi(argv[5]);
-
-    const auto benchmarkToRun = std::string{argv[4]};
+    const auto benchmarkToRun = std::string{argv[3]};
+    int iterations = std::stoi(argv[4]);
+    gpsTraces.readCSV(argv[5]);
 
     if (benchmarkToRun == "route")
     {

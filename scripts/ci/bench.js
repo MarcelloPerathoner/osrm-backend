@@ -186,8 +186,8 @@ async function main() {
   const path = args[1];
   const algorithm = args[2].toUpperCase();
   const method = args[3];
-  const gpsTracesFilePath = args[4];
-  const iterations = parseInt(args[5]);
+  const iterations = parseInt(args[4]);
+  const gpsTracesFilePath = args[5];
 
   const gpsData = new GPSData(gpsTracesFilePath);
   const osrm = new OSRM({path, algorithm});
