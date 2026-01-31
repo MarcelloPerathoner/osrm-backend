@@ -1,5 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import zlib from 'node:zlib';
 
 import seedrandom from 'seedrandom';
@@ -181,7 +182,7 @@ function calculateConfidenceInterval(data) {
 async function main() {
   const args = process.argv.slice(2);
 
-  const { default: OSRM } = await import(args[0]);
+  const { default: OSRM } = await import(pathToFileURL(args[0]).href);
   const path = args[1];
   const algorithm = args[2].toUpperCase();
   const method = args[3];

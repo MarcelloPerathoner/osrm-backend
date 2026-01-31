@@ -7,7 +7,6 @@ function usage {
 }
 
 ROOT_FOLDER=`pwd`
-echo $ROOT_FOLDER
 
 BINARIES_FOLDER=${OSRM_BUILD_DIR:-${ROOT_FOLDER}/build}
 SCRIPTS_FOLDER=${ROOT_FOLDER}/scripts/ci
@@ -77,8 +76,8 @@ function run_benchmarks_for_folder {
     "$BENCHMARKS_FOLDER/alias-bench${EXE}" > "$RESULTS_FOLDER/alias.bench"
     echo "Running json-render-bench"
     "$BENCHMARKS_FOLDER/json-render-bench${EXE}"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
-    # echo "Running packedvector-bench"
-    # "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
+    echo "Running packedvector-bench"
+    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
     "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
@@ -87,7 +86,6 @@ function run_benchmarks_for_folder {
     pushd $TMP_FOLDER
 
     echo "Running osrm-extract"
-    $BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf
     measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" "$RESULTS_FOLDER/osrm_extract.bench"
     echo "Running osrm-partition"
     measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" "$RESULTS_FOLDER/osrm_partition.bench"
