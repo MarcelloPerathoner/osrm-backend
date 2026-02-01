@@ -27,8 +27,6 @@ runs:
 
         set -o errexit
 
-        echo "±"
-
         "${CI_DIR}/run_benchmarks.sh" \
           -r "${LOG_DIR}" \
           -o "${TEST_DIR}/data/berlin.osm.pbf" \

@@ -1,4 +1,4 @@
-# Build OSRM from Source
+# Building OSRM from Source
 
 ## Prerequisites
 
@@ -27,7 +27,7 @@ cmake -B build/Release -DCMAKE_BUILD_TYPE=Release
 make -C build/Release -j 16 all tests benchmarks
 ```
 
-The binaries are now in `build/Release`.  Now you should [run the tests](Run tests).
+The binaries should be in `build/Release`.  Proceed with [running the tests](#Run-tests).
 
 ## Build using Conan
 
@@ -45,7 +45,7 @@ Then say:
 ```bash
 source .venv/bin/activate
 conan build -pr home --build=missing -s build_type=Release -o shared=True -o node_bindings=True
-conan run -pr home "make -C build/Release -j 16 tests benchmarks"
+conan run -pr home "make -C build/Release -j 16 all tests benchmarks"
 ```
 
 N.B. you must give the `source` command only once per shell invocation. It puts the
@@ -55,9 +55,14 @@ The binaries are now in `build/Release`.
 
 ## Run tests
 
-To run the tests say:
+To run the unit tests:
 
 ```bash
 for i in build/Release/unit_tests/*-tests ; do echo Running $i ; $i ; done
+```
+
+To run the Cucumber tests:
+
+```bash
 npm test -- --parallel 16
 ```

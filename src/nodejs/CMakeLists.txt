@@ -53,7 +53,7 @@ endforeach(binary)
 
 # For Conan-enabled builds we copy over tbb's shared objects for packaging.
 # TODO: consider using statically linked tbb library (for node_osrm only!)
-if (ENABLE_CONAN)
+if (USE_CONAN)
   foreach(libpath ${CONAN_LIB_DIRS_ONETBB})
     file(GLOB TBBGlob ${libpath}/*.*)
     foreach(filepath ${TBBGlob})

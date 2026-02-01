@@ -93,17 +93,14 @@ function run_benchmarks_for_folder {
     echo "Running rtree-bench"
     "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
 
-    ln -sf `realpath $OSM_PBF` "$TMP_FOLDER/data.osm.pbf"
-
     pushd $TMP_FOLDER
+
+    ln -sf `realpath $OSM_PBF` data.osm.pbf
 
     measure_peak_ram_and_time osrm-extract -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf
     measure_peak_ram_and_time osrm-partition data.osrm
     measure_peak_ram_and_time osrm-customize data.osrm
     measure_peak_ram_and_time osrm-contract  data.osrm
-
-    pwd
-    ls -al
 
     popd
 
