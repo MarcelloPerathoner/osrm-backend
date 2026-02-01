@@ -31,6 +31,5 @@ do
     set -x
     npx cucumber-js -p $base -p $algorithm -p $loadmethod $@
     { set +x; } 2>/dev/null
-    summary "\n"
   done
 done

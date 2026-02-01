@@ -254,8 +254,7 @@ jobs:
             echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
-            gendef --help || true
-            dlltool --help || true
+            cat C:/WINDOWS/system32/drivers/etc/hosts || true
           fi
 
       # Node
@@ -368,13 +367,6 @@ jobs:
             fi
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
           fi
-
-          # if [[ "${RUNNER_OS}" == "macOS" ]]; then
-          #   # missing from GCC path, needed for conan builds of libiconv, for example.
-          #   sudo xcode-select --switch /Library/Developer/CommandLineTools
-          #   echo "LIBRARY_PATH=${LIBRARY_PATH}:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/lib" >> $GITHUB_ENV
-          #   echo "CPATH=${CPATH}:/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk/usr/include" >> $GITHUB_ENV
-          # fi
 
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
             cat "$CONAN_GENERATORS_DIR/conan-build-env.sh"
