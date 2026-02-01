@@ -33,6 +33,7 @@ env:
   SCCACHE_DIR:       ${{ github.workspace }}/.sccache
   SCCACHE_CONF:      ${{ github.workspace }}/.sccacheconfig
   SCCACHE_ERROR_LOG: ${{ github.workspace }}/test/logs/sccache.log
+  SCCACHE_LOG:       debug
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
