@@ -254,7 +254,9 @@ jobs:
             echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
-            cat C:/WINDOWS/system32/drivers/etc/hosts || true
+            chcp
+            export PYTHONUTF8=1
+            # cat C:/WINDOWS/system32/drivers/etc/hosts || true
           fi
 
       # Node

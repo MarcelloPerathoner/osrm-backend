@@ -136,9 +136,9 @@ def main():
     parser.add_argument(
         "--host",
         type=str,
-        # localhost has abysmal performace on Windows
+        # "localhost" has abysmal performance on Windows
         default="http://127.0.0.1:5000",
-        help="Host URL (127.0.0.1:5000)",
+        help="Host URL (http://127.0.0.1:5000)",
     )
     parser.add_argument(
         "--method",

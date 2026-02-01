@@ -27,14 +27,14 @@ runs:
 
         set -o errexit
 
-        echo $PATH
+        echo "±"
 
-        ${CI_DIR}/run_benchmarks.sh \
-          -r ${LOG_DIR} \
-          -o ${TEST_DIR}/data/berlin.osm.pbf \
-          -g ${TEST_DIR}/data/berlin_gps_traces.csv.gz
+        "${CI_DIR}/run_benchmarks.sh" \
+          -r "${LOG_DIR}" \
+          -o "${TEST_DIR}/data/berlin.osm.pbf" \
+          -g "${TEST_DIR}/data/berlin_gps_traces.csv.gz"
 
-        for i in ${LOG_DIR}/*.bench; do
+        for i in "${LOG_DIR}/"*.bench; do
           echo "::group::$i"
           cat $i
           echo "::endgroup::"
