@@ -4,9 +4,6 @@ e2e_benchmark.py uses bootstrapping, which is a procedure that obtains new data 
 resampling an old data set, when obtaining new data sets may be hard or expensive. But
 since we can obtain as many data sets as we like, bootstrapping makes no sense.
 
-Resampling is crazy because we have observed random queries: very long ones and very
-short ones.
-
 We run N random queries against the server. Since the queries are randomly generated the
 response times obtained are meaningless except to compare them against the times
 obtained by other PRs.
@@ -23,7 +20,6 @@ import platform
 import random
 import time
 from statistics import NormalDist
-import sys
 
 import numpy as np
 import requests
@@ -80,37 +76,41 @@ class BenchmarkRunner:
         else:
             raise Exception(f"Unknown benchmark: {benchmark_name}")
 
-    def run(
-        self, samples: np.ndarray, benchmark_name, host, warmup_requests=2
-    ) -> list[float]:
+    def run(self, samples: np.ndarray, args) -> None:
 
+        # See: https://peps.python.org/pep-0564/#windows
         t = (
-            # See: https://peps.python.org/pep-0564/#windows
             time.perf_counter_ns
             if platform.system() == "Windows"
             else time.process_time_ns
         )
 
-        for i in range(-warmup_requests, samples.shape[0]):
-            # each iteration has to get the same queries, or we will compare apples with
-            # oranges!
-            random.seed(42)
-            for j in range(samples.shape[1]):
-                url = self.make_url(host, benchmark_name)
-                gc.collect()
-                gc.disable()
-                start_time = t()
-                response = requests.get(url)
-                end_time = t()
-                gc.enable()
+        # each iteration has to get the same queries, or we will compare apples with
+        # oranges!
+        random.seed(42)
+        reqs = [
+            [self.make_url(args.host, args.method), ""] for j in range(args.requests)
+        ]
+
+        for i in range(-args.warmup_iterations, args.iterations):
+            # gc.collect()
+            gc.disable()
+            start_time = t()
+            for req in reqs:
+                req[1] = requests.get(req[0])
+            end_time = t()
+            gc.enable()
+
+            for req in reqs:
+                url, response = req
                 if response.status_code != 200:
                     code = response.json()["code"]
                     if code not in ["NoSegment", "NoMatch", "NoRoute", "NoTrips"]:
                         raise Exception(
-                            f"Error: {response.status_code} {response.text}"
+                            f"Error: {url} {response.status_code} {response.text}"
                         )
-                if i >= 0:
-                    samples[i:j] = end_time - start_time
+            if i >= 0:
+                samples[i] = end_time - start_time
 
 
 def confidence_interval(data, confidence=0.95):
@@ -121,7 +121,17 @@ def confidence_interval(data, confidence=0.95):
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Run GPS benchmark tests.")
+    parser = argparse.ArgumentParser(
+        description="""
+    Run E2E benchmark tests.
+
+    This test reports the total execution time of a set of queries. The queries are
+    randomly generated once, and the query set is then repeatedly sent to osrm-routed.
+    The total times for each set are averaged and a confidence interval is calculated.
+
+    osrm-routed must already be running with a dataset covering the given GPS traces.
+    """
+    )
 
     parser.add_argument(
         "--host",
@@ -137,27 +147,37 @@ def main():
         help="Benchmark method",
     )
     parser.add_argument(
-        "--samples", type=int, help="Number of samples to take (100)", default=100
+        "--iterations",
+        type=int,
+        help="Number of iterations to make (20)",
+        default=20,
     )
     parser.add_argument(
-        "--iterations", type=int, help="Number of iterations to make (20)", default=20
+        "--requests",
+        type=int,
+        help="Number of requests per iteration (100)",
+        default=100,
+    )
+    parser.add_argument(
+        "--warmup-iterations",
+        type=int,
+        help="Number of warmup iterations to make (5)",
+        default=5,
     )
     parser.add_argument(
         "--gps_traces",
         type=str,
-        help="Path to the GPS traces file",
+        required=True,
+        help="Path to the GPS traces file (.gz allowed)",
     )
 
     args = parser.parse_args()
 
-    samples = np.ndarray((args.iterations, args.samples))
-
+    times = np.ndarray(args.iterations)
     runner = BenchmarkRunner(args.gps_traces)
-    runner.run(samples, args.method, args.host)
+    runner.run(times, args)
 
-    samples = np.sum(samples, 1)
-
-    ms = samples / 1e6
+    ms = times / 1e6
     mean, h = confidence_interval(ms)
 
     print(f"{mean:.2f} ± {h:.2f}")

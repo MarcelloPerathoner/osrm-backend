@@ -11,8 +11,7 @@ runs:
       id: berlin-cache-restore
       with:
         path: ${{ env.TEST_DIR }}/data/berlin.osm.pbf
-        key: berlin-osm-pbf-${{ github.sha }}
-        restore-keys: berlin-osm-pbf-
+        key: berlin-osm-pbf-
 
     - name: Download benchmark data
       if: steps.berlin-cache-restore.outputs.cache-hit != 'true'

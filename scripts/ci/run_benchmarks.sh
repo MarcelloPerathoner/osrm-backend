@@ -47,19 +47,25 @@ EXE=${EXE:-}
 mkdir -p $TMP_FOLDER
 
 function measure_peak_ram_and_time {
-    COMMAND=$1
+    echo "Running $1"
+
+    MSG='Time: %es Peak RAM: %MKB'
+
     case $(uname) in
-      Darwin)
-        gtime -f "Time: %es Peak RAM: %MKB" $COMMAND
-      ;;
       Linux)
-        /usr/bin/time -f "Time: %es Peak RAM: %MKB" $COMMAND
+        TIME=(/usr/bin/time -f "$MSG" -o "$RESULTS_FOLDER/$1.bench")
+      ;;
+      Darwin)
+        TIME=(gtime -f "$MSG" -o "$RESULTS_FOLDER/$1.bench")
       ;;
       *)
-        $COMMAND
+        TIME=()
       ;;
     esac
-}
+
+    "${TIME[@]}" $BINARIES_FOLDER/$@ > /dev/null 2>&1
+    cat "$RESULTS_FOLDER/$1.bench" || true
+ }
 
 function summary {
     if [ -n "$GITHUB_STEP_SUMMARY" ]; then
@@ -91,14 +97,10 @@ function run_benchmarks_for_folder {
 
     pushd $TMP_FOLDER
 
-    echo "Running osrm-extract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-extract${EXE} -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf" > "$RESULTS_FOLDER/osrm_extract.bench" 2>&1
-    echo "Running osrm-partition"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-partition${EXE} data.osrm" > "$RESULTS_FOLDER/osrm_partition.bench" 2>&1
-    echo "Running osrm-customize"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-customize${EXE} data.osrm" > "$RESULTS_FOLDER/osrm_customize.bench" 2>&1
-    echo "Running osrm-contract"
-    measure_peak_ram_and_time "$BINARIES_FOLDER/osrm-contract${EXE}  data.osrm" > "$RESULTS_FOLDER/osrm_contract.bench" 2>&1
+    measure_peak_ram_and_time osrm-extract -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf
+    measure_peak_ram_and_time osrm-partition data.osrm
+    measure_peak_ram_and_time osrm-customize data.osrm
+    measure_peak_ram_and_time osrm-contract  data.osrm
 
     pwd
     ls -al
@@ -134,7 +136,7 @@ function run_benchmarks_for_folder {
 
         # wait for osrm-routed to start
         if ! curl --retry-delay 3 --retry 10 --retry-all-errors \
-                "http://127.0.0.1:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true" > /dev/null 2>&1; then
+                "http://localhost:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true" > /dev/null 2>&1; then
             echo "osrm-routed failed to start for algorithm $ALGORITHM"
             kill -9 $OSRM_ROUTED_PID
             continue
@@ -145,6 +147,7 @@ function run_benchmarks_for_folder {
         for METHOD in route nearest trip table match; do
             echo "Running e2e benchmark for $METHOD $ALGORITHM"
             TIME=`python "$SCRIPTS_FOLDER/e2e_benchmark_simplified.py" --method $METHOD --gps_traces "$GPS_TRACES"`
+            echo $TIME
             echo $TIME > "$RESULTS_FOLDER/e2e_${METHOD}_${ALGORITHM}.bench"
             summary " | $TIME"
         done
