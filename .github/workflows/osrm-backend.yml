@@ -165,14 +165,8 @@ jobs:
             CCOMPILER: clang
             CXXCOMPILER: clang++
 
-          - name: conan-macos-15-arm64-release-node
-            runs-on: macos-15 # arm64
-            CCOMPILER: clang
-            CXXCOMPILER: clang++
-            ENABLE_BENCHMARKS: ON
-
           - name: conan-macos-15-x64-release-node
-            runs-on: macos-15-intel # x86_64
+            runs-on: macos-15-intel # x64
             CCOMPILER: clang
             CXXCOMPILER: clang++
 
@@ -180,6 +174,12 @@ jobs:
             runs-on: macos-15 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
+
+          - name: conan-macos-15-arm64-release-node
+            runs-on: macos-15 # arm64
+            CCOMPILER: clang
+            CXXCOMPILER: clang++
+            ENABLE_BENCHMARKS: ON
 
           - name: conan-macos-14-arm64-release-node
             runs-on: macos-14 # arm64
@@ -210,7 +210,7 @@ jobs:
       BUILD_NODE_BINDINGS:  ${{ contains(matrix.name, 'node')   && 'ON'    || 'OFF' }}
 
       ENABLE_CONAN:         ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
-      NODE_PACKAGE_TESTS:   ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
+      NODE_TESTS:           ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
       BUILD_NODE_PACKAGE:   ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
 
       CC:                ${{ matrix.CCOMPILER }}
@@ -497,8 +497,8 @@ jobs:
         run: |
           npm test -- --parallel $JOBS
 
-      - name: Run Node package tests
-        if: env.NODE_PACKAGE_TESTS == 'ON'
+      - name: Run Node tests
+        if: env.NODE_TESTS == 'ON'
         uses: ./.github/actions/node-package-tests
 
       - name: Run benchmarks
