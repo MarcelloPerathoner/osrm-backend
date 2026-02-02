@@ -33,29 +33,31 @@ target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
 
 target_link_libraries(node_osrm osrm_utils osrm_routed)
 
-add_custom_target(copy_artifacts ALL)
+# node_osrm artifacts in ${BINDING_DIR} to depend targets on
+set(ARTIFACTS "")
 
 # Create the binding directory at config time
 # MSVC outputs a warning if we make a dependency on this and create it at run time:
 # "MSB8065: Custom build for item binding_dir succeeded, but specified output
 # binding_dir was not created.  Incremental compilation may not work correctly."
 file(MAKE_DIRECTORY ${BINDING_DIR})
-message(STATUS "node_osrm artifacts will be copied to: ${BINDING_DIR}")
 
 set(OSRM_BINARIES osrm-extract osrm-contract osrm-routed osrm-datastore osrm-components osrm-partition osrm-customize)
-
 foreach(binary ${OSRM_BINARIES})
   set(t "${BINDING_DIR}/${binary}${CMAKE_EXECUTABLE_SUFFIX}")
   add_custom_command(OUTPUT "${t}"
                      COMMAND ${CMAKE_COMMAND} -E copy -t ${BINDING_DIR} $<TARGET_FILE:${binary}> $<TARGET_RUNTIME_DLLS:${binary}>
                      DEPENDS ${binary})
-  add_dependencies(copy_artifacts "${binary}")
+  list(APPEND ARTIFACTS "${t}")
 endforeach(binary)
 
 add_custom_command(OUTPUT ${BINDING_DIR}/node_osrm.node
                    COMMAND ${CMAKE_COMMAND} -E copy $<TARGET_FILE:node_osrm> ${BINDING_DIR}
                    DEPENDS node_osrm)
-add_dependencies(copy_artifacts node_osrm)
+list(APPEND ARTIFACTS "${BINDING_DIR}/node_osrm.node")
+
+message(STATUS "node_osrm artifacts will be copied to: ${BINDING_DIR}")
+add_custom_target(copy_artifacts ALL DEPENDS ${ARTIFACTS})
 
 if(NOT MSVC)
   add_custom_command(TARGET copy_artifacts POST_BUILD

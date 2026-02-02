@@ -415,8 +415,8 @@ jobs:
           echo "::endgroup::"
 
           if [[ "${BUILD_NODE_BINDINGS}" == "ON" ]]; then
-            echo "::group::ls ${OSRM_NODEJS_BUILD_DIR}"
-            ls -al ${OSRM_NODEJS_BUILD_DIR}
+            echo "::group::ls ${NAPI_DIR}"
+            ls -al ${NAPI_DIR}
             echo "::endgroup::"
           fi
 
