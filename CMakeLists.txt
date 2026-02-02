@@ -84,6 +84,8 @@ if(USE_CCACHE)
         "UseMultiToolTask=true"
         "TrackFileAccess=false"
       )
+      # sccache (v0.13.0) thinks the /scanDependencies argument is "multiple input files"
+      set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
     endif()
   endif()
 endif()
