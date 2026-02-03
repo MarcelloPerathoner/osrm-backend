@@ -18,10 +18,8 @@ set_target_properties(node_osrm PROPERTIES CXX_STANDARD 20)
 # TODO: we disable clang-tidy for this target, because it causes errors in third-party NodeJs related headers
 set_target_properties(node_osrm PROPERTIES CXX_CLANG_TIDY "")
 
-# https://github.com/cjntaylor/node-cmake/issues/53#issuecomment-842357457
-execute_process(COMMAND node -p "require('node-addon-api').include" WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE NODE_ADDON_API_DIR)
-string(REPLACE "\n" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
-string(REPLACE "\"" "" NODE_ADDON_API_DIR ${NODE_ADDON_API_DIR})
+execute_process(COMMAND node -p "require('node-addon-api').include.replaceAll('\"', '').trim()"
+                WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE NODE_ADDON_API_DIR)
 
 target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
 
