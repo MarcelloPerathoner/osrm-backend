@@ -11,23 +11,12 @@ Example: python scripts/ci/runtime_dependencies.py --grep "boost|tbb|osrm" lib/b
 
 import argparse
 import glob
+import os
 import platform
 import re
 import subprocess
-import shutil
 
 args = argparse.Namespace()
-
-
-def process(path: str):
-    if args.target:
-        try:
-            print(f"Copying {path}")
-            shutil.copy(path, args.target)
-        except shutil.SameFileError:
-            pass
-    else:
-        print(path)
 
 
 def main():
@@ -45,12 +34,6 @@ def main():
         "--grep",
         type=str,
         help="regular expression the libraries must match",
-    )
-    parser.add_argument(
-        "-t",
-        "--target",
-        type=str,
-        help="the target directory",
     )
 
     parser.parse_args(namespace=args)
@@ -79,30 +62,37 @@ def main():
             recursive=True,
         )
         if len(tool) > 0:
-            print(f"Found: {tool[0]}")
             tool = [tool[0], "/DEPENDENTS"]
             regex = re.compile(r"^\s+(.*dll)$")
         # FIXME: find the path of the dlls using PATH
 
-    libs = set()
+    def gather(libs):
+        for lib in list(libs):
+            with subprocess.Popen(
+                tool + [lib], stdout=subprocess.PIPE, encoding="utf-8"
+            ) as proc:
+                for line in proc.stdout.readlines():
+                    m = regex.search(line)
+                    if m:
+                        libs.add(m.group(1))
 
-    for filename in args.filenames:
-        tool += [filename]
-        print(f"Running: {tool}")
-        with subprocess.Popen(tool, stdout=subprocess.PIPE, encoding="utf-8") as proc:
-            for line in proc.stdout.readlines():
-                print(line)
-                m = regex.search(line)
-                if m:
-                    libs.add(m.group(1))
+    libs = set(args.filenames)
+    old_libs = set()
+
+    while old_libs != libs:
+        old_libs = set(libs)
+        gather(libs)
+
+    libs = libs.difference(args.filenames)
 
     for path in libs:
+        path = os.path.realpath(path)
         if args.grep:
             m = args.grep.search(path)
             if m:
-                process(path)
+                print(path)
         else:
-            process(path)
+            print(path)
 
 
 if __name__ == "__main__":

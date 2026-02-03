@@ -177,14 +177,14 @@ set(CMAKE_BUILD_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake-build-env.sh")
 file(REMOVE "${CMAKE_BUILD_ENV_SH}")
 
 # disclose to the afterworld the directory the built artifacts are in
-# usage: disclose_build_dir("OSRM_BUILD_DIR")
-function(disclose_build_dir var force_multi)
-  if(CMAKE_CONFIGURATION_TYPES OR force_multi)
+# usage: disclose_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+function(disclose_build_dir var value)
+  if(CMAKE_CONFIGURATION_TYPES)
     # multi-config generators (eg. Visual Studio) append /Release or /Debug
-    cmake_path(APPEND dir "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_BUILD_TYPE}")
+    cmake_path(APPEND dir "${value}" "${CMAKE_BUILD_TYPE}")
   else()
     # single-config generator (eg. Unix Makefiles)
-    cmake_path(SET dir "${CMAKE_CURRENT_BINARY_DIR}")
+    cmake_path(SET dir "${value}")
   endif()
   file(APPEND "${CMAKE_BUILD_ENV_SH}" "export ${var}=${dir}\n")
   set(ENV{${var}} "${dir}")
@@ -682,7 +682,9 @@ add_custom_target(uninstall
 # Modular build system: each directory registered here provides its own CMakeLists.txt
 add_subdirectory(unit_tests)
 add_subdirectory(src/benchmarks)
-add_subdirectory(src/nodejs)
+if(CMAKE_JS_INC)
+  add_subdirectory(src/nodejs nodejs)
+endif()
 
 if(ENABLE_FUZZING)
   # Requires libosrm being built with sanitizers; make configurable and default to ubsan
@@ -718,7 +720,7 @@ endforeach()
 add_library(check-headers STATIC EXCLUDE_FROM_ALL ${sources})
 set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_headers_dir})
 
-disclose_build_dir("OSRM_BUILD_DIR" False)
+disclose_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # debug print the list of include dirs
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)

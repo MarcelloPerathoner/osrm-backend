@@ -138,4 +138,4 @@ add_custom_target(tests
   add_dependencies(tests library-tests)
 #endif()
 
-disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR" False)
+disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")

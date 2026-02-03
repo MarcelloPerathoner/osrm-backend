@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import textwrap
 
 from conan import ConanFile
@@ -43,9 +44,13 @@ def _bash_path(path):
 class OsrmConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
-    options = {"shared": [True, False]}
+    options = {
+        "shared": [True, False],
+        "node_bindings": [True, False],
+        "ccache": [False, "ccache", "sccache"],
+    }
 
-    default_options = {"shared": False}
+    default_options = {"shared": False, "node_bindings": False, "ccache": "ccache"}
 
     def _writeEnvSh(self, env_vars):
         """
@@ -105,10 +110,26 @@ class OsrmConan(ConanFile):
         # and can be recalled with `cmake --preset conan-release`
         # Note: this does not mean we are supporting all of these options yet in conan
         tc.cache_variables["USE_CONAN"] = True
-        tc.cache_variables["BUILD_SHARED_LIBS"] = self.options.shared or _getOpt(
-            "BUILD_SHARED_LIBS"
+        tc.cache_variables["BUILD_SHARED_LIBS"] = (
+            _getOpt("BUILD_SHARED_LIBS") or self.options.shared
         )
-        tc.cache_variables["USE_CCACHE"] = os.environ.get("USE_CCACHE", "off")
+
+        if _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings:
+            # call cmake-js and grab the -Defines
+            with subprocess.Popen(
+                ["npx", "cmake-js", "print-configure"],
+                stdout=subprocess.PIPE,
+                encoding="utf-8",
+            ) as proc:
+                for line in proc.stdout.readlines():
+                    m = re.search("'-D((?:CMAKE_JS|NODE|CMAKE_CXX)_.*)=(.*)'", line)
+                    if m:
+                        tc.cache_variables[m.group(1)] = m.group(2)
+
+        if "USE_CCACHE" in os.environ:
+            tc.cache_variables["USE_CCACHE"] = os.environ["USE_CCACHE"]
+        else:
+            tc.cache_variables["USE_CCACHE"] = self.options.ccache
         for i in (
             "ASSERTIONS",
             "CCACHE",

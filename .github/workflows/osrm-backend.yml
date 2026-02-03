@@ -205,17 +205,17 @@ jobs:
     env:
       PUBLISH: OFF # set later
 
-      BUILD_TYPE:        ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
-      BUILD_SHARED_LIBS: ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
+      BUILD_TYPE:         ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
+      BUILD_SHARED_LIBS:  ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
 
-      ENABLE_CONAN:      ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
-      NODE_PACKAGE:      ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
-      NODE_TESTS:        ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
+      ENABLE_CONAN:       ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
+      BUILD_NODE_PACKAGE: ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
+      NODE_TESTS:         ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
 
-      CC:                ${{ matrix.CCOMPILER }}
-      CFLAGS:            ${{ matrix.CFLAGS }}
-      CXX:               ${{ matrix.CXXCOMPILER }}
-      CXXFLAGS:          ${{ matrix.CXXFLAGS }}
+      CC:                 ${{ matrix.CCOMPILER }}
+      CFLAGS:             ${{ matrix.CFLAGS }}
+      CXX:                ${{ matrix.CXXCOMPILER }}
+      CXXFLAGS:           ${{ matrix.CXXFLAGS }}
 
       # default 24
       NODE_VERSION:      ${{ (matrix.NODE_VERSION == null)      && 24    || matrix.NODE_VERSION }}
@@ -386,6 +386,10 @@ jobs:
 
       - name: Cmake configure
         run: |
+          if [[ "${BUILD_NODE_PACKAGE}" == "ON" ]]; then
+            NODEJS_CONFIG=`python src/nodejs/cmake-js-configure.py`
+          fi
+
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
             cmake -B ${CONAN_BUILD_DIR} --preset ${CONAN_CMAKE_PRESET}
           else
@@ -398,7 +402,7 @@ jobs:
                 -DENABLE_COVERAGE=${ENABLE_COVERAGE:-OFF} \
                 -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
-                -DENABLE_LTO=${ENABLE_LTO:-ON}
+                -DENABLE_LTO=${ENABLE_LTO:-ON} ${NODEJS_CONFIG:-}
           fi
 
       - name: Build core
@@ -416,9 +420,8 @@ jobs:
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
 
       - name: Build Node package
-        if: env.NODE_PACKAGE == 'ON'
+        if: env.BUILD_NODE_PACKAGE == 'ON'
         run: |
-          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target node_osrm
           ${CI_DIR}/node_package.sh
 
       - name: Debug build
@@ -521,7 +524,7 @@ jobs:
         uses: ./.github/actions/node-package-tests
 
       - name: Publish Node package
-        if: env.NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON'
+        if: env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON'
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true

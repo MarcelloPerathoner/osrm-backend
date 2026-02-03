@@ -26,4 +26,4 @@ add_custom_target(benchmarks
     json-render-bench
     alias-bench)
 
-disclose_build_dir("OSRM_BENCHMARKS_BUILD_DIR" False)
+disclose_build_dir("OSRM_BENCHMARKS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")

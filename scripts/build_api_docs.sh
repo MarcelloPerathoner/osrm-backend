@@ -39,9 +39,9 @@ cp docs/*.md build/docs/tmp/content
 
 # Now, run the scripts to generate the actual final product
 pushd build/docs/tmp
-# NODE_ENV=production browserify src/index.js | uglifyjs -c -m > ../bundle.js
-# babel src --out-dir lib
-# node lib/render.js ../index.html
+NODE_ENV=production browserify src/index.js | uglifyjs -c -m > ../bundle.js
+babel src --out-dir lib
+node lib/render.js ../index.html
 popd
 
 # Cleanup
