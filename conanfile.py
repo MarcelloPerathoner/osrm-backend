@@ -43,9 +43,9 @@ def _bash_path(path):
 class OsrmConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
-    options = {"shared": [True, False], "node_bindings": [True, False]}
+    options = {"shared": [True, False]}
 
-    default_options = {"shared": False, "node_bindings": False}
+    default_options = {"shared": False}
 
     def _writeEnvSh(self, env_vars):
         """
@@ -107,9 +107,6 @@ class OsrmConan(ConanFile):
         tc.cache_variables["USE_CONAN"] = True
         tc.cache_variables["BUILD_SHARED_LIBS"] = self.options.shared or _getOpt(
             "BUILD_SHARED_LIBS"
-        )
-        tc.cache_variables["BUILD_NODE_BINDINGS"] = (
-            self.options.node_bindings or _getOpt("BUILD_NODE_BINDINGS")
         )
         tc.cache_variables["USE_CCACHE"] = os.environ.get("USE_CCACHE", "off")
         for i in (

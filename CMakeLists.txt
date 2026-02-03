@@ -39,7 +39,6 @@ if(BUILD_AS_SUBPROJECT)
 endif()
 
 option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
-option(BUILD_NODE_BINDINGS "Build NodeJs bindings" OFF)
 option(BUILD_PACKAGE "Build OSRM package" OFF)
 option(ENABLE_ASSERTIONS "Use assertions in release mode" OFF)
 option(ENABLE_CCACHE "Speed up incremental rebuilds via ccache (ON)" ON)
@@ -174,17 +173,20 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
-file(REMOVE "${CMAKE_CURRENT_BINARY_DIR}/cmake-build-env.sh")
+set(CMAKE_BUILD_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake-build-env.sh")
+file(REMOVE "${CMAKE_BUILD_ENV_SH}")
 
 # disclose to the afterworld the directory the built artifacts are in
 # usage: disclose_build_dir("OSRM_BUILD_DIR")
-function(disclose_build_dir var)
-  if(MSVC)
+function(disclose_build_dir var force_multi)
+  if(CMAKE_CONFIGURATION_TYPES OR force_multi)
+    # multi-config generators (eg. Visual Studio) append /Release or /Debug
     cmake_path(APPEND dir "${CMAKE_CURRENT_BINARY_DIR}" "${CMAKE_BUILD_TYPE}")
   else()
+    # single-config generator (eg. Unix Makefiles)
     cmake_path(SET dir "${CMAKE_CURRENT_BINARY_DIR}")
   endif()
-  file(APPEND "${CMAKE_CURRENT_BINARY_DIR}/cmake-build-env.sh" "export ${var}=${dir}\n")
+  file(APPEND "${CMAKE_BUILD_ENV_SH}" "export ${var}=${dir}\n")
   set(ENV{${var}} "${dir}")
   if(DEFINED ENV{GITHUB_ENV})
     file(APPEND "$ENV{GITHUB_ENV}" "${var}=${dir}\n")
@@ -686,10 +688,7 @@ add_custom_target(uninstall
 # Modular build system: each directory registered here provides its own CMakeLists.txt
 add_subdirectory(unit_tests)
 add_subdirectory(src/benchmarks)
-
-if(BUILD_NODE_BINDINGS)
-  add_subdirectory(src/nodejs)
-endif()
+add_subdirectory(src/nodejs)
 
 if(ENABLE_FUZZING)
   # Requires libosrm being built with sanitizers; make configurable and default to ubsan
@@ -725,7 +724,7 @@ endforeach()
 add_library(check-headers STATIC EXCLUDE_FROM_ALL ${sources})
 set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_headers_dir})
 
-disclose_build_dir("OSRM_BUILD_DIR")
+disclose_build_dir("OSRM_BUILD_DIR" False)
 
 message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")
@@ -733,7 +732,6 @@ message(STATUS "C compiler is:          ${CMAKE_C_COMPILER}")
 message(STATUS "CXX compiler is:        ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler cache is:      ${ccache_bin}")
 message(STATUS "BUILD_SHARED_LIBS is:   ${BUILD_SHARED_LIBS}")
-message(STATUS "BUILD_NODE_BINDINGS is: ${BUILD_NODE_BINDINGS}")
 message(STATUS "LTO / IPO is:           ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 message(STATUS "ASSERTIONS are:         ${ENABLE_ASSERTIONS}")
 message(STATUS "-----------------------")

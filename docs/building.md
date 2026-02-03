@@ -20,6 +20,12 @@ Install dependencies:
 sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
 ```
 
+If you want to build the node package, you also need:
+
+```bash
+sudo apt-get install -y chrpath
+```
+
 Build:
 
 ```bash

@@ -19,7 +19,10 @@ args = argparse.Namespace()
 
 def process(path: str):
     if args.target:
-        shutil.copy(path, args.target)
+        try:
+            shutil.copy(path, args.target)
+        except shutil.SameFileError:
+            pass
     print(path)
 
 
@@ -53,10 +56,14 @@ def main():
 
     libs = {}
 
-    for filename in args.filenames:
-        # <TAB>libboost_date_time.so.1.83.0 => /path/to/libboost_date_time.so.1.83.0 (0x00007fcf3276f000)
-        regex = re.compile(r"^\s*(.*) => (.*) \(0x")
+    # ldd
+    # <TAB>libboost_date_time.so.1.83.0 => /path/to/libboost_date_time.so.1.83.0 (0x00007fcf3276f000)
+    regex = re.compile(r"^\s*(.*) => (.*) \(0x")
 
+    for filename in args.filenames:
+
+        # macOS: otool -L
+        # Windows: dumpbin /DEPENDENTS MathClient.exe
         with subprocess.Popen(
             ["ldd", filename], stdout=subprocess.PIPE, encoding="utf-8"
         ) as proc:

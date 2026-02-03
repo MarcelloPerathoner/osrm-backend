@@ -590,7 +590,7 @@ function(add_nodejs_module NAME)
     endif()
 
     # A node module is a shared library
-    add_library(${NAME} SHARED ${NODEJS_SOURCES} ${ARGN})
+    add_library(${NAME} SHARED EXCLUDE_FROM_ALL ${NODEJS_SOURCES} ${ARGN})
     # Add compiler defines for the module
     # Two helpful ones:
     # MODULE_NAME must match the name of the build library, define that here

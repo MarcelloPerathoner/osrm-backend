@@ -246,11 +246,11 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
-            sudo apt-get install -y ${CC} ${CXX} ccache zlib1g-dev
+            sudo apt-get install -y ${CC} ${CXX} ccache chrpath zlib1g-dev
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a version of bash that can do string lowercasing
-            brew install bash ccache gnu-time
+            brew install bash ccache chrpath gnu-time
             bash --version
             echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
@@ -393,7 +393,6 @@ jobs:
             cmake -B ${BUILD_DIR} \
                 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} \
-                -DBUILD_NODE_BINDINGS=${BUILD_NODE_BINDINGS:-OFF} \
                 -DUSE_CCACHE=${USE_CCACHE} \
                 -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
                 -DENABLE_CLANG_TIDY=${ENABLE_CLANG_TIDY:-OFF} \
@@ -407,18 +406,10 @@ jobs:
         run: |
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS}
 
-      - name: Debug build
-        if: always()
+      - name: Cmake node bindings
+        if: env.BUILD_NODE_BINDINGS == 'ON'
         run: |
-          echo "::group::ls ${OSRM_BUILD_DIR}"
-          ls -al ${OSRM_BUILD_DIR}
-          echo "::endgroup::"
-
-          if [[ "${BUILD_NODE_BINDINGS}" == "ON" ]]; then
-            echo "::group::ls ${NAPI_DIR}"
-            ls -al ${NAPI_DIR}
-            echo "::endgroup::"
-          fi
+          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target node_osrm
 
       - name: Cmake build unit tests
         if: env.UNIT_TESTS == 'ON'
@@ -429,6 +420,25 @@ jobs:
         if: env.ENABLE_BENCHMARKS == 'ON'
         run: |
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
+
+      - name: Debug build
+        if: always()
+        run: |
+          echo "::group::ls ${OSRM_BUILD_DIR}"
+          ls -al ${OSRM_BUILD_DIR}
+          echo "::endgroup::"
+
+          echo "::group::ls ${OSRM_NODEJS_BUILD_DIR}"
+          ls -al ${OSRM_NODEJS_BUILD_DIR} || true
+          echo "::endgroup::"
+
+          echo "::group::ls ${OSRM_UNIT_TESTS_BUILD_DIR}"
+          ls -al ${OSRM_UNIT_TESTS_BUILD_DIR} || true
+          echo "::endgroup::"
+
+          echo "::group::ls ${OSRM_BENCHMARKS_BUILD_DIR}"
+          ls -al ${OSRM_BENCHMARKS_BUILD_DIR} || true
+          echo "::endgroup::"
 
       # Save compiler cache
 
