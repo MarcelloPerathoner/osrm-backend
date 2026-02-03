@@ -19,12 +19,13 @@ fi
 # copy files into BINDINGS
 
 source build/cmake-build-env.sh
+mkdir -p "$BINDINGS"
 cp "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM" "$BINDINGS"
 for n in components contract customize datastore extract partition routed ; do
-    cp "$OSRM_BUILD_DIR/osrm-$n" "$BINDINGS"
+    cp "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"
 done
 
-# copy dynamic librariy dependencies
+# copy dynamic library dependencies
 python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" --target "$BINDINGS" "$BINDINGS/$NODE_OSRM"
 
 if [[ $(uname -s) == 'Linux' ]]; then

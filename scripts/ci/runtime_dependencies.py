@@ -10,6 +10,7 @@ Example: python scripts/ci/runtime_dependencies.py --grep "boost|tbb|osrm" lib/b
 """
 
 import argparse
+import glob
 import platform
 import re
 import subprocess
@@ -72,9 +73,14 @@ def main():
         regex = re.compile(r"^\s+(.*dylib)\s")
     if platform.system() == "Windows":
         # https://learn.microsoft.com/en-us/cpp/build/reference/dependents?view=msvc-170
-        tool = ["dumpbin", "/DEPENDENTS"]
-        regex = re.compile(r"^\s+(.*dll)$")
-        # FIXME: find the path using PATH
+        tool = glob.glob(
+            "C:\\Program Files\\Microsoft Visual Studio\\*\\Enterprise\\VC\\Tools\\MSVC\\*\\bin\\Hostx64\\x64\\dumpbin.exe"
+        )
+        if len(tool) == 1:
+            print(f"Found: {tool}")
+            tool += ["/DEPENDENTS"]
+            regex = re.compile(r"^\s+(.*dll)$")
+        # FIXME: find the path of the dlls using PATH
 
     libs = set()
 
