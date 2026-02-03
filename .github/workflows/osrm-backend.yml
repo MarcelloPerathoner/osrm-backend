@@ -61,12 +61,12 @@ jobs:
             CXXCOMPILER: clang++-20
             ENABLE_BENCHMARKS: ON
 
-          - name: clang-19-release
+          - name: clang-19-release-node
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
 
-          - name: clang-19-release-shared
+          - name: clang-19-release-shared-node
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
@@ -205,13 +205,12 @@ jobs:
     env:
       PUBLISH: OFF # set later
 
-      BUILD_TYPE:           ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
-      BUILD_SHARED_LIBS:    ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
-      BUILD_NODE_BINDINGS:  ${{ contains(matrix.name, 'node')   && 'ON'    || 'OFF' }}
+      BUILD_TYPE:        ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
+      BUILD_SHARED_LIBS: ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
 
-      ENABLE_CONAN:         ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
-      NODE_TESTS:           ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
-      BUILD_NODE_PACKAGE:   ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
+      ENABLE_CONAN:      ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
+      NODE_PACKAGE:      ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
+      NODE_TESTS:        ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
 
       CC:                ${{ matrix.CCOMPILER }}
       CFLAGS:            ${{ matrix.CFLAGS }}
@@ -250,7 +249,7 @@ jobs:
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a version of bash that can do string lowercasing
-            brew install bash ccache chrpath gnu-time
+            brew install bash ccache gnu-time
             bash --version
             echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
@@ -402,24 +401,25 @@ jobs:
                 -DENABLE_LTO=${ENABLE_LTO:-ON}
           fi
 
-      - name: Cmake build core
+      - name: Build core
         run: |
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS}
 
-      - name: Cmake node bindings
-        if: env.BUILD_NODE_BINDINGS == 'ON'
-        run: |
-          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target node_osrm
-
-      - name: Cmake build unit tests
+      - name: Build unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target tests
 
-      - name: Cmake build benchmarks
+      - name: Build benchmarks
         if: env.ENABLE_BENCHMARKS == 'ON'
         run: |
           cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
+
+      - name: Build Node package
+        if: env.NODE_PACKAGE == 'ON'
+        run: |
+          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target node_osrm
+          ${CI_DIR}/node_package.sh
 
       - name: Debug build
         if: always()
@@ -428,16 +428,20 @@ jobs:
           ls -al ${OSRM_BUILD_DIR}
           echo "::endgroup::"
 
-          echo "::group::ls ${OSRM_NODEJS_BUILD_DIR}"
-          ls -al ${OSRM_NODEJS_BUILD_DIR} || true
-          echo "::endgroup::"
-
           echo "::group::ls ${OSRM_UNIT_TESTS_BUILD_DIR}"
           ls -al ${OSRM_UNIT_TESTS_BUILD_DIR} || true
           echo "::endgroup::"
 
           echo "::group::ls ${OSRM_BENCHMARKS_BUILD_DIR}"
           ls -al ${OSRM_BENCHMARKS_BUILD_DIR} || true
+          echo "::endgroup::"
+
+          echo "::group::ls ${OSRM_NODEJS_BUILD_DIR}"
+          ls -al ${OSRM_NODEJS_BUILD_DIR} || true
+          echo "::endgroup::"
+
+          echo "::group::ls ${NAPI_DIR}"
+          ls -al ${NAPI_DIR} || true
           echo "::endgroup::"
 
       # Save compiler cache
@@ -507,30 +511,17 @@ jobs:
         run: |
           npm test -- --parallel $JOBS
 
-      - name: Run Node tests
-        if: env.NODE_TESTS == 'ON'
-        uses: ./.github/actions/node-package-tests
-
       - name: Run benchmarks
         if: env.ENABLE_BENCHMARKS == 'ON'
         continue-on-error: true
         uses: ./.github/actions/benchmarks
 
-      - name: Upload test logs
-        uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          if-no-files-found: ignore
-          name: ${{ matrix.name }}-test-logs
-          path: ${{ env.LOG_DIR }}
-
-      - name: Build Node package
-        if: env.BUILD_NODE_PACKAGE == 'ON'
-        run: |
-          ${CI_DIR}/node_package.sh
+      - name: Run Node tests
+        if: env.NODE_TESTS == 'ON'
+        uses: ./.github/actions/node-package-tests
 
       - name: Publish Node package
-        if: env.BUILD_NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON'
+        if: env.NODE_PACKAGE == 'ON' && env.PUBLISH == 'ON'
         uses: ncipollo/release-action@v1
         with:
           allowUpdates: true
@@ -542,6 +533,14 @@ jobs:
           omitNameDuringUpdate: true
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload log files
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          if-no-files-found: ignore
+          name: ${{ matrix.name }}-test-logs
+          path: ${{ env.LOG_DIR }}
 
   ci-complete:
     runs-on: ubuntu-latest

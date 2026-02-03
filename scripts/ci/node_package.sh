@@ -5,6 +5,7 @@ set -o pipefail
 
 BINDINGS="./lib/binding_napi_v8"
 NODE_OSRM="node_osrm.node"
+ELF_OUT="build/readelf-output.txt"
 
 echo "node version is:"
 which node
@@ -23,9 +24,10 @@ for n in components contract customize datastore extract partition routed ; do
     cp "$OSRM_BUILD_DIR/osrm-$n" "$BINDINGS"
 done
 
+# copy dynamic librariy dependencies
+python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" --target "$BINDINGS" "$BINDINGS/$NODE_OSRM"
+
 if [[ $(uname -s) == 'Linux' ]]; then
-  # copy .so dependencies
-  python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" --target "$BINDINGS" "$BINDINGS/$NODE_OSRM"
   chrpath --replace '$ORIGIN' "$BINDINGS/$NODE_OSRM"
 fi
 
@@ -35,13 +37,13 @@ echo "dumping binary meta..."
 # enforce that binary has proper ORIGIN flags so that
 # it can portably find libtbb.so in the same directory
 if [[ $(uname -s) == 'Linux' ]]; then
-    readelf -d "$BINDINGS/$NODE_OSRM" > readelf-output.txt
-    if grep -q 'Flags: ORIGIN' readelf-output.txt; then
+    readelf -d "$BINDINGS/$NODE_OSRM" > "$ELF_OUT"
+    if grep -q 'Flags: ORIGIN' "$ELF_OUT"; then
         echo "Found ORIGIN flag in readelf output"
-        cat readelf-output.txt
+        cat "$ELF_OUT"
     else
         echo "*** Error: Could not find ORIGIN flag in readelf output"
-        cat readelf-output.txt
+        cat "$ELF_OUT"
         exit 1
     fi
 fi

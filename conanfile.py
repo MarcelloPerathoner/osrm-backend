@@ -102,7 +102,7 @@ class OsrmConan(ConanFile):
     def generate(self):
         tc = CMakeToolchain(self)
         # cache_variables end up in CMakePresets.json
-        # and can be recalled with `cmake --preset conan-relase`
+        # and can be recalled with `cmake --preset conan-release`
         # Note: this does not mean we are supporting all of these options yet in conan
         tc.cache_variables["USE_CONAN"] = True
         tc.cache_variables["BUILD_SHARED_LIBS"] = self.options.shared or _getOpt(

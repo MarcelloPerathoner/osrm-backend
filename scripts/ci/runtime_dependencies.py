@@ -10,6 +10,7 @@ Example: python scripts/ci/runtime_dependencies.py --grep "boost|tbb|osrm" lib/b
 """
 
 import argparse
+import platform
 import re
 import subprocess
 import shutil
@@ -20,10 +21,12 @@ args = argparse.Namespace()
 def process(path: str):
     if args.target:
         try:
+            print(f"Copying {path}")
             shutil.copy(path, args.target)
         except shutil.SameFileError:
             pass
-    print(path)
+    else:
+        print(path)
 
 
 def main():
@@ -54,27 +57,39 @@ def main():
     if args.grep:
         args.grep = re.compile(args.grep)
 
-    libs = {}
+    if platform.system() == "Linux":
+        # ldd filename
+        tool = ["ldd"]
+        # <TAB>libboost_date_time.so.1.83.0 => /path/to/libboost_date_time.so.1.83.0 (0x00007fcf3276f000)
+        regex = re.compile(r" => (.*) \(0x")
+    if platform.system() == "Darwin":
+        # otool -L libfoo.dylib
+        tool = ["otool", "-L"]
+        # /home/me/lib/libjli.dylib:
+        # 	@rpath/libjli.dylib (compatibility version 1.0.0, current version 1.0.0)
+        # 	/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation (compatibility version 300.0.0, current version 1856.105.0)
+        # 	/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)
+        regex = re.compile(r"^\s+(.*dylib)\s")
+    if platform.system() == "Windows":
+        # https://learn.microsoft.com/en-us/cpp/build/reference/dependents?view=msvc-170
+        tool = ["dumpbin", "/DEPENDENTS"]
+        regex = re.compile(r"^\s+(.*dll)$")
+        # FIXME: find the path using PATH
 
-    # ldd
-    # <TAB>libboost_date_time.so.1.83.0 => /path/to/libboost_date_time.so.1.83.0 (0x00007fcf3276f000)
-    regex = re.compile(r"^\s*(.*) => (.*) \(0x")
+    libs = set()
 
     for filename in args.filenames:
-
-        # macOS: otool -L
-        # Windows: dumpbin /DEPENDENTS MathClient.exe
         with subprocess.Popen(
-            ["ldd", filename], stdout=subprocess.PIPE, encoding="utf-8"
+            tool + [filename], stdout=subprocess.PIPE, encoding="utf-8"
         ) as proc:
             for line in proc.stdout.readlines():
-                m = regex.match(line)
+                m = regex.search(line)
                 if m:
-                    libs[m.group(1)] = m.group(2)
+                    libs.add(m.group(1))
 
-    for lib, path in libs.items():
+    for path in libs:
         if args.grep:
-            m = args.grep.search(lib)
+            m = args.grep.search(path)
             if m:
                 process(path)
         else:
