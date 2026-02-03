@@ -499,12 +499,6 @@ add_definitions(${OSRM_DEFINES})
 list(REMOVE_DUPLICATES DEPENDENCIES_INCLUDE_DIRS)
 include_directories(SYSTEM ${DEPENDENCIES_INCLUDE_DIRS})
 
-# debug print the list of include dirs
-get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-foreach(dir ${dirs})
-  message(STATUS "-I ${dir}")
-endforeach()
-
 set(UTIL_LIBRARIES
     ${BOOST_BASE_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
@@ -725,6 +719,12 @@ add_library(check-headers STATIC EXCLUDE_FROM_ALL ${sources})
 set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_headers_dir})
 
 disclose_build_dir("OSRM_BUILD_DIR" False)
+
+# debug print the list of include dirs
+get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
+foreach(dir ${dirs})
+  message(STATUS "-I ${dir}")
+endforeach()
 
 message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")

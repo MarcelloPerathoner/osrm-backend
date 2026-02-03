@@ -7,6 +7,7 @@ Start with checking out the repository:
 ```bash
 git clone https://github.com/Project-OSRM/osrm-backend.git
 cd osrm-backend
+npm ci --ignore-scripts
 ```
 
 The project depends on some external libraries. You can install those dependencies with

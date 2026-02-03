@@ -10,18 +10,18 @@ list(APPEND CMAKE_MODULE_PATH "${PROJECT_SOURCE_DIR}/src/nodejs")
 include(NodeJS)
 nodejs_init()
 
-message(STATUS "Configuring node_osrm bindings for NodeJs ${NODEJS_VERSION}")
-
 add_nodejs_module(node_osrm node_osrm.cpp)
 set_target_properties(node_osrm PROPERTIES CXX_STANDARD 20)
 
 # TODO: we disable clang-tidy for this target, because it causes errors in third-party NodeJs related headers
 set_target_properties(node_osrm PROPERTIES CXX_CLANG_TIDY "")
 
-execute_process(COMMAND node -p "require('node-addon-api').include.replaceAll('\"', '').trim()"
+execute_process(COMMAND node -p "require('node-addon-api').include.replaceAll('\"', '')"
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE NODE_ADDON_API_DIR)
+string(STRIP ${NODE_ADDON_API_DIR} NODE_ADDON_API_DIR)
 
-target_include_directories(node_osrm SYSTEM PRIVATE ${NODE_ADDON_API_DIR})
+message(STATUS "-I ${NODE_ADDON_API_DIR}")
+target_include_directories(node_osrm SYSTEM PRIVATE "${NODE_ADDON_API_DIR}")
 
 target_link_libraries(node_osrm osrm_utils osrm_routed)
 
