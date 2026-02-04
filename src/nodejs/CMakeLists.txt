@@ -5,8 +5,6 @@ set(CMAKE_CXX_STANDARD 20)
 set(NAPI_VERSION 8)
 add_definitions(-DNAPI_VERSION=${NAPI_VERSION})
 
-disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
-
 if(ENABLE_CMAKE_JS)
   project (node_osrm)
 
@@ -25,6 +23,8 @@ else()
 
   add_nodejs_module(node_osrm node_osrm.cpp)
 endif()
+
+disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # TODO: we disable clang-tidy for this target, because it causes errors in third-party NodeJs related headers
 set_target_properties(node_osrm PROPERTIES CXX_CLANG_TIDY "")
