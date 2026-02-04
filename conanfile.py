@@ -122,7 +122,6 @@ class OsrmConan(ConanFile):
                 ["npx" + exe, "cmake-js", "print-configure"],
                 stdout=subprocess.PIPE,
                 encoding="utf-8",
-                shell=True,
             ) as proc:
                 for line in proc.stdout.readlines():
                     m = re.search("'-D((?:CMAKE_JS|NODE|CMAKE_CXX)_.*)=(.*)'", line)
