@@ -327,6 +327,9 @@ jobs:
           fi
 
           if [[ "${BUILD_NODE_PACKAGE}" == "ON" ]]; then
+            echo "::group::cmake-js configuration"
+            npx cmake-js print-configure
+            echo "::endgroup::"
             echo "NODEJS_CMAKE_CONFIG=`python src/nodejs/cmake-js-configure.py`" >> $GITHUB_ENV
           fi
 
