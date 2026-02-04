@@ -80,3 +80,43 @@ To run the Cucumber tests:
 ```bash
 npm test -- --parallel 16
 ```
+
+## The Build Process
+
+
+The `build` directory is a 'well-known' location for bootstrapping build- and runtime
+configurations. Conan puts `conan.env` and Cmake puts `cmake.env` here. `.env` files
+should only contain `KEY=VALUE` pairs so they can safely be sourced or piped into
+`$GITHUB_ENV`.
+
+The file `conan.env` contains:
+
+| Key                    | Description                                                                 |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `CONAN_GENERATORS_DIR` | The location where `conan-build-env.sh` and `conan-run-env.sh` are emitted. |
+| `CONAN_BUILD_DIR`      | The directory where Cmake should build the binaries.                        |
+| `CONAN_CMAKE_PRESET`   | The preset Cmake should use for building.                                   |
+
+After running Conan call Cmake like this:
+`cmake -B $CONAN_BUILD_DIR --preset $CONAN_CMAKE_PRESET`
+
+
+The file `cmake.env` contains:
+
+| Key                         | Description                                          |
+| --------------------------- | ---------------------------------------------------- |
+| `OSRM_BUILD_DIR`            | The directory where the OSRM binaries will be built. |
+| `OSRM_UNIT_TESTS_BUILD_DIR` | The directory where the unit tests will be built.    |
+| `OSRM_BENCHMARKS_BUILD_DIR` | The directory where the benchmarks will be built.    |
+| `OSRM_NODEJS_BUILD_DIR`     | The directory where the node bindings will be built. |
+
+
+### NodeJS bindings
+
+The script `src/nodejs/cmake-js-configure.py` is a wrapper around `cmake-js` and returns
+a string of Cmake commands. To be used like this:
+
+```bash
+NODEJS_CMAKE_CONFIG=`python src/nodejs/cmake-js-configure.py`
+cmake ..... $NODEJS_CMAKE_CONFIG
+```

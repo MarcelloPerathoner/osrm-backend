@@ -375,15 +375,6 @@ jobs:
             echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
           fi
 
-          if [[ "${ENABLE_CONAN}" == "ON" ]]; then
-            cat "$CONAN_GENERATORS_DIR/conan-build-env.sh"
-            source "$CONAN_GENERATORS_DIR/conan-build-env.sh"
-            # set Conan build environment for future bash invocations
-            echo "BASH_ENV=$CONAN_GENERATORS_DIR/conan-build-env.sh" >> $GITHUB_ENV
-          else
-            echo "BUILD_DIR=build/" >> $GITHUB_ENV
-          fi
-
           echo "::group::PATH"
           echo PATH=${PATH}
           echo LIBRARY_PATH=${LIBRARY_PATH}
@@ -396,7 +387,7 @@ jobs:
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
             cmake -B ${CONAN_BUILD_DIR} --preset ${CONAN_CMAKE_PRESET}
           else
-            cmake -B ${BUILD_DIR} \
+            cmake -B build/ \
                 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} \
                 -DUSE_CCACHE=${USE_CCACHE} \
@@ -407,6 +398,7 @@ jobs:
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                 -DENABLE_LTO=${ENABLE_LTO:-ON} ${NODEJS_CMAKE_CONFIG:-}
           fi
+          cat build/cmake-build-env.sh >> $GITHUB_ENV
 
       - name: Build core
         run: |

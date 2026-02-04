@@ -173,12 +173,17 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
-set(CMAKE_BUILD_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake-build-env.sh")
+set(CMAKE_BUILD_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake.env")
 file(REMOVE "${CMAKE_BUILD_ENV_SH}")
+
+function(push_env key value)
+  # puts key=value into cmake.env
+  file(APPEND "${CMAKE_BUILD_ENV_SH}" "${key}=${value}\n")
+endfunction()
 
 # disclose to the afterworld the directory the built artifacts are in
 # usage: disclose_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-function(disclose_build_dir var value)
+function(disclose_build_dir key value)
   if(CMAKE_CONFIGURATION_TYPES)
     # multi-config generators (eg. Visual Studio) append /Release or /Debug
     cmake_path(APPEND dir "${value}" "${CMAKE_BUILD_TYPE}")
@@ -186,11 +191,7 @@ function(disclose_build_dir var value)
     # single-config generator (eg. Unix Makefiles)
     cmake_path(SET dir "${value}")
   endif()
-  file(APPEND "${CMAKE_BUILD_ENV_SH}" "export ${var}=${dir}\n")
-  set(ENV{${var}} "${dir}")
-  if(DEFINED ENV{GITHUB_ENV})
-    file(APPEND "$ENV{GITHUB_ENV}" "${var}=${dir}\n")
-  endif()
+  push_env("${key}" "${dir}")
 endfunction()
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -722,6 +723,10 @@ set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_
 
 disclose_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
+# useful for windows build on ci
+push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
+push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
+
 # debug print the list of include dirs
 get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
 foreach(dir ${dirs})
@@ -743,10 +748,3 @@ message(STATUS "OSRM_UNIT_TESTS_BUILD_DIR is: $ENV{OSRM_UNIT_TESTS_BUILD_DIR}")
 message(STATUS "OSRM_BENCHMARKS_BUILD_DIR is: $ENV{OSRM_BENCHMARKS_BUILD_DIR}")
 message(STATUS "OSRM_NODE_JS_BUILD_DIR is:    $ENV{OSRM_NODEJS_BUILD_DIR}")
 message(STATUS "-----------------------------")
-
-# useful for windows build on ci
-if(DEFINED ENV{GITHUB_ENV})
-  # build/Release/ in make, build/ in MSBuild
-  file(APPEND "$ENV{GITHUB_ENV}" "CMAKE_BINARY_DIR=${CMAKE_BINARY_DIR}\n")
-  file(APPEND "$ENV{GITHUB_ENV}" "EXE=${CMAKE_EXECUTABLE_SUFFIX}\n")
-endif()

@@ -46,6 +46,7 @@ def main():
         tool = ["ldd"]
         # <TAB>libboost_date_time.so.1.83.0 => /path/to/libboost_date_time.so.1.83.0 (0x00007fcf3276f000)
         regex = re.compile(r" => (.*) \(0x")
+        # regex = re.compile(r"\s+(.*) => (.*) \(0x")
     if platform.system() == "Darwin":
         # otool -L libfoo.dylib
         tool = ["otool", "-L"]
@@ -66,33 +67,37 @@ def main():
             regex = re.compile(r"^\s+(.*dll)$")
         # FIXME: find the path of the dlls using PATH
 
-    def gather(libs):
-        for lib in list(libs):
+    def find_lib(lib: str) -> str:
+        """Find the library in PATH"""
+        if "/" in lib:
+            return lib
+        for p in os.environ.get("PATH", "").split(":"):
+            p = os.path.join(p, lib)
+            if os.access(p, os.R_OK):
+                return p
+        return lib
+
+    def gather(binaries):
+        libs = []
+        for bin in list(binaries):
             with subprocess.Popen(
-                tool + [lib], stdout=subprocess.PIPE, encoding="utf-8"
+                tool + [bin], stdout=subprocess.PIPE, encoding="utf-8"
             ) as proc:
                 for line in proc.stdout.readlines():
                     m = regex.search(line)
                     if m:
-                        libs.add(m.group(1))
+                        libs.append(find_lib(m.group(1)))
+        return libs
 
-    libs = set(args.filenames)
-    old_libs = set()
-
-    while old_libs != libs:
-        old_libs = set(libs)
-        gather(libs)
-
-    libs = libs.difference(args.filenames)
-
-    for path in libs:
-        path = os.path.realpath(path)
+    for lib in gather(args.filenames):
+        # be careful *not* to resolve symlinks! eg. libtbbmalloc.so.2 => libtbbmalloc.so.2.17
+        # path = os.path.relpath(path)
         if args.grep:
-            m = args.grep.search(path)
+            m = args.grep.search(lib)
             if m:
-                print(path)
+                print(lib)
         else:
-            print(path)
+            print(lib)
 
 
 if __name__ == "__main__":

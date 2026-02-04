@@ -124,7 +124,7 @@ class OsrmConan(ConanFile):
                 encoding="utf-8",
             ) as proc:
                 for line in proc.stdout.readlines():
-                    m = re.search("'-D((?:CMAKE_JS|NODE|CMAKE_CXX)_.*)=(.*)'", line)
+                    m = re.search("'-D((?:CMAKE_JS|NODE|CMAKE_CXX)_.*?)=(.*)'", line)
                     if m:
                         tc.cache_variables[m.group(1)] = m.group(2)
 
@@ -166,17 +166,19 @@ class OsrmConan(ConanFile):
         self._writeEnvSh(vbe.environment().vars(self, scope="build"))
         self._writeEnvSh(vre.environment().vars(self, scope="run"))
 
-        if "GITHUB_ENV" in os.environ:
-            with open(os.environ["GITHUB_ENV"], "a") as fp:
-                build_dir = _bash_path(self.folders.build_folder)
-                generators_dir = _bash_path(self.folders.generators_folder)
-                preset = f"conan-{self.settings.build_type}".lower()
-                if self.settings.os == "Windows":
-                    preset = "conan-default"
+        # Put a bootstrap environment into the well-known location `build/conan.env` to
+        # aid in finding `conan-build-env.sh` and `conan-run-env.sh` since these do not
+        # always end in the same place.
+        with open(".env/conan.env", "w") as fp:
+            build_dir = _bash_path(self.folders.build_folder)
+            generators_dir = _bash_path(self.folders.generators_folder)
+            preset = f"conan-{self.settings.build_type}".lower()
+            if self.settings.os == "Windows":
+                preset = "conan-default"
 
-                fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
-                fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
-                fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
+            fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
+            fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
+            fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
 
     def layout(self):
         cmake_layout(self)
