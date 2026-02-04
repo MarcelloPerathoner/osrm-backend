@@ -26,7 +26,7 @@ Build:
 
 ```bash
 cmake -B build/Release -DCMAKE_BUILD_TYPE=Release
-make -C build/Release -j 16 all tests benchmarks
+make -C build/Release -j 16
 ```
 
 The binaries should be in `build/Release`.  Proceed with [running the tests](#Run-tests).
@@ -34,7 +34,9 @@ The binaries should be in `build/Release`.  Proceed with [running the tests](#Ru
 If you want to build the node package, you should use:
 
 ```bash
-node run install
+cmake -B build/Release -DCMAKE_BUILD_TYPE=Release `python src/nodejs/cmake-js-configure.py`
+make -C build/Release -j 16
+scripts/ci/node_package.sh
 ```
 
 The node binaries should be in `lib/binding_napi_v8`.
@@ -57,10 +59,10 @@ Then say:
 source .venv/bin/activate
 export CONAN_HOME=`pwd`/.conan2
 conan build -pr home --build=missing -s build_type=Release -o shared=True -o node_bindings=True
-make -C build/Release -j 16 tests benchmarks
 ```
 
-N.B. you need the `source` and `export` commands only once per shell invocation.
+N.B. you need to enter the `source` and `export` commands only once per shell
+invocation.
 
 The binaries are now in `build/Release`.
 
@@ -69,6 +71,7 @@ The binaries are now in `build/Release`.
 To run the unit tests:
 
 ```bash
+make -C build/Release -j 16 tests benchmarks
 for i in build/Release/unit_tests/*-tests ; do echo Running $i ; $i ; done
 ```
 

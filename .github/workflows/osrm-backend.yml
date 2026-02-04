@@ -326,6 +326,10 @@ jobs:
             fi
           fi
 
+          if [[ "${BUILD_NODE_PACKAGE}" == "ON" ]]; then
+            echo "NODEJS_CMAKE_CONFIG=`python src/nodejs/cmake-js-configure.py`" >> $GITHUB_ENV
+          fi
+
           # for install-boost below
           BOOST_PLATFORM=${{ matrix.runs-on }}
           BOOST_PLATFORM=${BOOST_PLATFORM#ubuntu-}
@@ -386,10 +390,6 @@ jobs:
 
       - name: Cmake configure
         run: |
-          if [[ "${BUILD_NODE_PACKAGE}" == "ON" ]]; then
-            NODEJS_CONFIG=`python src/nodejs/cmake-js-configure.py`
-          fi
-
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
             cmake -B ${CONAN_BUILD_DIR} --preset ${CONAN_CMAKE_PRESET}
           else
@@ -402,7 +402,7 @@ jobs:
                 -DENABLE_COVERAGE=${ENABLE_COVERAGE:-OFF} \
                 -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
-                -DENABLE_LTO=${ENABLE_LTO:-ON} ${NODEJS_CONFIG:-}
+                -DENABLE_LTO=${ENABLE_LTO:-ON} ${NODEJS_CMAKE_CONFIG:-}
           fi
 
       - name: Build core
