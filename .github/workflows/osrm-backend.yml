@@ -330,7 +330,7 @@ jobs:
             echo "::group::cmake-js configuration"
             npx cmake-js print-configure
             echo "::endgroup::"
-            echo "NODEJS_CMAKE_CONFIG=`python src/nodejs/cmake-js-configure.py`" >> $GITHUB_ENV
+            echo "CMAKE_JS_CONFIG=`python src/nodejs/cmake-js-configure.py`" >> $GITHUB_ENV
           fi
 
           # for install-boost below
@@ -396,7 +396,8 @@ jobs:
                 -DENABLE_COVERAGE=${ENABLE_COVERAGE:-OFF} \
                 -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
-                -DENABLE_LTO=${ENABLE_LTO:-ON} ${NODEJS_CMAKE_CONFIG:-}
+                -DENABLE_LTO=${ENABLE_LTO:-ON}
+                # ${CMAKE_JS_CONFIG:-}
           fi
           cat build/cmake.env >> $GITHUB_ENV
 

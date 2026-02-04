@@ -108,23 +108,25 @@ class OsrmConan(ConanFile):
         tc = CMakeToolchain(self)
         # cache_variables end up in CMakePresets.json
         # and can be recalled with `cmake --preset conan-release`
-        if _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings:
-            exceptions = "CMAKE_BUILD_TYPE CMAKE_LIBRARY_OUTPUT_DIRECTORY CMAKE_RUNTIME_OUTPUT_DIRECTORY".split()
-            # call cmake-js and grab the -Defines
-            stdout = subprocess.check_output(
-                "npx cmake-js print-configure", shell=True, encoding="utf-8"
-            )
-            for line in stdout.splitlines():
-                m = re.search("'-D((?:CMAKE|NODE)_.*?)=(.*)'", line)
-                if m:
-                    key = m.group(1)
-                    if key not in exceptions:
-                        tc.cache_variables[m.group(1)] = m.group(2)
-
         tc.cache_variables["USE_CONAN"] = True
         tc.cache_variables["BUILD_SHARED_LIBS"] = (
             _getOpt("BUILD_SHARED_LIBS") or self.options.shared
         )
+        tc.cache_variables["BUILD_NODE_PACKAGE"] = (
+            _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings
+        )
+        # if _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings:
+        #     exceptions = "CMAKE_BUILD_TYPE CMAKE_LIBRARY_OUTPUT_DIRECTORY CMAKE_RUNTIME_OUTPUT_DIRECTORY".split()
+        #     # call cmake-js and grab the -Defines
+        #     stdout = subprocess.check_output(
+        #         "npx cmake-js print-configure", shell=True, encoding="utf-8"
+        #     )
+        #     for line in stdout.splitlines():
+        #         m = re.search("'-D((?:CMAKE|NODE)_.*?)=(.*)'", line)
+        #         if m:
+        #             key = m.group(1)
+        #             if key not in exceptions:
+        #                 tc.cache_variables[m.group(1)] = m.group(2)
 
         if "USE_CCACHE" in os.environ:
             tc.cache_variables["USE_CCACHE"] = os.environ["USE_CCACHE"]

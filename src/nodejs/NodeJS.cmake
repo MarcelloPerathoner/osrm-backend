@@ -590,7 +590,7 @@ function(add_nodejs_module NAME)
     endif()
 
     # A node module is a shared library
-    add_library(${NAME} SHARED EXCLUDE_FROM_ALL ${NODEJS_SOURCES} ${ARGN})
+    add_library(${NAME} SHARED ${NODEJS_SOURCES} ${ARGN})
     # Add compiler defines for the module
     # Two helpful ones:
     # MODULE_NAME must match the name of the build library, define that here
@@ -618,7 +618,7 @@ function(add_nodejs_module NAME)
         CXX_VISIBILITY_PRESET hidden
         POSITION_INDEPENDENT_CODE TRUE
         CMAKE_CXX_STANDARD_REQUIRED TRUE
-        CXX_STANDARD 11
+        CXX_STANDARD 20
     )
 
     # Handle link flag cases properly
