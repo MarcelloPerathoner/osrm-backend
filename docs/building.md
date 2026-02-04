@@ -34,7 +34,7 @@ The binaries should be in `build/Release`.  Proceed with [running the tests](#Ru
 If you want to build the node package, you should use:
 
 ```bash
-cmake -B build/Release -DCMAKE_BUILD_TYPE=Release `python src/nodejs/cmake-js-configure.py`
+cmake -B build/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_NODE_PACKAGE=ON
 make -C build/Release -j 16
 scripts/ci/node_package.sh
 ```
@@ -109,14 +109,3 @@ The file `cmake.env` contains:
 | `OSRM_UNIT_TESTS_BUILD_DIR` | The directory where the unit tests will be built.    |
 | `OSRM_BENCHMARKS_BUILD_DIR` | The directory where the benchmarks will be built.    |
 | `OSRM_NODEJS_BUILD_DIR`     | The directory where the node bindings will be built. |
-
-
-### NodeJS bindings
-
-The script `src/nodejs/cmake-js-configure.py` is a wrapper around `cmake-js` and returns
-a string of Cmake commands. To be used like this:
-
-```bash
-NODEJS_CMAKE_CONFIG=`python src/nodejs/cmake-js-configure.py`
-cmake ..... $NODEJS_CMAKE_CONFIG
-```

@@ -326,13 +326,6 @@ jobs:
             fi
           fi
 
-          if [[ "${BUILD_NODE_PACKAGE}" == "ON" ]]; then
-            echo "::group::cmake-js configuration"
-            npx cmake-js print-configure
-            echo "::endgroup::"
-            echo "CMAKE_JS_CONFIG=`python src/nodejs/cmake-js-configure.py`" >> $GITHUB_ENV
-          fi
-
           # for install-boost below
           BOOST_PLATFORM=${{ matrix.runs-on }}
           BOOST_PLATFORM=${BOOST_PLATFORM#ubuntu-}
@@ -398,7 +391,6 @@ jobs:
                 -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                 -DENABLE_LTO=${ENABLE_LTO:-ON}
-                # ${CMAKE_JS_CONFIG:-}
           fi
           cat build/cmake.env >> $GITHUB_ENV
 

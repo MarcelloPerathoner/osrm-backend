@@ -45,12 +45,6 @@ runs:
         CONAN_OS_PROFILE=github-${RUNNER_OS,,} # lowercases the os
         echo "CONAN_OS_PROFILE=${CONAN_OS_PROFILE}" >> $GITHUB_ENV
 
-        if [[ "${BUILD_NODE_PACKAGE}" == "ON" ]]; then
-          echo "::group::cmake-js configuration"
-          npx cmake-js print-configure
-          echo "::endgroup::"
-        fi
-
         echo "::group::conan install"
         conan profile detect --force
         conan install -pr ${CONAN_OS_PROFILE} --build=missing -s build_type=${BUILD_TYPE}
