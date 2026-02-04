@@ -34,7 +34,7 @@ if [[ $(uname -s) == 'Linux' ]]; then
 fi
 
 # echo "dumping binary meta..."
-# ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS
+./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS
 
 # enforce that binary has proper ORIGIN flags so that
 # it can portably find libtbb.so in the same directory
@@ -50,4 +50,4 @@ if [[ $(uname -s) == 'Linux' ]]; then
     fi
 fi
 
-# ./node_modules/.bin/node-pre-gyp package testpackage $NPM_FLAGS
+./node_modules/.bin/node-pre-gyp package testpackage $NPM_FLAGS

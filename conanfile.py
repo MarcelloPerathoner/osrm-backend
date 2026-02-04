@@ -1,4 +1,5 @@
 import os
+import platform
 import re
 import subprocess
 import textwrap
@@ -116,8 +117,9 @@ class OsrmConan(ConanFile):
 
         if _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings:
             # call cmake-js and grab the -Defines
+            exe = ".exe" if platform.system() == "Windows" else ""
             with subprocess.Popen(
-                ["npx", "cmake-js", "print-configure"],
+                ["npx" + exe, "cmake-js", "print-configure"],
                 stdout=subprocess.PIPE,
                 encoding="utf-8",
                 shell=True,

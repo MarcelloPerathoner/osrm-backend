@@ -9,14 +9,16 @@ commanline.
 
 """
 
+import platform
 import re
 import subprocess
 
+exe = ".exe" if platform.system() == "Windows" else ""
+
 with subprocess.Popen(
-    ["npx", "cmake-js", "print-configure"],
+    ["npx" + exe, "cmake-js", "print-configure"],
     stdout=subprocess.PIPE,
     encoding="utf-8",
-    shell=True,
 ) as proc:
     for line in proc.stdout.readlines():
         m = re.search("'-D((?:CMAKE_JS|NODE|CMAKE_CXX)_.*)=(.*)'", line)
