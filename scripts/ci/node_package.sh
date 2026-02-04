@@ -23,7 +23,7 @@ source build/cmake.env
 mkdir -p "$BINDINGS"
 cp "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM" "$BINDINGS"
 for n in components contract customize datastore extract partition routed ; do
-    cp -uv "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"
+    cp -v "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"
 done
 
 # Copy dynamic library dependencies. Note: the RPATH inside node_osrm.node is not enough

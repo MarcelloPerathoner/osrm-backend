@@ -109,7 +109,7 @@ class OsrmConan(ConanFile):
         # cache_variables end up in CMakePresets.json
         # and can be recalled with `cmake --preset conan-release`
         if _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings:
-            exceptions = "CMAKE_BUILD_TYPE CMAKE_LIBRARY_OUTPUT_DIRECTORY CMAKE_MSVC_RUNTIME_LIBRARY".split()
+            exceptions = "CMAKE_BUILD_TYPE CMAKE_LIBRARY_OUTPUT_DIRECTORY CMAKE_RUNTIME_OUTPUT_DIRECTORY".split()
             # call cmake-js and grab the -Defines
             stdout = subprocess.check_output(
                 "npx cmake-js print-configure", shell=True, encoding="utf-8"
