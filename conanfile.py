@@ -169,7 +169,7 @@ class OsrmConan(ConanFile):
         # Put a bootstrap environment into the well-known location `build/conan.env` to
         # aid in finding `conan-build-env.sh` and `conan-run-env.sh` since these do not
         # always end in the same place.
-        with open(".env/conan.env", "w") as fp:
+        with open("build/conan.env", "w") as fp:
             build_dir = _bash_path(self.folders.build_folder)
             generators_dir = _bash_path(self.folders.generators_folder)
             preset = f"conan-{self.settings.build_type}".lower()

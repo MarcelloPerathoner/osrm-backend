@@ -18,7 +18,7 @@ fi
 
 # copy files into BINDINGS
 
-source build/cmake-build-env.sh
+source build/cmake.env
 mkdir -p "$BINDINGS"
 cp "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM" "$BINDINGS"
 for n in components contract customize datastore extract partition routed ; do
