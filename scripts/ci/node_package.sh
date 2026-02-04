@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -eu
+set -e
 set -o pipefail
 
 BINDINGS="./lib/binding_napi_v8"
@@ -19,13 +19,21 @@ fi
 # copy files into BINDINGS
 
 source build/cmake.env
+
 mkdir -p "$BINDINGS"
 cp "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM" "$BINDINGS"
 for n in components contract customize datastore extract partition routed ; do
     cp -uv "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"
 done
 
-# copy dynamic library dependencies
+# Copy dynamic library dependencies. Note: the RPATH inside node_osrm.node is not enough
+# because it is not valid for recursively loaded libraries: when boost_random imports
+# boost_system there is no RPATH in boost_random.
+if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
+    source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
+    export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
+fi
+
 python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
     while IFS= read -r line; do cp -uv "$line" "$BINDINGS" || true; done
 

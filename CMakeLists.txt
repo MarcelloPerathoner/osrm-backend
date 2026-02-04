@@ -179,6 +179,7 @@ file(REMOVE "${CMAKE_BUILD_ENV_SH}")
 function(push_env key value)
   # puts key=value into cmake.env
   file(APPEND "${CMAKE_BUILD_ENV_SH}" "${key}=${value}\n")
+  set(ENV{${key}} "${value}")
 endfunction()
 
 # disclose to the afterworld the directory the built artifacts are in
