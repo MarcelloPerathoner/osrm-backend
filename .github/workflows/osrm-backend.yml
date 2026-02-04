@@ -241,7 +241,7 @@ jobs:
       - name: Setup environment
         run: |
           uname -a
-          mkdir -p $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
+          mkdir -p build $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
