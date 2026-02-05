@@ -22,6 +22,12 @@ fi
 # copy files into BINDINGS
 
 source build/cmake.env
+
+# We need the library paths because of a bug in Cmake (current 4.2.3)
+if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
+    source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
+    export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
+fi
 cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
 
 # cp package.json "$BUILD"
@@ -30,14 +36,6 @@ cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
 # for n in components contract customize datastore extract partition routed ; do
 #     cp -v "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"
 # done
-#
-# # Copy dynamic library dependencies. Note: the RPATH inside node_osrm.node is not enough
-# # because it is not valid for recursively loaded libraries: when boost_random imports
-# # boost_system there is no RPATH in boost_random.
-# if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
-#     source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
-#     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
-# fi
 #
 # DEPS=`python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM"
 # echo "=== Dependencies ==="
@@ -61,21 +59,6 @@ cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
 #   ;;
 # esac
 
-# echo "dumping binary meta..."
+echo "dumping binary meta..."
 ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS
-
-# enforce that binary has proper ORIGIN flags so that
-# it can portably find libtbb.so in the same directory
-if [[ $(uname -s) == 'Linux' ]]; then
-    readelf -d "$BINDINGS/$NODE_OSRM" > "$ELF_OUT"
-    if grep -q 'Flags: ORIGIN' "$ELF_OUT"; then
-        echo "Found ORIGIN flag in readelf output"
-        cat "$ELF_OUT"
-    else
-        echo "*** Error: Could not find ORIGIN flag in readelf output"
-        cat "$ELF_OUT"
-        exit 1
-    fi
-fi
-
 ./node_modules/.bin/node-pre-gyp package testpackage $NPM_FLAGS

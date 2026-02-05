@@ -24,7 +24,7 @@ string(STRIP ${NODE_ADDON_API_DIR} NODE_ADDON_API_DIR)
 message(STATUS "-I ${NODE_ADDON_API_DIR}")
 
 target_include_directories(node_osrm PRIVATE "${NODE_ADDON_API_DIR}")
-target_link_libraries(node_osrm PRIVATE osrm_utils osrm_routed)
+target_link_libraries(node_osrm osrm_utils osrm_routed)
 
 disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
@@ -38,7 +38,11 @@ endforeach()
 
 foreach(t "${TARGETS}")
   set_property(TARGET ${t} PROPERTY INSTALL_RPATH_USE_LINK_PATH FALSE)
-  set_property(TARGET ${t} PROPERTY INSTALL_RPATH "\$ORIGIN")
+  if(APPLE)
+    set_property(TARGET ${t} PROPERTY INSTALL_RPATH "@loader_path")
+  else()
+    set_property(TARGET ${t} PROPERTY INSTALL_RPATH "\$ORIGIN")
+  endif()
 endforeach()
 
 # there is a bug in cmake (current 4.2.3) that does not find recursive dependencies, eg.
