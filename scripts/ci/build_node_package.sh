@@ -38,6 +38,10 @@ if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
 
+# cp on macOS knows no -t, no -u
+python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
+    xargs cp -v '{}' "$BINDINGS" || true
+
 case $(uname) in
   Linux)
     ldd "$BINDINGS/$NODE_OSRM"
@@ -51,9 +55,6 @@ case $(uname) in
     DUMPBIN /DEPENDENTS "$BINDINGS/$NODE_OSRM"
   ;;
 esac
-
-python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
-    xargs cp -v -t "$BINDINGS" || true
 
 # echo "dumping binary meta..."
 ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS

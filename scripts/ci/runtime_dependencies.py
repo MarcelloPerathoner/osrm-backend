@@ -74,7 +74,6 @@ def main():
         else:
             print("Cannot find dumpbin.exe")
             exit(-1)
-        tool = "DUMPBIN /DEPENDENTS"
         regex = re.compile(r"^\s+(.*dll)$")
         path = os.environ.get("PATH", "").split(":")
 
