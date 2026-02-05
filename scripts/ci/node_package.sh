@@ -3,7 +3,7 @@
 set -e
 set -o pipefail
 
-BUILD="build/nodejs"
+BUILD="build/nodejs/lib"
 BINDINGS="$BUILD/binding_napi_v8"
 NODE_OSRM="node_osrm.node"
 ELF_OUT="$BUILD/readelf-output.txt"
