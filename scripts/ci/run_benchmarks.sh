@@ -104,7 +104,7 @@ function run_benchmarks_for_folder {
 
     popd
 
-    # if [[ -f "$LIB_FOLDER/binding_napi_v8/node_osrm.node" ]]; then
+    # if [[ -f "build/lib/binding_napi_v8/node_osrm.node" ]]; then
     #   for ALGORITHM in ch mld; do
     #       for BENCH in nearest table trip route match; do
     #           echo "Running node $BENCH $ALGORITHM"

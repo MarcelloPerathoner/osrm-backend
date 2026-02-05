@@ -46,11 +46,11 @@ class OsrmConan(ConanFile):
 
     options = {
         "shared": [True, False],
-        "node_bindings": [True, False],
+        "node_package": [True, False],
         "ccache": [False, "ccache", "sccache"],
     }
 
-    default_options = {"shared": False, "node_bindings": False, "ccache": "ccache"}
+    default_options = {"shared": False, "node_package": False, "ccache": "ccache"}
 
     def _writeEnvSh(self, env_vars):
         """
@@ -113,7 +113,7 @@ class OsrmConan(ConanFile):
             _getOpt("BUILD_SHARED_LIBS") or self.options.shared
         )
         tc.cache_variables["BUILD_NODE_PACKAGE"] = (
-            _getOpt("BUILD_NODE_PACKAGE") or self.options.node_bindings
+            _getOpt("BUILD_NODE_PACKAGE") or self.options.node_package
         )
         if "USE_CCACHE" in os.environ:
             tc.cache_variables["USE_CCACHE"] = os.environ["USE_CCACHE"]

@@ -105,6 +105,3 @@ node_modules
 
 # local lua debugging file
 debug.lua
-
-# node-osrm artifacts
-lib/binding_napi_v8

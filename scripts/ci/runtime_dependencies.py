@@ -6,7 +6,7 @@ dynamic libraries (.so) a target needs to run.
 
 This tools does that.
 
-Example: python scripts/ci/runtime_dependencies.py --grep "boost|tbb|osrm" lib/binding_napi_v8/node_osrm.node
+Example: python scripts/ci/runtime_dependencies.py --grep "boost|tbb|osrm" build/Release/nodejs/node_osrm.node
 """
 
 import argparse
@@ -34,6 +34,11 @@ def main():
         "--grep",
         type=str,
         help="regular expression the libraries must match",
+    )
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        help="print the tool output and exit",
     )
 
     parser.parse_args(namespace=args)
@@ -88,7 +93,9 @@ def main():
             stdout = subprocess.check_output(
                 f"{tool} {bin}", shell=True, encoding="utf-8"
             )
-            print(stdout)
+            if args.debug:
+                print(stdout)
+                exit(0)
             for line in stdout.splitlines():
                 m = regex.search(line)
                 if m:

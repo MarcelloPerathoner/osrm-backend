@@ -2,15 +2,15 @@
 
 ## Prerequisites
 
-Start with checking out the repository:
+Check out the repository:
 
 ```bash
 git clone https://github.com/Project-OSRM/osrm-backend.git
 cd osrm-backend
 ```
 
-The project depends on some external libraries. You can install those dependencies with
-a package manager (Conan) or install them  manually.
+The project depends on external libraries. You can install those dependencies with a
+package manager (Conan) or install them  manually (apt-get).
 
 ## Build manually
 
@@ -29,9 +29,19 @@ cmake -B build/Release -DCMAKE_BUILD_TYPE=Release
 make -C build/Release -j 16
 ```
 
-The binaries should be in `build/Release`.  Proceed with [running the tests](#Run-tests).
+Replace `16` with the number of cores you have. The binaries will be in `build/Release`.  Proceed with [running the tests](#Run-tests).
 
-If you want to build the node package, you should use:
+A list of arguments for cmake:
+
+| Argument               | Description                                  |
+| ---------------------- | -------------------------------------------- |
+| `-DMAKE_BUILD_TYPE`    | Specify the build type: `Release` or `Debug` |
+| `-DBUILD_SHARED_LIBS`  | Build with shared libs: `ON` or `OFF`.       |
+| `-DBUILD_NODE_PACKAGE` | Build the Node package: `ON` or `OFF`.       |
+
+### Node Package
+
+If you want to build the Node package, you should use:
 
 ```bash
 cmake -B build/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_NODE_PACKAGE=ON
@@ -39,7 +49,7 @@ make -C build/Release -j 16
 scripts/ci/node_package.sh
 ```
 
-The node binaries should be in `lib/binding_napi_v8`.
+The node binaries should be in `build/lib/binding_napi_v8`.
 
 ## Build using Conan
 
@@ -58,11 +68,19 @@ Then say:
 ```bash
 source .venv/bin/activate
 export CONAN_HOME=`pwd`/.conan2
-conan build -pr home --build=missing -s build_type=Release -o shared=True -o node_bindings=True
+conan build -pr home --build=missing -s build_type=Release -o shared=True -o node_package=True
 ```
 
 N.B. you need to enter the `source` and `export` commands only once per shell
 invocation.
+
+A list of arguments for Conan:
+
+| Argument          | Description                                  |
+| ----------------- | -------------------------------------------- |
+| `-s build_type`   | Specify the build type: `Release` or `Debug` |
+| `-o shared`       | Build with shared libs: `True` or `False`.   |
+| `-o node_package` | Build the Node package: `True` or `False`.   |
 
 The binaries are now in `build/Release`.
 

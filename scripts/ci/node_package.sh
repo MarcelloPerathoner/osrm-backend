@@ -3,24 +3,27 @@
 set -e
 set -o pipefail
 
-BINDINGS="./lib/binding_napi_v8"
+BUILD="build/nodejs"
+BINDINGS="$BUILD/binding_napi_v8"
 NODE_OSRM="node_osrm.node"
-ELF_OUT="build/readelf-output.txt"
+ELF_OUT="$BUILD/readelf-output.txt"
+
+mkdir -p "$BINDINGS"
 
 echo "node version is:"
 which node
 node -v
 
-NPM_FLAGS=''
+NPM_FLAGS=""
 if [[ "${BUILD_TYPE:-}" == "Debug" ]]; then
-    NPM_FLAGS='--debug'
+    NPM_FLAGS="$NPM_FLAGS --debug"
 fi
 
 # copy files into BINDINGS
 
 source build/cmake.env
 
-mkdir -p "$BINDINGS"
+cp src/nodejs/index.js "$BUILD"
 cp "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM" "$BINDINGS"
 for n in components contract customize datastore extract partition routed ; do
     cp -v "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"
@@ -33,6 +36,8 @@ if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
     source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
+
+python scripts/ci/runtime_dependencies.py --debug "$BINDINGS/$NODE_OSRM"
 
 python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
     while IFS= read -r line; do cp -uv "$line" "$BINDINGS" || true; done
