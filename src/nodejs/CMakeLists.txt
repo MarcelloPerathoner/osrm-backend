@@ -26,4 +26,8 @@ message(STATUS "-I ${NODE_ADDON_API_DIR}")
 target_include_directories(node_osrm PRIVATE "${NODE_ADDON_API_DIR}")
 target_link_libraries(node_osrm osrm_utils osrm_routed)
 
+install(
+  TARGETS node_osrm DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
+)
+
 disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
