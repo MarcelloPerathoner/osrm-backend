@@ -15,7 +15,7 @@ add_nodejs_module(node_osrm node_osrm.cpp)
 set_target_properties(node_osrm PROPERTIES CXX_CLANG_TIDY "")
 # TODO: we turn off some warnings for this target, because it causes errors in third-party NodeJs related headers
 target_no_warning(node_osrm suggest-destructor-override)
-target_no_warning(node_osrm suggest-override)
+# target_no_warning(node_osrm suggest-override)
 
 execute_process(COMMAND node -p "require('node-addon-api').include.replaceAll('\"', '')"
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE NODE_ADDON_API_DIR)
@@ -24,10 +24,45 @@ string(STRIP ${NODE_ADDON_API_DIR} NODE_ADDON_API_DIR)
 message(STATUS "-I ${NODE_ADDON_API_DIR}")
 
 target_include_directories(node_osrm PRIVATE "${NODE_ADDON_API_DIR}")
-target_link_libraries(node_osrm osrm_utils osrm_routed)
-
-install(
-  TARGETS node_osrm DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
-)
+target_link_libraries(node_osrm PRIVATE osrm_utils osrm_routed)
 
 disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+
+# Installation
+# as a prelude to building the nodejs package
+
+list(APPEND TARGETS node_osrm osrm_utils osrm_routed)
+foreach(binary components contract customize datastore extract partition routed)
+  list(APPEND TARGETS "osrm-${binary}")
+endforeach()
+
+foreach(t "${TARGETS}")
+  set_property(TARGET ${t} PROPERTY INSTALL_RPATH_USE_LINK_PATH FALSE)
+  set_property(TARGET ${t} PROPERTY INSTALL_RPATH "\$ORIGIN")
+endforeach()
+
+# there is a bug in cmake (current 4.2.3) that does not find recursive dependencies, eg.
+# if node_osrm => libboost-iostreams => libboost-system then last one is not found
+string(REPLACE ":" ";" LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH} $ENV{DYLD_LIBRARY_PATH}")
+
+install(
+  TARGETS ${TARGETS}
+  DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
+  COMPONENT node_osrm
+  RUNTIME_DEPENDENCIES
+  POST_INCLUDE_REGEXES "boost|tbb|bz2"
+  POST_EXCLUDE_REGEXES ".*"
+  DIRECTORIES ${LD_LIBRARY_PATH}
+)
+
+install(
+  FILES "index.js"
+  DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/"
+  COMPONENT node_osrm
+)
+
+install(
+  FILES "${PROJECT_SOURCE_DIR}/package.json"
+  DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/"
+  COMPONENT node_osrm
+)
