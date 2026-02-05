@@ -38,9 +38,13 @@ if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
 
+DEPS=`python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM"`
+echo "=== Dependencies ==="
+echo "$DEPS"
+echo "===================="
+
 # cp on macOS knows no -t, no -u
-python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
-    xargs -I '{}' cp -v '{}' "$BINDINGS" || true
+echo "$DEPS" | xargs -I '{}' cp -v '{}' "$BINDINGS" || true
 
 case $(uname) in
   Linux)

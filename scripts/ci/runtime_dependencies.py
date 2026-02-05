@@ -78,7 +78,7 @@ def main():
         regex = re.compile(r"^\s+(.*dll)$")
         path = os.environ.get("PATH", "").split(":")
 
-    def find_lib(lib: str) -> str:
+    def find_lib(path: list[str], lib: str) -> str:
         """Find the library in PATH"""
         if "/" in lib:
             return lib
@@ -88,27 +88,27 @@ def main():
                 return p
         return lib
 
-    def gather(binaries):
-        libs = []
-        for bin in list(binaries):
-            stdout = subprocess.check_output(
-                f"{tool} {bin}", shell=True, encoding="utf-8"
-            )
-            for line in stdout.splitlines():
-                m = regex.search(line)
-                if m:
-                    libs.append(find_lib(m.group(1)))
-        return libs
-
-    for lib in gather(args.filenames):
-        # be careful *not* to resolve symlinks! eg. libtbbmalloc.so.2 => libtbbmalloc.so.2.17
-        lib = os.path.normpath(lib)
-        if args.grep:
-            m = args.grep.search(lib)
+    libs = set()
+    for filename in args.filenames:
+        stdout = subprocess.check_output(
+            f"{tool} {filename}", shell=True, encoding="utf-8"
+        )
+        for line in stdout.splitlines():
+            m = regex.search(line)
             if m:
-                sys.stdout.write(lib + "\n")  # always \n even on Windows!
+                dir = os.path.dirname(filename)
+                # be careful *not* to resolve symlinks! eg. libtbbmalloc.so.2 => libtbbmalloc.so.2.17
+                libs.add(os.path.normpath(find_lib([dir] + path, m.group(1))))
+
+    # always use \n even on Windows!
+    sys.stdout.reconfigure(newline="\n")
+
+    for lib in sorted(libs):
+        if args.grep:
+            if args.grep.search(lib):
+                print(lib)
         else:
-            sys.stdout.write(lib + "\n")
+            print(lib)
 
 
 if __name__ == "__main__":
