@@ -15,6 +15,7 @@ import os
 import platform
 import re
 import subprocess
+import sys
 
 args = argparse.Namespace()
 
@@ -105,9 +106,9 @@ def main():
         if args.grep:
             m = args.grep.search(lib)
             if m:
-                print(lib)
+                sys.stdout.write(lib + "\n")  # always \n even on Windows!
         else:
-            print(lib)
+            sys.stdout.write(lib + "\n")
 
 
 if __name__ == "__main__":
