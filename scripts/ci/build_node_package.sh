@@ -40,7 +40,7 @@ fi
 
 # cp on macOS knows no -t, no -u
 python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
-    xargs cp -v '{}' "$BINDINGS" || true
+    xargs -I '{}' cp -v '{}' "$BINDINGS" || true
 
 case $(uname) in
   Linux)
