@@ -35,11 +35,6 @@ def main():
         type=str,
         help="regular expression the libraries must match",
     )
-    parser.add_argument(
-        "--debug",
-        action="store_true",
-        help="print the tool output and exit",
-    )
 
     parser.parse_args(namespace=args)
 
@@ -65,16 +60,22 @@ def main():
     if platform.system() == "Windows":
         # https://learn.microsoft.com/en-us/cpp/build/reference/dependents?view=msvc-170
         # https://github.com/actions/runner-images/blob/main/images/windows/Windows2025-Readme.md
+        # Image has the following dependencies:
+        #   KERNEL32.dll
+        #   SHLWAPI.dll
+        #   boost_iostreams.dll
+        #   MSVCP140.dll
         tool = glob.glob(
             r"C:\\Program Files\\Microsoft Visual Studio\\**\\DUMPBIN.EXE",
             recursive=True,
         )
         if len(tool) > 0:
             tool = f'"{tool[0]}" /DEPENDENTS'
-            regex = re.compile(r"^\s+(.*dll)$")
         else:
             print("Cannot find dumpbin.exe")
             exit(-1)
+        tool = "DUMPBIN /DEPENDENTS"
+        regex = re.compile(r"^\s+(.*dll)$")
         path = os.environ.get("PATH", "").split(":")
 
     def find_lib(lib: str) -> str:
@@ -93,9 +94,6 @@ def main():
             stdout = subprocess.check_output(
                 f"{tool} {bin}", shell=True, encoding="utf-8"
             )
-            if args.debug:
-                print(stdout)
-                exit(0)
             for line in stdout.splitlines():
                 m = regex.search(line)
                 if m:

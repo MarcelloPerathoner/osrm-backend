@@ -38,14 +38,22 @@ if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
 
-python scripts/ci/runtime_dependencies.py --debug "$BINDINGS/$NODE_OSRM"
+case $(uname) in
+  Linux)
+    ldd "$BINDINGS/$NODE_OSRM"
+    chrpath --replace '$ORIGIN' "$BINDINGS/$NODE_OSRM"
+  ;;
+  Darwin)
+    otool -l "$BINDINGS/$NODE_OSRM"
+    otool -L "$BINDINGS/$NODE_OSRM"
+  ;;
+  Windows)
+    DUMPBIN /DEPENDENTS "$BINDINGS/$NODE_OSRM"
+  ;;
+esac
 
 python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM" | \
-    while IFS= read -r line; do cp -uv "$line" "$BINDINGS" || true; done
-
-if [[ $(uname -s) == 'Linux' ]]; then
-  chrpath --replace '$ORIGIN' "$BINDINGS/$NODE_OSRM"
-fi
+    xargs cp -v -t "$BINDINGS" || true
 
 # echo "dumping binary meta..."
 ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS

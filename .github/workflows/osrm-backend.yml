@@ -412,7 +412,7 @@ jobs:
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
         run: |
-          bash ${CI_DIR}/build_node_package.sh
+          ${CI_DIR}/build_node_package.sh
 
       - name: Debug build
         if: always()
