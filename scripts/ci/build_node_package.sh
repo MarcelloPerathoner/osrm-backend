@@ -38,7 +38,7 @@ if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
 
-DEPS=`python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$BINDINGS/$NODE_OSRM"`
+DEPS=`python scripts/ci/runtime_dependencies.py --grep "boost|bz2|tbb|osrm" "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM"
 echo "=== Dependencies ==="
 echo "$DEPS"
 echo "===================="
