@@ -3,8 +3,8 @@
 set -e
 set -o pipefail
 
-BUILD="build/nodejs/lib"
-BINDINGS="$BUILD/binding_napi_v8"
+BUILD="build/nodejs"
+BINDINGS="$BUILD/lib/binding_napi_v8"
 NODE_OSRM="node_osrm.node"
 ELF_OUT="$BUILD/readelf-output.txt"
 
@@ -14,7 +14,7 @@ echo "node version is:"
 which node
 node -v
 
-NPM_FLAGS=""
+NPM_FLAGS="--directory $BUILD"
 if [[ "${BUILD_TYPE:-}" == "Debug" ]]; then
     NPM_FLAGS="$NPM_FLAGS --debug"
 fi
@@ -23,7 +23,8 @@ fi
 
 source build/cmake.env
 
-cp src/nodejs/index.js "$BUILD"
+cp package.json "$BUILD"
+cp src/nodejs/index.js "$BUILD/lib"
 cp "$OSRM_NODEJS_BUILD_DIR/$NODE_OSRM" "$BINDINGS"
 for n in components contract customize datastore extract partition routed ; do
     cp -v "$OSRM_BUILD_DIR/osrm-$n${EXE:-}" "$BINDINGS"

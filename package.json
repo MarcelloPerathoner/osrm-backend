@@ -20,7 +20,7 @@
     "clean": "rm -rf test/cache",
     "docs": "./scripts/build_api_docs.sh",
     "install": "node-pre-gyp install --fallback-to-build=false || ./scripts/node_install.sh",
-    "nodejs-tests": "make -C test/data && build/nodejs/lib/binding_napi_v8/osrm-datastore test/data/ch/monaco.osrm && node test/nodejs/index.js | faucet",
+    "nodejs-tests": "make -C test/data && lib/binding_napi_v{napi_build_version}/osrm-datastore test/data/ch/monaco.osrm && node test/nodejs/index.js | faucet",
     "prepare": "husky"
   },
   "repository": {
@@ -75,7 +75,7 @@
       8
     ],
     "module_name": "node_osrm",
-    "module_path": "build/nodejs/lib/binding_napi_v{napi_build_version}/",
+    "module_path": "lib/binding_napi_v{napi_build_version}/",
     "host": "https://github.com",
     "remote_path": "./Project-OSRM/osrm-backend/releases/download/v{version}/",
     "package_name": "{module_name}-v{version}-{napi_build_version}-{platform}-{arch}-{configuration}.tar.gz"

@@ -56,11 +56,11 @@ def main():
     if platform.system() == "Darwin":
         # otool -L libfoo.dylib
         tool = "otool -L"
-        # /home/me/lib/libjli.dylib:
-        # 	@rpath/libjli.dylib (compatibility version 1.0.0, current version 1.0.0)
-        # 	/System/Library/Frameworks/Foundation.framework/Versions/C/Foundation (compatibility version 300.0.0, current version 1856.105.0)
-        # 	/usr/lib/libobjc.A.dylib (compatibility version 1.0.0, current version 228.0.0)
-        regex = re.compile(r"^\s+(/.*dylib)\s")
+        # @rpath/node_osrm.node (compatibility version 0.0.0, current version 0.0.0)
+        # @rpath/libosrm.dylib (compatibility version 0.0.0, current version 0.0.0)
+        # @rpath/libosrm_utils.dylib (compatibility version 0.0.0, current version 0.0.0)
+        # @rpath/libboost_iostreams.dylib (compatibility version 0.0.0, current version 0.0.0)
+        regex = re.compile(r"@rpath/(.*dylib)\s")
         path = os.environ.get("DYLD_LIBRARY_PATH", "").split(":")
     if platform.system() == "Windows":
         # https://learn.microsoft.com/en-us/cpp/build/reference/dependents?view=msvc-170
@@ -70,7 +70,7 @@ def main():
             recursive=True,
         )
         if len(tool) > 0:
-            tool = tool[0] + " /DEPENDENTS"
+            tool = f'"{tool[0]}" /DEPENDENTS'
             regex = re.compile(r"^\s+(.*dll)$")
         else:
             print("Cannot find dumpbin.exe")
