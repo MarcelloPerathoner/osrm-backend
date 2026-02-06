@@ -379,7 +379,7 @@ jobs:
       - name: Cmake configure
         run: |
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
-            cmake -B ${CONAN_BUILD_DIR} --preset ${CONAN_CMAKE_PRESET}
+            cmake -B "${CONAN_BUILD_DIR}" --preset ${CONAN_CMAKE_PRESET}
           else
             cmake -B build/ \
                 -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
@@ -397,21 +397,22 @@ jobs:
 
       - name: Build core
         run: |
-          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS}
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS}
 
       - name: Build unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target tests
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS} --target tests
 
       - name: Build benchmarks
         if: env.ENABLE_BENCHMARKS == 'ON'
         run: |
-          cmake --build ${CMAKE_BINARY_DIR} --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
         run: |
+          cmake --install "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS} --component node_osrm -v
           ${CI_DIR}/build_node_package.sh
 
       - name: Debug build

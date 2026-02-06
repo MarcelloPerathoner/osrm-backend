@@ -91,13 +91,6 @@ if(USE_CCACHE)
 endif()
 
 if(BUILD_SHARED_LIBS)
-  if(MSVC)
-    # Windows DLLs need all exported functions declared as __declspec(export)
-    # trying to fix that without touching the code,
-    # ... without much success so far
-    # set(CMAKE_WINDOWS_EXPORT_ALL_SYMBOLS TRUE)
-  endif()
-else()
   set(BUILD_SHARED_LIBS "OFF")
 endif()
 
@@ -129,7 +122,14 @@ else()
   set(CMAKE_BUILD_RPATH "\$ORIGIN")
   if(NOT MSVC)
     # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
+    # FIXME: do we still need $ORIGIN in the build when we set it during install?
+    # Workaround for bug in Cmake (current 4.2.3): RPATH and RUNPATH are treated
+    # different.  The RPATH of the grandparent is used when searching for dependencies
+    # but the RUNPATH of the grandparent is not.  Thus we have to disable DT_RUNPATH and
+    # use DT_RPATH because we have the dependency: node_osrm => libboost-iostreams =>
+    # libboost-system
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags")
   endif()
 endif()
 

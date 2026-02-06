@@ -29,7 +29,7 @@ target_link_libraries(node_osrm osrm_utils osrm_routed)
 disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Installation
-# as a prelude to building the nodejs package
+# as a prelude to building the nodejs package with gyp
 
 list(APPEND TARGETS node_osrm osrm_utils osrm_routed)
 foreach(binary components contract customize datastore extract partition routed)
@@ -40,23 +40,19 @@ foreach(t "${TARGETS}")
   set_property(TARGET ${t} PROPERTY INSTALL_RPATH_USE_LINK_PATH FALSE)
   if(APPLE)
     set_property(TARGET ${t} PROPERTY INSTALL_RPATH "@loader_path")
-  else()
+  endif()
+  if(LINUX)
     set_property(TARGET ${t} PROPERTY INSTALL_RPATH "\$ORIGIN")
   endif()
 endforeach()
-
-# there is a bug in cmake (current 4.2.3) that does not find recursive dependencies, eg.
-# if node_osrm => libboost-iostreams => libboost-system then last one is not found
-string(REPLACE ":" ";" LD_LIBRARY_PATH "$ENV{LD_LIBRARY_PATH} $ENV{DYLD_LIBRARY_PATH}")
 
 install(
   TARGETS ${TARGETS}
   DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
   COMPONENT node_osrm
   RUNTIME_DEPENDENCIES
-  POST_INCLUDE_REGEXES "boost|tbb|bz2"
-  POST_EXCLUDE_REGEXES ".*"
-  DIRECTORIES ${LD_LIBRARY_PATH}
+    POST_INCLUDE_REGEXES "conan2"
+    POST_EXCLUDE_REGEXES ".*"
 )
 
 install(

@@ -46,6 +46,7 @@ If you want to build the Node package, you should use:
 ```bash
 cmake -B build/Release -DCMAKE_BUILD_TYPE=Release -DBUILD_NODE_PACKAGE=ON
 make -C build/Release -j 16
+cmake --install build/Release -j 16 --component node_osrm
 scripts/ci/build_node_package.sh
 ```
 
