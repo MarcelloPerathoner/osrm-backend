@@ -17,7 +17,7 @@ package manager (Conan) or install them  manually (apt-get).
 Install dependencies:
 
 ```bash
-sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev chrpath
+sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
 npm ci --ignore-scripts
 ```
 Note: here `ci` means "clean install" and not "continuous integration".

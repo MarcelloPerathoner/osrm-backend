@@ -246,7 +246,7 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
-            sudo apt-get install -y ${CC} ${CXX} ccache chrpath zlib1g-dev
+            sudo apt-get install -y ${CC} ${CXX} ccache zlib1g-dev
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a version of bash that can do string lowercasing
