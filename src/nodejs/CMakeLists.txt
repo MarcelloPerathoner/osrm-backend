@@ -46,9 +46,9 @@ foreach(t "${TARGETS}")
   endif()
 endforeach()
 
-# on Windows we have no RPATH/RUNPATH and we must search the PATH
-string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{PATH}")
-message(STATUS "PATH=${WIN_LIBRARY_PATH}")
+# install(TARGETS ...  RUNTIME_DEPENDENCIES) is too dumb to use the PATH when searching
+# for DLLs. We have to spoon-feed cmake ourselves.
+# string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{CONAN_DEPENDENCIES_DIRS}")
 
 install(
   TARGETS ${TARGETS}
@@ -58,7 +58,7 @@ install(
     PRE_EXCLUDE_REGEXES "api-ms-.*"
     POST_INCLUDE_REGEXES "conan2|boost|tbb|lua|bz2|zstd"
     POST_EXCLUDE_REGEXES ".*"
-    DIRECTORIES ${WIN_LIBRARY_PATH}
+    DIRECTORIES $<TARGET_RUNTIME_DLL_DIRS:node_osrm>
 )
 
 install(

@@ -347,6 +347,10 @@ jobs:
         run: |
           echo "Boost_DIR=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
 
+          if [[ "$CONAN_GENERATORS_DIR" "= "" ]]; then
+            source "$CONAN_GENERATORS_DIR/conan-build-env.sh"
+          fi
+
           if [[ "${USE_CCACHE}" == "ccache" ]]; then
             ccache --version
             ccache --max-size=256M

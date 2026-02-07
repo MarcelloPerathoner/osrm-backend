@@ -52,13 +52,21 @@ class OsrmConan(ConanFile):
 
     default_options = {"shared": False, "node_package": False, "ccache": "ccache"}
 
+    def _getVarValue(self, varvalues):
+        """Returns var value as string, drops placeholders"""
+        values = []
+        for varvalue in varvalues._values:
+            if varvalue is not _EnvVarPlaceHolder:
+                values.append(_bash_path(varvalue))
+        return ":".join(values)
+
     def _writeEnvSh(self, env_vars):
         """
         Usually Conan puts the environments for building and running into `conanbuild.sh`
         and `conanrun.sh` and you are supposed to source those files.  The troubles start
         when we run under Windows and use a bash shell, like we do on github CI.
 
-        With 5 different configuration entries you can configure Conan almost but not
+        Setting 5 different configuration entries we could configure Conan almost but not
         quite entirely unlike the way we want.  To avoid that config hell we just write
         the file ourselves.
         """
@@ -169,6 +177,15 @@ class OsrmConan(ConanFile):
             fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
             fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
+
+            # hack! Conan emits the search path for libraries in the "run" environment
+            # (eg. LD_LIBRARY_PATH) but we need it during the cmake configure stage
+            # because otherwise install(TARGETS ... RUNTIME_DEPENDENCIES) is too dumb to
+            # look into the PATH when searching for DLLs on Windows.
+            values = vre.environment().vars(self, scope="run")._values
+            if "LD_LIBRARY_PATH" in values:
+                conan_deps = self._getVarValue(values["LD_LIBRARY_PATH"])
+                fp.write(f"CONAN_DEPENDENCIES_DIRS={conan_deps}")
 
     def layout(self):
         cmake_layout(self)
