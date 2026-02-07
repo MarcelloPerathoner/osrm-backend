@@ -31,7 +31,7 @@ disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 # Installation
 # as a prelude to building the nodejs package with gyp
 
-list(APPEND TARGETS node_osrm osrm_utils osrm_routed)
+list(APPEND TARGETS node_osrm)
 foreach(binary components contract customize datastore extract partition routed)
   list(APPEND TARGETS "osrm-${binary}")
 endforeach()
@@ -46,14 +46,18 @@ foreach(t "${TARGETS}")
   endif()
 endforeach()
 
+# on Windows we have no RPATH/RUNPATH and we must search the PATH
+string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{PATH}")
+
 install(
   TARGETS ${TARGETS}
   DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
   COMPONENT node_osrm
   RUNTIME_DEPENDENCIES
-    PRE_EXCLUDE_REGEXES "api-ms-*.dll"
+    PRE_EXCLUDE_REGEXES "api-ms-.*"
     POST_INCLUDE_REGEXES "conan2|boost|tbb|lua|bz2|zstd"
     POST_EXCLUDE_REGEXES ".*"
+    DIRECTORIES ${WIN_LIBRARY_PATH}
 )
 
 install(
