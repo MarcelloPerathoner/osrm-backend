@@ -393,7 +393,7 @@ jobs:
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                 -DENABLE_LTO=${ENABLE_LTO:-ON}
           fi
-          cat build/cmake.env >> $GITHUB_ENV
+          cat build/cmake-run.env >> $GITHUB_ENV
 
       - name: Build core
         run: |

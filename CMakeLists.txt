@@ -174,12 +174,19 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
-set(CMAKE_BUILD_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake.env")
-file(REMOVE "${CMAKE_BUILD_ENV_SH}")
+# Following lines and functions generate the files `build/cmake-run.env` and
+# `build/cmake-run-env.sh`. The first is handy on CI eg. `cat build/cmake-run.env >>
+# $GIHUB_ENV`. The second can be sourced.
+
+set(CONAN_ENV       "${PROJECT_SOURCE_DIR}/build/conan.env")
+set(CMAK_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/cmake-run.env")
+set(CMAK_RUN_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake-run-env.sh")
+file(REMOVE "${CMAK_RUN_ENV}")
+configure_file(cmake/cmake-run-env.sh.in ${CMAK_RUN_ENV_SH} @ONLY)
 
 function(push_env key value)
-  # puts key=value into cmake.env
-  file(APPEND "${CMAKE_BUILD_ENV_SH}" "${key}=${value}\n")
+  # puts key=value into cmake-run.env
+  file(APPEND "${CMAK_RUN_ENV}" "${key}=${value}\n")
   set(ENV{${key}} "${value}")
 endfunction()
 

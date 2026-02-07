@@ -51,6 +51,7 @@ install(
   DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
   COMPONENT node_osrm
   RUNTIME_DEPENDENCIES
+    PRE_EXCLUDE_REGEXES "api-ms-*.dll"
     POST_INCLUDE_REGEXES "conan2|boost|tbb|lua|bz2|zstd"
     POST_EXCLUDE_REGEXES ".*"
 )

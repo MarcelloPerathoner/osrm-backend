@@ -21,13 +21,7 @@ fi
 
 # copy files into BINDINGS
 
-# source build/cmake.env
-
-# We need the library paths because of a bug in Cmake (current 4.2.3)
-# if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
-#     source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
-#     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
-# fi
+source build/cmake-run-env.sh
 cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
 
 # cp package.json "$BUILD"

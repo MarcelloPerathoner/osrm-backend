@@ -1,0 +1,10 @@
+if [[ -f @CONAN_ENV@ ]]; then
+    source @CONAN_ENV@
+fi
+
+if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
+    source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
+    export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
+fi
+
+source @CMAK_RUN_ENV@
