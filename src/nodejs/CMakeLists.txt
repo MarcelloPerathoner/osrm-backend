@@ -15,7 +15,6 @@ add_nodejs_module(node_osrm node_osrm.cpp)
 set_target_properties(node_osrm PROPERTIES CXX_CLANG_TIDY "")
 # TODO: we turn off some warnings for this target, because it causes errors in third-party NodeJs related headers
 target_no_warning(node_osrm suggest-destructor-override)
-# target_no_warning(node_osrm suggest-override)
 
 execute_process(COMMAND node -p "require('node-addon-api').include.replaceAll('\"', '')"
                 WORKING_DIRECTORY ${CMAKE_SOURCE_DIR} OUTPUT_VARIABLE NODE_ADDON_API_DIR)
@@ -47,8 +46,8 @@ foreach(t "${TARGETS}")
 endforeach()
 
 # GET_RUNTIME_DEPENDENCIES() is too dumb to use the PATH when searching
-# for DLLs. We have to spoon-feed it ourselves.
-string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{CONAN_DEPENDENCIES_DIRS}")
+# for DLLs. We have to spoon-feed it.
+string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{CONAN_LIBRARY_PATH}")
 
 install(
   TARGETS ${TARGETS}

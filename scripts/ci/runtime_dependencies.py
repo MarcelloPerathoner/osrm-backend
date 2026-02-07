@@ -1,10 +1,8 @@
 """
-Copy the .so dependencies of a target.
+Get the shared libraries dependencies of a target.
 
-Incredible but true: Cmake does not offer this very elementary function: to list the
-dynamic libraries (.so) a target needs to run.
-
-This tools does that.
+Incredible but true: Cmake does not offer this very elementary function: to get a list
+of the dynamic libraries (.so) a target needs to run.
 
 Example: python scripts/ci/runtime_dependencies.py --grep "boost|tbb|osrm" build/Release/nodejs/node_osrm.node
 """

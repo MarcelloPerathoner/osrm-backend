@@ -123,13 +123,14 @@ else()
   if(NOT MSVC)
     # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
     # FIXME: do we still need $ORIGIN in the build when we set it during install?
-    # Workaround for bug in Cmake (current 4.2.3): RPATH and RUNPATH are treated
-    # different.  The RPATH of the grandparent is used when searching for dependencies
-    # but the RUNPATH of the grandparent is not.  Thus we have to disable DT_RUNPATH and
-    # use DT_RPATH because we have the dependency: node_osrm => libboost-iostreams =>
-    # libboost-system
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags")
+
+    # RUNPATH and RPATH are different animals, see: `man ld.so`.  While the RPATH of the
+    # grandparent is used when searching for dependencies the RUNPATH of the grandparent
+    # is not.  Thus we have to disable DT_RUNPATH and use DT_RPATH instead because we
+    # have the dependency: node_osrm => libboost-iostreams => libboost-system and there
+    # is no RUNPATH in libboost-iostreams.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags,--as-needed")
+    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags,--as-needed")
   endif()
 endif()
 
@@ -478,25 +479,25 @@ endif()
 find_package(Osmium REQUIRED COMPONENTS io)
 add_dependency_includes(${OSMIUM_INCLUDE_DIR})
 
-set(BOOST_BASE_LIBRARIES            Boost::date_time Boost::iostreams Boost::thread)
+set(BOOST_BASE_LIBRARIES            boost::boost)
+# set(BOOST_BASE_LIBRARIES            Boost::date_time Boost::iostreams Boost::thread)
 set(BOOST_ENGINE_LIBRARIES          ${BOOST_BASE_LIBRARIES})
 set(BOOST_UNIT_TEST_LIBRARIES       Boost::unit_test_framework)
 set(BOOST_PROGRAM_OPTIONS_LIBRARIES Boost::program_options)
 
-if(USE_CONAN)
-else()
+if(NOT USE_CONAN)
   set(TBB_LIBRARIES TBB::tbb)
+endif()
 
-  # add a target to generate API documentation with Doxygen
-  find_package(Doxygen)
-  if(DOXYGEN_FOUND)
-    configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-    add_custom_target(doc
-      ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-      WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
-      COMMENT "Generating API documentation with Doxygen" VERBATIM
-    )
-  endif()
+# add a target to generate API documentation with Doxygen
+find_package(Doxygen)
+if(DOXYGEN_FOUND)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
+  add_custom_target(doc
+    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
+    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+    COMMENT "Generating API documentation with Doxygen" VERBATIM
+  )
 endif()
 
 # add_dependency_defines(-DBOOST_SPIRIT_USE_PHOENIX_V3)

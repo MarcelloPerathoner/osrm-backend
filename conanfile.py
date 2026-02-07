@@ -178,14 +178,14 @@ class OsrmConan(ConanFile):
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
             fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
 
-            # hack! Conan emits the search PATH for libraries in the "run" environment
+            # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because
             # GET_RUNTIME_DEPENDENCIES() is too dumb to look into the PATH when
             # searching for DLLs on Windows.
             values = vre.environment().vars(self, scope="run")._values
             if "PATH" in values:
                 conan_deps = self._getVarValue(values["PATH"])
-                fp.write(f"CONAN_DEPENDENCIES_DIRS={conan_deps}\n")
+                fp.write(f"CONAN_LIBRARY_PATH={conan_deps}\n")
 
     def layout(self):
         cmake_layout(self)
