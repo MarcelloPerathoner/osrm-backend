@@ -185,7 +185,7 @@ class OsrmConan(ConanFile):
             values = vre.environment().vars(self, scope="run")._values
             if "PATH" in values:
                 conan_deps = self._getVarValue(values["PATH"])
-                fp.write(f"CONAN_DEPENDENCIES_DIRS={conan_deps}")
+                fp.write(f"CONAN_DEPENDENCIES_DIRS={conan_deps}\n")
 
     def layout(self):
         cmake_layout(self)

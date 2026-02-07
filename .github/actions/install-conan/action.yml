@@ -68,7 +68,7 @@ runs:
     - name: Debug Conan environment
       shell: bash
       run: |
-        echo "::group::cat build/conan.env
+        echo "::group::cat build/conan.env"
         cat build/conan.env
         echo "::endgroup::"
 
