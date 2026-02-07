@@ -4,11 +4,11 @@ set -e
 set -o pipefail
 
 BUILD="build/nodejs"
-BINDINGS="$BUILD/lib/binding_napi_v8"
-NODE_OSRM="node_osrm.node"
-ELF_OUT="$BUILD/readelf-output.txt"
+# BINDINGS="$BUILD/lib/binding_napi_v8"
+# NODE_OSRM="node_osrm.node"
+# ELF_OUT="$BUILD/readelf-output.txt"
 
-mkdir -p "$BINDINGS"
+# mkdir -p "$BINDINGS"
 
 echo "node version is:"
 which node
@@ -21,9 +21,9 @@ fi
 
 # copy files into BINDINGS
 
-source build/cmake-run-env.sh
-echo "PATH is: $PATH"
-cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
+# source build/cmake-run-env.sh
+# echo "PATH is: $PATH"
+# cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
 
 # cp package.json "$BUILD"
 # cp src/nodejs/index.js "$BUILD/lib"
