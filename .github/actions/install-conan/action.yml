@@ -68,6 +68,10 @@ runs:
     - name: Debug Conan environment
       shell: bash
       run: |
+        echo "::group::cat build/conan.env
+        cat build/conan.env
+        echo "::endgroup::"
+
         echo "::group::ls"
         ls "${CONAN_GENERATORS_DIR}"
         echo "::endgroup::"
