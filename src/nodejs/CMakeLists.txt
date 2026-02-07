@@ -48,6 +48,7 @@ endforeach()
 
 # on Windows we have no RPATH/RUNPATH and we must search the PATH
 string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{PATH}")
+message(STATUS "PATH=${WIN_LIBRARY_PATH}")
 
 install(
   TARGETS ${TARGETS}

@@ -22,6 +22,7 @@ fi
 # copy files into BINDINGS
 
 source build/cmake-run-env.sh
+echo "PATH is: $PATH"
 cmake --install "$OSRM_BUILD_DIR" --component node_osrm -v
 
 # cp package.json "$BUILD"
