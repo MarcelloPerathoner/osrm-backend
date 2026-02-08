@@ -1,5 +1,7 @@
 #!/bin/bash
-set -eou pipefail
+set -e -o pipefail
+
+source build/osrm-run-env.sh
 
 function usage {
     echo "Usage: $0 -f <folder> -r <results_folder> -s <scripts_folder> -b <binaries_folder> -o <osm_pbf> -g <gps_traces>"
@@ -40,7 +42,6 @@ fi
 
 BENCHMARKS_FOLDER=${OSRM_BENCHMARKS_BUILD_DIR:-${BINARIES_FOLDER}/src/benchmarks}
 TEST_DATA_FOLDER=${ROOT_FOLDER}/test/data
-LIB_FOLDER=${ROOT_FOLDER}/lib
 TMP_FOLDER=${ROOT_FOLDER}/tmp
 EXE=${EXE:-}
 
@@ -77,25 +78,25 @@ function run_benchmarks_for_folder {
     mkdir -p $RESULTS_FOLDER
 
     echo "Running match-bench MLD"
-    "$BENCHMARKS_FOLDER/match-bench${EXE}" "$TEST_DATA_FOLDER/mld/monaco.osrm" mld > "$RESULTS_FOLDER/match_mld.bench"
+    "$BENCHMARKS_FOLDER/match-bench" "$TEST_DATA_FOLDER/mld/monaco.osrm" mld > "$RESULTS_FOLDER/match_mld.bench"
     echo "Running match-bench CH"
-    "$BENCHMARKS_FOLDER/match-bench${EXE}" "$TEST_DATA_FOLDER/ch/monaco.osrm" ch > "$RESULTS_FOLDER/match_ch.bench"
+    "$BENCHMARKS_FOLDER/match-bench" "$TEST_DATA_FOLDER/ch/monaco.osrm" ch > "$RESULTS_FOLDER/match_ch.bench"
     echo "Running route-bench MLD"
-    "$BENCHMARKS_FOLDER/route-bench${EXE}" "$TEST_DATA_FOLDER/mld/monaco.osrm" mld > "$RESULTS_FOLDER/route_mld.bench"
+    "$BENCHMARKS_FOLDER/route-bench" "$TEST_DATA_FOLDER/mld/monaco.osrm" mld > "$RESULTS_FOLDER/route_mld.bench"
     echo "Running route-bench CH"
-    "$BENCHMARKS_FOLDER/route-bench${EXE}" "$TEST_DATA_FOLDER/ch/monaco.osrm" ch > "$RESULTS_FOLDER/route_ch.bench"
+    "$BENCHMARKS_FOLDER/route-bench" "$TEST_DATA_FOLDER/ch/monaco.osrm" ch > "$RESULTS_FOLDER/route_ch.bench"
     echo "Running alias"
-    "$BENCHMARKS_FOLDER/alias-bench${EXE}" > "$RESULTS_FOLDER/alias.bench"
+    "$BENCHMARKS_FOLDER/alias-bench" > "$RESULTS_FOLDER/alias.bench"
     echo "Running json-render-bench"
-    "$BENCHMARKS_FOLDER/json-render-bench${EXE}"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
+    "$BENCHMARKS_FOLDER/json-render-bench"  "$TEST_DATA_FOLDER/portugal_to_korea.json" > "$RESULTS_FOLDER/json-render.bench"
     echo "Running packedvector-bench"
-    "$BENCHMARKS_FOLDER/packedvector-bench${EXE}" 10 100000 > "$RESULTS_FOLDER/packedvector.bench"
+    "$BENCHMARKS_FOLDER/packedvector-bench" 10 100000 > "$RESULTS_FOLDER/packedvector.bench"
     echo "Running rtree-bench"
-    "$BENCHMARKS_FOLDER/rtree-bench${EXE}" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
+    "$BENCHMARKS_FOLDER/rtree-bench" "$TEST_DATA_FOLDER/monaco.osrm.ramIndex" "$TEST_DATA_FOLDER/monaco.osrm.fileIndex" "$TEST_DATA_FOLDER/monaco.osrm.nbg_nodes" > "$RESULTS_FOLDER/rtree.bench"
+
+    ln -sf `realpath "$OSM_PBF"` "$TMP_FOLDER/data.osm.pbf"
 
     pushd $TMP_FOLDER
-
-    ln -sf `realpath $OSM_PBF` data.osm.pbf
 
     measure_peak_ram_and_time osrm-extract -p $ROOT_FOLDER/profiles/car.lua data.osm.pbf
     measure_peak_ram_and_time osrm-partition data.osrm
@@ -104,23 +105,27 @@ function run_benchmarks_for_folder {
 
     popd
 
-    # if [[ -f "build/nodejs/lib/binding_napi_v8/node_osrm.node" ]]; then
-    #   for ALGORITHM in ch mld; do
-    #       for BENCH in nearest table trip route match; do
-    #           echo "Running node $BENCH $ALGORITHM"
-    #           node "$SCRIPTS_FOLDER/bench.js" "$LIB_FOLDER/index.js" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
-    #               > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" || true
-    #       done
-    #   done
-    # fi
-    #
-    # for ALGORITHM in ch mld; do
-    #     for BENCH in nearest table trip route match; do
-    #         echo "Running random $BENCH $ALGORITHM"
-    #         "$BENCHMARKS_FOLDER/bench${EXE}" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
-    #             > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" || true
-    #     done
-    # done
+    if [ -z "$GITHUB_STEP_SUMMARY" ]; then
+        # these waste an awful lot of time on CI
+        # FIXME: reenable after parallelizing them
+        if [[ -f "$OSRM_NODEJS_INSTALL_DIR/lib/index.js" ]]; then
+            for ALGORITHM in ch mld; do
+                for BENCH in nearest table trip route match; do
+                    echo "Running node $BENCH $ALGORITHM"
+                    node "$SCRIPTS_FOLDER/bench.js" "$OSRM_NODEJS_INSTALL_DIR/lib/index.js" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
+                        > "$RESULTS_FOLDER/node_${BENCH}_${ALGORITHM}.bench" || true
+                done
+            done
+        fi
+
+        for ALGORITHM in ch mld; do
+            for BENCH in nearest table trip route match; do
+                echo "Running random $BENCH $ALGORITHM"
+                "$BENCHMARKS_FOLDER/bench" "$TMP_FOLDER/data.osrm" $ALGORITHM $BENCH 5 "$GPS_TRACES" \
+                    > "$RESULTS_FOLDER/random_${BENCH}_${ALGORITHM}.bench" || true
+            done
+        done
+    fi
 
     summary "### e2e benchmarks\n"
     summary "Mean time for answering 100 randomly generated requests, in ms.\n"
@@ -128,7 +133,7 @@ function run_benchmarks_for_folder {
     summary "| --------- | -----:| -------:| ----:| -----:| -----:|\n"
 
     for ALGORITHM in ch mld; do
-        "$BINARIES_FOLDER/osrm-routed${EXE}" --algorithm $ALGORITHM "$TMP_FOLDER/data.osrm" > /dev/null 2>&1 &
+        "$BINARIES_FOLDER/osrm-routed" --algorithm $ALGORITHM "$TMP_FOLDER/data.osrm" > /dev/null 2>&1 &
         OSRM_ROUTED_PID=$!
 
         # wait for osrm-routed to start

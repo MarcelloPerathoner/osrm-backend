@@ -1,7 +1,6 @@
 #!/bin/bash
 
-set -e
-set -o pipefail
+set -e -o pipefail
 
 BUILD="build/nodejs"
 NPM_FLAGS="--directory $BUILD"

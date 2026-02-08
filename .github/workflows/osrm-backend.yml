@@ -393,7 +393,7 @@ jobs:
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
                 -DENABLE_LTO=${ENABLE_LTO:-ON}
           fi
-          cat build/cmake-run.env >> $GITHUB_ENV
+          cat build/osrm-run.env >> $GITHUB_ENV
 
       - name: Build core
         run: |
@@ -491,8 +491,7 @@ jobs:
       - name: Run unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          make -C ${TEST_DIR}/data
-          ctest --test-dir ${OSRM_UNIT_TESTS_BUILD_DIR}
+          ctest --test-dir ${OSRM_UNIT_TESTS_BUILD_DIR} -j 0 --verbose --output-log ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'

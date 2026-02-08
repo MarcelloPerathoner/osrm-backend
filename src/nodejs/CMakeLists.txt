@@ -30,6 +30,10 @@ disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 # Installation
 # as a prelude to building the nodejs package with gyp
 
+set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
+
+disclose_build_dir("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
+
 list(APPEND TARGETS node_osrm)
 foreach(binary components contract customize datastore extract partition routed)
   list(APPEND TARGETS "osrm-${binary}")
@@ -51,7 +55,7 @@ string(REPLACE ":" ";" WIN_LIBRARY_PATH "$ENV{CONAN_LIBRARY_PATH}")
 
 install(
   TARGETS ${TARGETS}
-  DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/binding_napi_v${NAPI_VERSION}"
+  DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib/binding_napi_v${NAPI_VERSION}"
   COMPONENT node_osrm
   RUNTIME_DEPENDENCIES
     PRE_EXCLUDE_REGEXES "api-ms-.*"
@@ -62,12 +66,12 @@ install(
 
 install(
   FILES "index.js"
-  DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/lib/"
+  DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib"
   COMPONENT node_osrm
 )
 
 install(
   FILES "${PROJECT_SOURCE_DIR}/package.json"
-  DESTINATION "${PROJECT_SOURCE_DIR}/build/nodejs/"
+  DESTINATION "${OSRM_NODEJS_INSTALL_DIR}"
   COMPONENT node_osrm
 )

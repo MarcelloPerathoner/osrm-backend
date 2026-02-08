@@ -1,4 +1,4 @@
-DATA_NAME:=monaco
+DATA_NAME?=monaco
 OSRM_BUILD_DIR?=../../build
 PROFILE_ROOT:=../../profiles
 SCRIPT_ROOT:=../../scripts
@@ -13,39 +13,42 @@ TIMER:=$(SCRIPT_ROOT)/timer.js
 PROFILE:=$(PROFILE_ROOT)/car.lua
 TMP:=`node $(SCRIPT_ROOT)/get-tmp-dir.js`
 
-all: data
+all: monaco
 
-data: ch/$(DATA_NAME).osrm.hsgr mld/$(DATA_NAME).osrm.partition
+monaco: ch/monaco.osrm.hsgr mld/monaco.osrm.partition
+
+berlin: ch/berlin.osrm.hsgr mld/berlin.osrm.partition
 
 clean:
-	-rm -r $(DATA_NAME).*
+	-rm -r *.osrm.*
 	-rm -r ch mld
 
-ch/$(DATA_NAME).osrm: $(DATA_NAME).osrm
+ch/%.osrm: %.osrm
 	mkdir -p ch
-	cp $(DATA_NAME).osrm.* ch/
+	cp $<.* ch/
 
-mld/$(DATA_NAME).osrm: $(DATA_NAME).osrm
+mld/%.osrm: %.osrm
 	mkdir -p mld
-	cp $(DATA_NAME).osrm.* mld/
+	cp $<.* mld/
 
-$(DATA_NAME).osrm: $(DATA_NAME).osm.pbf $(DATA_NAME).poly $(PROFILE) $(OSRM_EXTRACT)
-	@echo "Verifying data file integrity..."
-	$(MD5SUM) -c data.md5sum
+%.osrm: %.osm.pbf $(PROFILE) $(OSRM_EXTRACT)
 	@echo "Running osrm-extract..."
 	$(TIMER) "osrm-extract\t$@" $(OSRM_EXTRACT) $< -p $(PROFILE)
 
-ch/$(DATA_NAME).osrm.hsgr: ch/$(DATA_NAME).osrm $(PROFILE) $(OSRM_CONTRACT)
+ch/%.hsgr: ch/% $(PROFILE) $(OSRM_CONTRACT)
 	@echo "Running osrm-contract..."
 	$(TIMER) "osrm-contract\t$@" $(OSRM_CONTRACT) $<
 
-mld/$(DATA_NAME).osrm.partition: mld/$(DATA_NAME).osrm $(PROFILE) $(OSRM_PARTITION)
+mld/%.partition: mld/% $(PROFILE) $(OSRM_PARTITION)
 	@echo "Running osrm-partition..."
 	$(TIMER) "osrm-partition\t$@" $(OSRM_PARTITION) $<
 	$(TIMER) "osrm-customize\t$@" $(OSRM_CUSTOMIZE) $<
 
-$(DATA_NAME).requests: $(DATA_NAME).poly
-	$(POLY2REQ) $(DATA_NAME).poly > $(DATA_NAME).requests
+%.md5sum: %.osm.pbf
+	$(MD5SUM) $< > $@
+
+%.requests: %.poly
+	$(POLY2REQ) $< > $@
 
 benchmark: data $(DATA_NAME).requests
 	@echo "Running benchmark..."
@@ -63,7 +66,6 @@ benchmark: data $(DATA_NAME).requests
 	@cat $(TMP)/osrm.timings
 	@echo "****************"
 
-checksum:
-	$(MD5SUM) $(DATA_NAME).osm.pbf > data.md5sum
+checksum: monaco.md5sum
 
 .PHONY: clean checksum benchmark data

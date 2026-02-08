@@ -179,18 +179,18 @@ function(add_dependency_defines defines)
 endfunction(add_dependency_defines)
 
 # Following lines and functions generate the files:
-# - `build/cmake-run-env.sh` usage: `source build/cmake-run-env.sh`
-# - `build/cmake-run.env`    usage: `cat build/cmake-run.env >> $GIHUB_ENV`.
+# - `build/osrm-run-env.sh` usage: `source build/osrm-run-env.sh`
+# - `build/osrm-run.env`    usage: `cat build/osrm-run.env >> $GIHUB_ENV`.
 
-set(CONAN_ENV       "${PROJECT_SOURCE_DIR}/build/conan.env") # used in cmake-run-env.sh.in
-set(CMAK_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/cmake-run.env") # CMAKE_ prefix is reserved
-set(CMAK_RUN_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake-run-env.sh")
-file(REMOVE "${CMAK_RUN_ENV}")
-configure_file(cmake/cmake-run-env.sh.in ${CMAK_RUN_ENV_SH} @ONLY)
+set(CONAN_ENV       "${PROJECT_SOURCE_DIR}/build/conan.env") # used in osrm-run-env.sh.in
+set(OSRM_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/osrm-run.env")
+set(OSRM_RUN_ENV_SH "${PROJECT_SOURCE_DIR}/build/osrm-run-env.sh")
+file(REMOVE "${OSRM_RUN_ENV}")
+configure_file(cmake/osrm-run-env.sh.in ${OSRM_RUN_ENV_SH} @ONLY)
 
 function(push_env key value)
-  # puts key=value into cmake-run.env
-  file(APPEND "${CMAK_RUN_ENV}" "${key}=${value}\n")
+  # puts key=value into osrm-run.env
+  file(APPEND "${OSRM_RUN_ENV}" "${key}=${value}\n")
   set(ENV{${key}} "${value}")
 endfunction()
 
@@ -691,11 +691,11 @@ add_custom_target(uninstall
 
 
 # Modular build system: each directory registered here provides its own CMakeLists.txt
-add_subdirectory(unit_tests)
-add_subdirectory(src/benchmarks)
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
 endif()
+add_subdirectory(unit_tests)
+add_subdirectory(src/benchmarks)
 
 if(ENABLE_FUZZING)
   # Requires libosrm being built with sanitizers; make configurable and default to ubsan
@@ -759,4 +759,5 @@ message(STATUS "OSRM_BUILD_DIR is:            $ENV{OSRM_BUILD_DIR}")
 message(STATUS "OSRM_UNIT_TESTS_BUILD_DIR is: $ENV{OSRM_UNIT_TESTS_BUILD_DIR}")
 message(STATUS "OSRM_BENCHMARKS_BUILD_DIR is: $ENV{OSRM_BENCHMARKS_BUILD_DIR}")
 message(STATUS "OSRM_NODE_JS_BUILD_DIR is:    $ENV{OSRM_NODEJS_BUILD_DIR}")
+message(STATUS "OSRM_NODE_JS_INSTALL_DIR is:  $ENV{OSRM_NODEJS_INSTALL_DIR}")
 message(STATUS "-----------------------------")

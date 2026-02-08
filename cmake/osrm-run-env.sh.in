@@ -7,4 +7,4 @@ if [[ "$CONAN_GENERATORS_DIR" != "" ]]; then
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
 
-source @CMAK_RUN_ENV@
+source @OSRM_RUN_ENV@
