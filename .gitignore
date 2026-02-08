@@ -44,6 +44,7 @@ Thumbs.db
 /_build*
 /build/
 /test/data/monaco.osrm*
+/test/data/berlin.osrm*
 /test/data/berlin.osm.pbf
 /test/data/ch
 /test/data/mld

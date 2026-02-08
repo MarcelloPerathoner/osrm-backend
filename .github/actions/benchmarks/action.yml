@@ -23,14 +23,11 @@ runs:
     - name: Run benchmarks
       shell: bash
       run: |
-        make -C ${TEST_DIR}/data
-
         set -o errexit
 
-        "${CI_DIR}/run_benchmarks.sh" \
-          -r "${LOG_DIR}" \
-          -o "${TEST_DIR}/data/berlin.osm.pbf" \
-          -g "${TEST_DIR}/data/berlin_gps_traces.csv.gz"
+        ctest --test-dir ${OSRM_BENCHMARKS_BUILD_DIR} -j 0 --verbose --output-log ${LOG_DIR}/benchmarks.log
+
+        "${CI_DIR}/run_e2e_benchmarks.sh"
 
         for i in "${LOG_DIR}/"*.bench; do
           echo "::group::$i"
