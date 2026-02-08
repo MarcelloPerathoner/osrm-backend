@@ -1,3 +1,5 @@
+enable_testing()
+
 file(GLOB EngineTestsSources
     engine_tests.cpp
     engine/*.cpp)
@@ -59,20 +61,31 @@ file(GLOB UtilTestsSources
     util_tests.cpp
     util/*.cpp)
 
+foreach(t contractor customizer engine extractor partitioner server storage updater util)
+  list(APPEND TESTS "${t}-tests")
+endforeach()
+
+foreach(t contract customize extract partition)
+  list(APPEND TESTS "library-${t}-tests")
+endforeach()
+
+list(APPEND TESTS "library-tests")
+
 add_executable(contractor-tests	       EXCLUDE_FROM_ALL ${ContractorTestsSources})
 add_executable(customizer-tests	       EXCLUDE_FROM_ALL ${CustomizerTestsSources})
 add_executable(engine-tests	           EXCLUDE_FROM_ALL	${EngineTestsSources})
 add_executable(extractor-tests	       EXCLUDE_FROM_ALL	${ExtractorTestsSources})
-add_executable(library-contract-tests  EXCLUDE_FROM_ALL	${LibraryContractTestsSources})
-add_executable(library-customize-tests EXCLUDE_FROM_ALL ${LibraryCustomizeTestsSources})
-add_executable(library-extract-tests   EXCLUDE_FROM_ALL	${LibraryExtractTestsSources})
-add_executable(library-partition-tests EXCLUDE_FROM_ALL ${LibraryPartitionTestsSources})
-add_executable(library-tests	       EXCLUDE_FROM_ALL	${LibraryTestsSources})
 add_executable(partitioner-tests	   EXCLUDE_FROM_ALL	${PartitionTestsSources})
 add_executable(server-tests	           EXCLUDE_FROM_ALL	${ServerTestsSources})
 add_executable(storage-tests	       EXCLUDE_FROM_ALL ${StorageTestsSources})
 add_executable(updater-tests	       EXCLUDE_FROM_ALL ${UpdaterTestsSources})
 add_executable(util-tests	           EXCLUDE_FROM_ALL	${UtilTestsSources})
+
+add_executable(library-contract-tests  EXCLUDE_FROM_ALL	${LibraryContractTestsSources})
+add_executable(library-customize-tests EXCLUDE_FROM_ALL ${LibraryCustomizeTestsSources})
+add_executable(library-extract-tests   EXCLUDE_FROM_ALL	${LibraryExtractTestsSources})
+add_executable(library-partition-tests EXCLUDE_FROM_ALL ${LibraryPartitionTestsSources})
+add_executable(library-tests	       EXCLUDE_FROM_ALL	${LibraryTestsSources})
 
 set(UPDATER_TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/unit_tests/updater")
 set(TEST_DATA_DIR "${CMAKE_SOURCE_DIR}/test/data")
@@ -116,26 +129,10 @@ target_link_libraries(storage-tests                         osrm_utils ${BOOST_U
 target_link_libraries(updater-tests                         osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(util-tests                            osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 
-add_custom_target(tests
-  DEPENDS
-    contractor-tests
-    customizer-tests
-    engine-tests
-    extractor-tests
-    library-contract-tests
-    library-customize-tests
-    library-extract-tests
-    library-partition-tests
-    partitioner-tests
-    server-tests
-    storage-tests
-    updater-tests
-    util-tests
-)
+foreach(t ${TESTS})
+  add_test(NAME "${t}" COMMAND "${t}")
+endforeach()
 
-#if (NOT MSVC)
-  # FIXME: MSVC goes out of mem on github ci compiling target library-tests
-  add_dependencies(tests library-tests)
-#endif()
+add_custom_target(tests DEPENDS ${TESTS})
 
 disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")

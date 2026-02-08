@@ -178,12 +178,12 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
-# Following lines and functions generate the files `build/cmake-run.env` and
-# `build/cmake-run-env.sh`. The first is handy on CI eg. `cat build/cmake-run.env >>
-# $GIHUB_ENV`. The second can be sourced.
+# Following lines and functions generate the files:
+# - `build/cmake-run-env.sh` usage: `source build/cmake-run-env.sh`
+# - `build/cmake-run.env`    usage: `cat build/cmake-run.env >> $GIHUB_ENV`.
 
-set(CONAN_ENV       "${PROJECT_SOURCE_DIR}/build/conan.env")
-set(CMAK_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/cmake-run.env")
+set(CONAN_ENV       "${PROJECT_SOURCE_DIR}/build/conan.env") # used in cmake-run-env.sh.in
+set(CMAK_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/cmake-run.env") # CMAKE_ prefix is reserved
 set(CMAK_RUN_ENV_SH "${PROJECT_SOURCE_DIR}/build/cmake-run-env.sh")
 file(REMOVE "${CMAK_RUN_ENV}")
 configure_file(cmake/cmake-run-env.sh.in ${CMAK_RUN_ENV_SH} @ONLY)
@@ -578,6 +578,8 @@ set_property(TARGET osrm-io-benchmark PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 set_property(TARGET osrm-partition    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 set_property(TARGET osrm-routed       PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 
+### install ###
+
 file(GLOB FlatbuffersGlob third_party/flatbuffers/include/flatbuffers/*.h)
 file(GLOB LibraryGlob include/osrm/*.hpp)
 file(GLOB ParametersGlob include/engine/api/*_parameters.hpp)
@@ -746,7 +748,9 @@ message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")
 message(STATUS "C compiler is:          ${CMAKE_C_COMPILER}")
 message(STATUS "CXX compiler is:        ${CMAKE_CXX_COMPILER}")
 message(STATUS "Compiler cache is:      ${ccache_bin}")
+message(STATUS "CMAKE_BUILD_TYPE is:    ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS is:   ${BUILD_SHARED_LIBS}")
+message(STATUS "BUILD_NODE_PACKAGE is:  ${BUILD_NODE_PACKAGE}")
 message(STATUS "LTO / IPO is:           ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 message(STATUS "ASSERTIONS are:         ${ENABLE_ASSERTIONS}")
 message(STATUS "-----------------------")

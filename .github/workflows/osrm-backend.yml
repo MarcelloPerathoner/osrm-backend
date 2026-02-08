@@ -492,13 +492,7 @@ jobs:
         if: env.UNIT_TESTS == 'ON'
         run: |
           make -C ${TEST_DIR}/data
-
-          cd ${OSRM_UNIT_TESTS_BUILD_DIR}
-          for i in *-tests${EXE}; do
-            echo "::group::Running $i"
-            ./$i
-            echo "::endgroup::"
-          done
+          ctest --test-dir ${OSRM_UNIT_TESTS_BUILD_DIR}
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'
