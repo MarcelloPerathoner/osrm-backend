@@ -122,15 +122,18 @@ else()
   set(CMAKE_BUILD_RPATH "\$ORIGIN")
   if(NOT MSVC)
     # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
-    # FIXME: do we still need $ORIGIN in the build when we set it during install?
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
+    set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin")
 
-    # RUNPATH and RPATH are different animals, see: `man ld.so`.  While the RPATH of the
-    # grandparent is used when searching for dependencies the RUNPATH of the grandparent
-    # is not.  Thus we have to disable DT_RUNPATH and use DT_RPATH instead because we
-    # have the dependency: node_osrm => libboost-iostreams => libboost-system and there
-    # is no RUNPATH in libboost-iostreams.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags,--as-needed")
-    set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin,--disable-new-dtags,--as-needed")
+    # Fix for `cmake --install --component node_osrm` rising the error: "file Could not
+    # resolve runtime dependencies: libboost_system.so.1.88.0".  RUNPATH and RPATH are
+    # different animals, see: `man ld.so`.  While the RPATH of the grandparent is used
+    # when searching for dependencies the RUNPATH of the grandparent is not.  Thus we
+    # have to disable DT_RUNPATH and use DT_RPATH instead because we have the
+    # dependency: node_osrm.node => libboost_iostreams.so => libboost_system.so and
+    # there is no RUNPATH set in libboost_iostreams.so.
+    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--disable-new-dtags")
+    set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
   endif()
 endif()
 
@@ -479,15 +482,10 @@ endif()
 find_package(Osmium REQUIRED COMPONENTS io)
 add_dependency_includes(${OSMIUM_INCLUDE_DIR})
 
-set(BOOST_BASE_LIBRARIES            boost::boost)
-# set(BOOST_BASE_LIBRARIES            Boost::date_time Boost::iostreams Boost::thread)
+set(BOOST_BASE_LIBRARIES            Boost::date_time Boost::iostreams Boost::thread)
 set(BOOST_ENGINE_LIBRARIES          ${BOOST_BASE_LIBRARIES})
 set(BOOST_UNIT_TEST_LIBRARIES       Boost::unit_test_framework)
 set(BOOST_PROGRAM_OPTIONS_LIBRARIES Boost::program_options)
-
-if(NOT USE_CONAN)
-  set(TBB_LIBRARIES TBB::tbb)
-endif()
 
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
@@ -513,7 +511,7 @@ include_directories(SYSTEM ${DEPENDENCIES_INCLUDE_DIRS})
 set(UTIL_LIBRARIES
     ${BOOST_BASE_LIBRARIES}
     ${CMAKE_THREAD_LIBS_INIT}
-    ${TBB_LIBRARIES}
+    TBB::tbb
     ${MAYBE_RT_LIBRARY}
     ${MAYBE_COVERAGE_LIBRARIES}
     ${ZLIB_LIBRARIES})
