@@ -737,6 +737,7 @@ disclose_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
+push_env("PROJECT_SOURCE_DIR" "${PROJECT_SOURCE_DIR}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
 
 # debug print the list of include dirs
@@ -756,6 +757,7 @@ message(STATUS "BUILD_NODE_PACKAGE is:  ${BUILD_NODE_PACKAGE}")
 message(STATUS "LTO / IPO is:           ${CMAKE_INTERPROCEDURAL_OPTIMIZATION}")
 message(STATUS "ASSERTIONS are:         ${ENABLE_ASSERTIONS}")
 message(STATUS "-----------------------")
+message(STATUS "PROJECT_SOURCE_DIR is:        ${PROJECT_SOURCE_DIR}")
 message(STATUS "CMAKE_BINARY_DIR is:          ${CMAKE_BINARY_DIR}")
 message(STATUS "OSRM_BUILD_DIR is:            $ENV{OSRM_BUILD_DIR}")
 message(STATUS "OSRM_UNIT_TESTS_BUILD_DIR is: $ENV{OSRM_UNIT_TESTS_BUILD_DIR}")

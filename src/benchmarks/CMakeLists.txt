@@ -3,6 +3,8 @@ set(DATASET "berlin")
 set(GPS_TRACES "${TEST_DATA_DIR}/${DATASET}_gps_traces.csv.gz")
 set(LOG_DIR "${PROJECT_SOURCE_DIR}/test/logs")
 
+set(MONACO "${TEST_DATA_DIR}/monaco")
+
 ### build the benchmarks ###
 
 add_executable(alias-bench        EXCLUDE_FROM_ALL alias.cpp)
@@ -43,7 +45,7 @@ set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 foreach(ALGORITHM ch mld)
   foreach(BENCHMARK match-bench route-bench)
     set (NAME "${BENCHMARK}-${ALGORITHM}")
-    add_test(NAME "${NAME}" COMMAND match-bench "${TEST_DATA_DIR}/${ALGORITHM}/monaco.osrm" ${ALGORITHM})
+    add_test(NAME "${NAME}" COMMAND match-bench "${MONACO}/${ALGORITHM}/monaco.osrm" ${ALGORITHM})
     set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
   endforeach()
 endforeach()
@@ -53,9 +55,9 @@ add_test(NAME json-render-bench COMMAND json-render-bench
                 "${TEST_DATA_DIR}/portugal_to_korea.json")
 add_test(NAME packedvector-bench COMMAND packedvector-bench 10 100000)
 add_test(NAME rtree-bench COMMAND rtree-bench
-                "${TEST_DATA_DIR}/monaco.osrm.ramIndex"
-                "${TEST_DATA_DIR}/monaco.osrm.fileIndex"
-                "${TEST_DATA_DIR}/monaco.osrm.nbg_nodes")
+                "${MONACO}/ch/monaco.osrm.ramIndex"
+                "${MONACO}/ch/monaco.osrm.fileIndex"
+                "${MONACO}/ch/monaco.osrm.nbg_nodes")
 
 set_tests_properties(alias-bench        PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
 set_tests_properties(json-render-bench  PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
@@ -69,7 +71,7 @@ foreach(ALGORITHM ch mld)
             NAME "${NAME}"
             COMMAND
                 "${CMAKE_CURRENT_BINARY_DIR}/bench"
-                "${TEST_DATA_DIR}/${ALGORITHM}/${DATASET}.osrm"
+                "${TEST_DATA_DIR}/${DATASET}/${ALGORITHM}/${DATASET}.osrm"
                 "${ALGORITHM}"
                 "${BENCHMARK}"
                 5
@@ -82,7 +84,7 @@ foreach(ALGORITHM ch mld)
                 COMMAND
                     node "${PROJECT_SOURCE_DIR}/scripts/ci/bench.js"
                     "$ENV{OSRM_NODEJS_INSTALL_DIR}/lib/index.js"
-                    "${TEST_DATA_DIR}/${ALGORITHM}/${DATASET}.osrm"
+                    "${TEST_DATA_DIR}/${DATASET}/${ALGORITHM}/${DATASET}.osrm"
                     "${ALGORITHM}"
                     "${BENCHMARK}"
                     5

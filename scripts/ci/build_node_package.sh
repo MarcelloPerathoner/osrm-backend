@@ -11,7 +11,7 @@ echo "node version is:"
 which node
 node -v
 
-cmake --install "${OSRM_BUILD_DIR}" --component node_osrm -v
+cmake --install "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} --component node_osrm -v
 
 echo "dumping binary meta..."
 ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS
