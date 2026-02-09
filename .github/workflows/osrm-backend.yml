@@ -413,7 +413,7 @@ jobs:
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
         run: |
-          cmake --install "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j --component node_osrm -v
+          cmake --install "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} --component node_osrm -v
           ${CI_DIR}/build_node_package.sh
 
       - name: Debug build

@@ -1,6 +1,7 @@
 set(TEST_DATA_DIR $ENV{OSRM_TEST_DATA_DIR})
 set(DATASET "berlin")
 set(GPS_TRACES "${TEST_DATA_DIR}/${DATASET}_gps_traces.csv.gz")
+set(LOG_DIR "${PROJECT_SOURCE_DIR}/test/logs")
 
 ### build the benchmarks ###
 
@@ -48,7 +49,8 @@ foreach(ALGORITHM ch mld)
 endforeach()
 
 add_test(NAME alias-bench COMMAND alias-bench)
-add_test(NAME json-render-bench COMMAND json-render-bench "${TEST_DATA_DIR}/portugal_to_korea.json")
+add_test(NAME json-render-bench COMMAND json-render-bench
+                "${TEST_DATA_DIR}/portugal_to_korea.json")
 add_test(NAME packedvector-bench COMMAND packedvector-bench 10 100000)
 add_test(NAME rtree-bench COMMAND rtree-bench
                 "${TEST_DATA_DIR}/monaco.osrm.ramIndex"
