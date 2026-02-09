@@ -191,7 +191,9 @@ configure_file(cmake/osrm-run-env.sh.in ${OSRM_RUN_ENV_SH} @ONLY)
 function(push_env key value)
   # puts key=value into osrm-run.env
   file(APPEND "${OSRM_RUN_ENV}" "${key}=${value}\n")
+  # ENV used as workaround for setting variables on the project scope
   set(ENV{${key}} "${value}")
+  set(${key} "${value}" PARENT_SCOPE)
 endfunction()
 
 # disclose to the afterworld the directory the built artifacts are in
@@ -691,7 +693,6 @@ add_custom_target(uninstall
 
 
 # Modular build system: each directory registered here provides its own CMakeLists.txt
-set(TEST_DATA_DIR "${PROJECT_SOURCE_DIR}/test/data")
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
 endif()
@@ -736,7 +737,6 @@ disclose_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
-push_env("OSRM_TEST_DATA_DIR" "${TEST_DATA_DIR}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
 
 # debug print the list of include dirs

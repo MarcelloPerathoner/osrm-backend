@@ -1,3 +1,4 @@
+set(TEST_DATA_DIR $ENV{OSRM_TEST_DATA_DIR})
 set(DATASET "berlin")
 set(GPS_TRACES "${TEST_DATA_DIR}/${DATASET}_gps_traces.csv.gz")
 

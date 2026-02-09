@@ -1,3 +1,6 @@
+push_env("OSRM_TEST_DATA_DIR" "${PROJECT_SOURCE_DIR}/test/data")
+disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+
 set(TEST_UPDATER_DATA_DIR "${PROJECT_SOURCE_DIR}/unit_tests/updater")
 set(TEST_FIXTURES_DIR "${PROJECT_SOURCE_DIR}/unit_tests/fixtures")
 
@@ -90,15 +93,15 @@ add_executable(library-tests	       EXCLUDE_FROM_ALL	${LibraryTestsSources})
 
 add_dependencies(library-tests osrm-extract osrm-contract osrm-partition)
 
-target_compile_definitions(contractor-tests        PRIVATE COMPILE_DEFINITIONS TEST_DATA_DIR="${TEST_DATA_DIR}")
+target_compile_definitions(contractor-tests        PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
 target_compile_definitions(extractor-tests         PRIVATE COMPILE_DEFINITIONS OSRM_FIXTURES_DIR="${TEST_FIXTURES_DIR}")
-target_compile_definitions(library-contract-tests  PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${TEST_DATA_DIR}")
-target_compile_definitions(library-customize-tests PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${TEST_DATA_DIR}")
-target_compile_definitions(library-extract-tests   PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${TEST_DATA_DIR}")
-target_compile_definitions(library-partition-tests PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${TEST_DATA_DIR}")
-target_compile_definitions(library-tests           PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${TEST_DATA_DIR}")
-target_compile_definitions(storage-tests           PRIVATE COMPILE_DEFINITIONS TEST_DATA_DIR="${TEST_DATA_DIR}")
-target_compile_definitions(updater-tests           PRIVATE COMPILE_DEFINITIONS TEST_DATA_DIR="${TEST_UPDATER_DATA_DIR}")
+target_compile_definitions(library-contract-tests  PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+target_compile_definitions(library-customize-tests PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+target_compile_definitions(library-extract-tests   PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+target_compile_definitions(library-partition-tests PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+target_compile_definitions(library-tests           PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+target_compile_definitions(storage-tests           PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+target_compile_definitions(updater-tests           PRIVATE COMPILE_DEFINITIONS TEST_UPDATER_DATA_DIR="${TEST_UPDATER_DATA_DIR}")
 
 target_include_directories(contractor-tests        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 target_include_directories(customizer-tests        PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
@@ -128,13 +131,11 @@ target_link_libraries(storage-tests                         osrm_utils ${BOOST_U
 target_link_libraries(updater-tests                         osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(util-tests                            osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 
-disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
-
 ### run the tests ###
 
 enable_testing()
 
-add_test(NAME test-fixture COMMAND make -C "${TEST_DATA_DIR}" monaco)
+add_test(NAME test-fixture COMMAND make -C "${OSRM_TEST_DATA_DIR}" monaco)
 set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 
 foreach(t ${TESTS})
