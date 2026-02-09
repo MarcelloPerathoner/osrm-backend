@@ -180,8 +180,8 @@ class OsrmConan(ConanFile):
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because
-            # GET_RUNTIME_DEPENDENCIES() is too dumb to look into the PATH when
-            # searching for DLLs on Windows.
+            # GET_RUNTIME_DEPENDENCIES() in cmake install is too dumb to look into the
+            # PATH when searching for DLLs on Windows.
             values = vre.environment().vars(self, scope="run")._values
             if "PATH" in values:
                 conan_deps = self._getVarValue(values["PATH"])

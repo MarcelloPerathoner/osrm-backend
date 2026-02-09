@@ -1,4 +1,3 @@
-set(TEST_DATA_DIR "${PROJECT_SOURCE_DIR}/test/data")
 set(TEST_UPDATER_DATA_DIR "${PROJECT_SOURCE_DIR}/unit_tests/updater")
 set(TEST_FIXTURES_DIR "${PROJECT_SOURCE_DIR}/unit_tests/fixtures")
 
@@ -131,16 +130,16 @@ target_link_libraries(util-tests                            osrm_utils ${BOOST_U
 
 disclose_build_dir("OSRM_UNIT_TESTS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
-### cmake run the tests ###
+### run the tests ###
 
 enable_testing()
 
-add_test(NAME test_build COMMAND make -C "${TEST_DATA_DIR}" monaco)
-set_tests_properties(test_build PROPERTIES FIXTURES_SETUP test_fixture)
+add_test(NAME test-fixture COMMAND make -C "${TEST_DATA_DIR}" monaco)
+set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 
 foreach(t ${TESTS})
   add_test(NAME "${t}" COMMAND "${t}")
-  set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test_fixture)
+  set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
 endforeach()
 
 add_custom_target(tests DEPENDS ${TESTS})

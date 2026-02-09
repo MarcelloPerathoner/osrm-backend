@@ -691,6 +691,7 @@ add_custom_target(uninstall
 
 
 # Modular build system: each directory registered here provides its own CMakeLists.txt
+set(TEST_DATA_DIR "${PROJECT_SOURCE_DIR}/test/data")
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
 endif()
@@ -735,6 +736,7 @@ disclose_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
+push_env("OSRM_TEST_DATA_DIR" "${TEST_DATA_DIR}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
 
 # debug print the list of include dirs
@@ -760,4 +762,5 @@ message(STATUS "OSRM_UNIT_TESTS_BUILD_DIR is: $ENV{OSRM_UNIT_TESTS_BUILD_DIR}")
 message(STATUS "OSRM_BENCHMARKS_BUILD_DIR is: $ENV{OSRM_BENCHMARKS_BUILD_DIR}")
 message(STATUS "OSRM_NODE_JS_BUILD_DIR is:    $ENV{OSRM_NODEJS_BUILD_DIR}")
 message(STATUS "OSRM_NODE_JS_INSTALL_DIR is:  $ENV{OSRM_NODEJS_INSTALL_DIR}")
+message(STATUS "OSRM_TEST_DATA_DIR is:        $ENV{OSRM_TEST_DATA_DIR}")
 message(STATUS "-----------------------------")

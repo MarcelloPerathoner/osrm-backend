@@ -397,22 +397,21 @@ jobs:
 
       - name: Build core
         run: |
-          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS}
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j
 
       - name: Build unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS} --target tests
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j --target tests
 
       - name: Build benchmarks
         if: env.ENABLE_BENCHMARKS == 'ON'
         run: |
-          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS} --target benchmarks
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j --target benchmarks
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
         run: |
-          cmake --install "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j ${JOBS} --component node_osrm -v
           ${CI_DIR}/build_node_package.sh
 
       - name: Debug build
@@ -491,7 +490,7 @@ jobs:
       - name: Run unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          ctest --test-dir ${OSRM_UNIT_TESTS_BUILD_DIR} -j 0 --verbose --output-log ${LOG_DIR}/unit_test.log
+          ctest --test-dir ${OSRM_UNIT_TESTS_BUILD_DIR} -j --verbose --output-log ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'

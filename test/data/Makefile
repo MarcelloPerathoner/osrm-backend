@@ -15,7 +15,7 @@ TMP:=`node $(SCRIPT_ROOT)/get-tmp-dir.js`
 
 all: monaco
 
-monaco: ch/monaco.osrm.hsgr mld/monaco.osrm.partition
+monaco: verify ch/monaco.osrm.hsgr mld/monaco.osrm.partition
 
 berlin: ch/berlin.osrm.hsgr mld/berlin.osrm.partition
 
@@ -68,4 +68,8 @@ benchmark: data $(DATA_NAME).requests
 
 checksum: monaco.md5sum
 
-.PHONY: clean checksum benchmark data
+verify:
+	@echo "Verifying data file integrity..."
+	$(MD5SUM) -c monaco.md5sum
+
+.PHONY: clean checksum verify benchmark data

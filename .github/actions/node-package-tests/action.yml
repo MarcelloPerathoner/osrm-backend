@@ -18,7 +18,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node 20"
-        ${NAPI_DIR}/osrm-datastore${EXE} ${TEST_DIR}/data/ch/monaco.osrm
+        ${NAPI_DIR}/osrm-datastore ${TEST_DIR}/data/ch/monaco.osrm
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"
 
@@ -31,7 +31,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node 22"
-        ${NAPI_DIR}/osrm-datastore${EXE} ${TEST_DIR}/data/ch/monaco.osrm
+        ${NAPI_DIR}/osrm-datastore ${TEST_DIR}/data/ch/monaco.osrm
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"
 
@@ -44,7 +44,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node 24"
-        ${NAPI_DIR}/osrm-datastore${EXE} ${TEST_DIR}/data/ch/monaco.osrm
+        ${NAPI_DIR}/osrm-datastore ${TEST_DIR}/data/ch/monaco.osrm
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"
 
@@ -57,6 +57,6 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node latest"
-        ${NAPI_DIR}/osrm-datastore${EXE} ${TEST_DIR}/data/ch/monaco.osrm
+        ${NAPI_DIR}/osrm-datastore ${TEST_DIR}/data/ch/monaco.osrm
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"

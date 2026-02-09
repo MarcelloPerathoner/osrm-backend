@@ -3,7 +3,6 @@ set -e -o pipefail
 
 DATASET=berlin
 GPS_TRACES="${DATASET}_gps_traces.csv.gz"
-TEST_DATA_DIR=test/data
 LOG_DIR=test/logs
 SCRIPTS_DIR=scripts/ci
 
@@ -21,7 +20,7 @@ summary "| Algorithm | Route | Nearest | Trip | Table | Match |\n"
 summary "| --------- | -----:| -------:| ----:| -----:| -----:|\n"
 
 for ALGORITHM in ch mld; do
-    "$OSRM_BUILD_DIR/osrm-routed" -a $ALGORITHM "$TEST_DATA_DIR/$ALGORITHM/$DATASET.osrm" > /dev/null 2>&1 &
+    "$OSRM_BUILD_DIR/osrm-routed" -a $ALGORITHM "$OSRM_TEST_DATA_DIR/$ALGORITHM/$DATASET.osrm" > /dev/null 2>&1 &
     OSRM_ROUTED_PID=$!
 
     if ! curl --retry-delay 1 --retry 30 --retry-all-errors \
@@ -35,7 +34,7 @@ for ALGORITHM in ch mld; do
 
     for METHOD in route nearest trip table match; do
         echo "Running e2e benchmark for $METHOD $ALGORITHM"
-        TIME=`python "$SCRIPTS_DIR/e2e_benchmark_simplified.py" --method $METHOD --gps_traces "$TEST_DATA_DIR/$GPS_TRACES"`
+        TIME=`python "$SCRIPTS_DIR/e2e_benchmark_simplified.py" --method $METHOD --gps_traces "$OSRM_TEST_DATA_DIR/$GPS_TRACES"`
         echo $TIME
         echo $TIME > "$LOG_DIR/e2e_${METHOD}_${ALGORITHM}.bench"
         summary " | $TIME"

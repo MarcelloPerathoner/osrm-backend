@@ -23,27 +23,37 @@ If you do not want to do this, define `BOOST_TEST_DONT_PRINT_LOG_VALUE` (and und
 
 ### Test Fixture
 
-If you need to test features on a real dataset (think about this twice: prefer cucumber and dataset-independent tests for their reproducibility and minimality), there is a fixed dataset in `test/data`.
-This dataset is a small extract and may not even contain all tags or edge cases.
-Furthermore this dataset is not in sync with what you see in up-to-date OSM maps or on the demo server.
-See the library tests for how to add new dataset dependent tests.
+If you need to test features on a real dataset (think about this twice: prefer cucumber
+and dataset-independent tests for their reproducibility and minimality), there is a
+fixed dataset in `test/data`. This dataset is a small extract and may not even contain
+all tags or edge cases.  Furthermore this dataset is not in sync with what you see in
+up-to-date OSM maps or on the demo server.  See the library tests for how to add new
+dataset dependent tests.
 
-To prepare the test data simply `cd test/data/` and then run `make`.
+To prepare the test data run:
+
+```
+make -C test/data
+```
 
 ### Running Tests
 
 To build the unit tests:
 
 ```
-cd build
-cmake ..
-make tests
+make -C build/Release -j 16 tests
 ```
 
-You should see the compiled binaries in `build/unit_tests`, you can then run each suite individually:
+You should see the compiled binaries in `build/Release/unit_tests`, you can then run each suite individually:
 
 ```
-./engine-tests
+build/Release/engine-tests
+```
+
+or use ctest to run them all:
+
+```
+ctest --test-dir build/Release/unit_tests/ -j 0
 ```
 
 ## Cucumber
@@ -60,7 +70,7 @@ Instructions should only be used when writing a feature located in `features/gui
 
 ### Write Tests to Scale
 
-OSRM is a navigation engine. Tests should always consider this context. 
+OSRM is a navigation engine. Tests should always consider this context.
 
 An important implication is the grid size. If tests use a very small grid size, you run into the chance of instructions being omitted.
 For example:
@@ -94,7 +104,7 @@ In a navigation engine, the instructions
  - in 10 meters the road name changes to bc
  - in 10 meters the road name changes to cd
  - you arrived at cd
- 
+
 would be impossible to announce and not helpful at all.
 Since no actual choices exist, the route you get could result in `ab,cd` and simply say `depart` and `arrive`.
 
@@ -349,7 +359,7 @@ Given a grid size of 5 m
 Given the node map
 """
 a - b - - - - - - c
-     \  
+     \
       d - - - - - e
 """
 
@@ -371,7 +381,7 @@ Given a grid size of 5 m
 Given the node map
 """
 a - b - - - - - - c
-     \  
+     \
       d - - - - - e
 """
 
@@ -381,12 +391,12 @@ When I route I should get
 ```
 
 where we see a `slight right`, over the expected `right`.
-We could be tempted to adjust the grid size (e.g. from `10 m` to `20` meters). 
+We could be tempted to adjust the grid size (e.g. from `10 m` to `20` meters).
 
 Such a change would fundamentally alter the tests, though.
 Since the part `b-d` is a short offset, when we are looking at a grid of size `5 m`, the angle calculation will try and compensate for this offset.
 
-In this case we would see a very slight turn angle. If your change now reports different turn angles, you can of course change the expected result. But you should not adjust the grid size. The test would be testing turn angles of `180` and `100` degrees, instead of `180` and `160`. 
+In this case we would see a very slight turn angle. If your change now reports different turn angles, you can of course change the expected result. But you should not adjust the grid size. The test would be testing turn angles of `180` and `100` degrees, instead of `180` and `160`.
 
 ### Consider Post-Processing Impacts
 

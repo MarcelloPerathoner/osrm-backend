@@ -1,4 +1,3 @@
-set(TEST_DATA_DIR "${PROJECT_SOURCE_DIR}/test/data")
 set(DATASET "berlin")
 set(GPS_TRACES "${TEST_DATA_DIR}/${DATASET}_gps_traces.csv.gz")
 
@@ -28,19 +27,14 @@ add_custom_target(benchmarks DEPENDS ${TESTS})
 
 disclose_build_dir("OSRM_BENCHMARKS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
-### ctest run the benchmarks ###
+### run the benchmarks ###
 
 enable_testing()
 
 # fixture for test matrix
 
-add_test(
-  NAME test_build
-  COMMAND
-    make -C "${TEST_DATA_DIR}" monaco berlin
-)
-
-set_tests_properties(test_build PROPERTIES FIXTURES_SETUP test_fixture)
+add_test(NAME test-fixture COMMAND make -C "${TEST_DATA_DIR}" monaco berlin)
+set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 
 # test matrix
 
@@ -48,7 +42,7 @@ foreach(ALGORITHM ch mld)
   foreach(BENCHMARK match-bench route-bench)
     set (NAME "${BENCHMARK}-${ALGORITHM}")
     add_test(NAME "${NAME}" COMMAND match-bench "${TEST_DATA_DIR}/${ALGORITHM}/monaco.osrm" ${ALGORITHM})
-    set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test_fixture)
+    set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
   endforeach()
 endforeach()
 
@@ -60,10 +54,10 @@ add_test(NAME rtree-bench COMMAND rtree-bench
                 "${TEST_DATA_DIR}/monaco.osrm.fileIndex"
                 "${TEST_DATA_DIR}/monaco.osrm.nbg_nodes")
 
-set_tests_properties(alias-bench        PROPERTIES FIXTURES_REQUIRED test_fixture)
-set_tests_properties(json-render-bench  PROPERTIES FIXTURES_REQUIRED test_fixture)
-set_tests_properties(packedvector-bench PROPERTIES FIXTURES_REQUIRED test_fixture)
-set_tests_properties(rtree-bench        PROPERTIES FIXTURES_REQUIRED test_fixture)
+set_tests_properties(alias-bench        PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
+set_tests_properties(json-render-bench  PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
+set_tests_properties(packedvector-bench PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
+set_tests_properties(rtree-bench        PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
 
 foreach(ALGORITHM ch mld)
     foreach(BENCHMARK nearest table trip route match)
@@ -77,7 +71,7 @@ foreach(ALGORITHM ch mld)
                 "${BENCHMARK}"
                 5
                 "${GPS_TRACES}")
-        set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test_fixture)
+        set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
         if(BUILD_NODE_PACKAGE)
             set (NAME "node-${BENCHMARK}-${ALGORITHM}")
             add_test(
@@ -90,7 +84,7 @@ foreach(ALGORITHM ch mld)
                     "${BENCHMARK}"
                     5
                     "${GPS_TRACES}")
-            set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test_fixture)
+            set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
         endif()
     endforeach()
 endforeach()
