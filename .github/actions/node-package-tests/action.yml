@@ -8,7 +8,7 @@ runs:
       shell: bash
       run: |
         make -C ${TEST_DIR}/data monaco
-        echo "DATASET=${TEST_DIR}/data/ch/monaco.osrm" >> $GITHUB_ENV
+        echo "DATASET=${TEST_DIR}/data/monaco/ch/monaco.osrm" >> $GITHUB_ENV
 
     - name: Use Node 20
       uses: actions/setup-node@v4

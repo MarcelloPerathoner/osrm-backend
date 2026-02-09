@@ -488,6 +488,15 @@ jobs:
           echo DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}
           echo "::endgroup::"
 
+          make -C "$TEST_DIR/data"
+
+          echo "::group::ls test/data/ch"
+          ls -al "$TEST_DIR/data/ch"
+          echo "::endgroup::"
+          echo "::group::ls test/data/mld"
+          ls -al "$TEST_DIR/data/mld"
+          echo "::endgroup::"
+
       - name: Run unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |

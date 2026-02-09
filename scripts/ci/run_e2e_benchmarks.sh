@@ -20,7 +20,7 @@ summary "| Algorithm | Route | Nearest | Trip | Table | Match |\n"
 summary "| --------- | -----:| -------:| ----:| -----:| -----:|\n"
 
 for ALGORITHM in ch mld; do
-    "$OSRM_BUILD_DIR/osrm-routed" -a $ALGORITHM "$OSRM_TEST_DATA_DIR/$ALGORITHM/$DATASET.osrm" > /dev/null 2>&1 &
+    "$OSRM_BUILD_DIR/osrm-routed" -a $ALGORITHM "$OSRM_TEST_DATA_DIR/$DATASET/$ALGORITHM/$DATASET.osrm" > /dev/null 2>&1 &
     OSRM_ROUTED_PID=$!
 
     if ! curl --retry-delay 1 --retry 30 --retry-all-errors \

@@ -6,7 +6,7 @@ source build/osrm-run-env.sh
 SCRIPTS_DIR="${PROJECT_SOURCE_DIR}/scripts/ci"
 LOGS_DIR="${PROJECT_SOURCE_DIR}/test/logs"
 
-MONACO="$OSRM_TEST_DATA_DIR/monaco/monaco.osrm"
+MONACO="$OSRM_TEST_DATA_DIR/monaco"
 
 DATASET=berlin
 PBF="${OSRM_TEST_DATA_DIR}/${DATASET}.osm.pbf"
@@ -47,7 +47,7 @@ function summary {
 for method in route match; do
     for algorithm in ch mld; do
         echo "Running ${method}-bench ${algorithm}"
-        "$OSRM_BENCHMARKS_BUILD_DIR/${method}-bench" "$MONACO" ${algorithm} \
+        "$OSRM_BENCHMARKS_BUILD_DIR/${method}-bench" "$MONACO/${algorithm}/monaco.osrm" ${algorithm} \
             > "$LOGS_DIR/${method}_${algorithm}.bench"
     endfor
 endfor
@@ -59,7 +59,10 @@ echo "Running json-render-bench"
 echo "Running packedvector-bench"
 "$OSRM_BENCHMARKS_BUILD_DIR/packedvector-bench" 10 100000 > "$LOGS_DIR/packedvector.bench"
 echo "Running rtree-bench"
-"$OSRM_BENCHMARKS_BUILD_DIR/rtree-bench" "$MONACO.ramIndex" "$MONACO.fileIndex" "$MONACO.nbg_nodes" > "$LOGS_DIR/rtree.bench"
+"$OSRM_BENCHMARKS_BUILD_DIR/rtree-bench" \
+    "$MONACO/ch/monaco.osrm.ramIndex" \
+    "$MONACO/ch/monaco.osrm.fileIndex" \
+    "$MONACO/ch/monaco.osrm.nbg_nodes" > "$LOGS_DIR/rtree.bench"
 
 pushd "$DATA_DIR"
 
