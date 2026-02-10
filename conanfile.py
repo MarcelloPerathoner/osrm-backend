@@ -1,6 +1,5 @@
 import os
 import re
-import subprocess
 import textwrap
 
 from conan import ConanFile
@@ -48,9 +47,15 @@ class OsrmConan(ConanFile):
         "shared": [True, False],
         "node_package": [True, False],
         "ccache": [False, "ccache", "sccache"],
+        "clang_tidy": ["ANY"],
     }
 
-    default_options = {"shared": False, "node_package": False, "ccache": "ccache"}
+    default_options = {
+        "shared": False,
+        "node_package": False,
+        "ccache": "ccache",
+        "clang_tidy": None,
+    }
 
     def _getVarValue(self, varvalues):
         """Returns var value as string, drops placeholders"""
@@ -127,6 +132,10 @@ class OsrmConan(ConanFile):
             tc.cache_variables["USE_CCACHE"] = os.environ["USE_CCACHE"]
         else:
             tc.cache_variables["USE_CCACHE"] = self.options.ccache
+        if "CLANG_TIDY" in os.environ:
+            tc.cache_variables["CLANG_TIDY"] = os.environ["CLANG_TIDY"]
+        else:
+            tc.cache_variables["CLANG_TIDY"] = self.options.clang_tidy
 
         # Note: this does not mean we are supporting all of these options yet in conan
         for i in (

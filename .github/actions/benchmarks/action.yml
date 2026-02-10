@@ -25,7 +25,8 @@ runs:
       run: |
         set -o errexit
 
-        ctest --test-dir ${OSRM_BENCHMARKS_BUILD_DIR} -j 0 --verbose --output-log ${LOG_DIR}/benchmarks.log
+        ctest --test-dir ${OSRM_BENCHMARKS_BINARY_DIR} --build-config ${BUILD_TYPE} \
+          -j $JOBS --verbose --output-log ${LOG_DIR}/benchmarks.log --no-tests=error
 
         "${CI_DIR}/run_e2e_benchmarks.sh"
 

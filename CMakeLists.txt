@@ -197,8 +197,8 @@ function(push_env key value)
 endfunction()
 
 # disclose to the afterworld the directory the built artifacts are in
-# usage: disclose_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-function(disclose_build_dir key value)
+# usage: push_env_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+function(push_env_build_dir key value)
   if(CMAKE_CONFIGURATION_TYPES)
     # multi-config generators (eg. Visual Studio) append /Release or /Debug
     cmake_path(APPEND dir "${value}" "${CMAKE_BUILD_TYPE}")
@@ -733,7 +733,8 @@ endforeach()
 add_library(check-headers STATIC EXCLUDE_FROM_ALL ${sources})
 set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_headers_dir})
 
-disclose_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env("OSRM_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")

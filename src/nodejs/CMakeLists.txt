@@ -25,14 +25,15 @@ message(STATUS "-I ${NODE_ADDON_API_DIR}")
 target_include_directories(node_osrm PRIVATE "${NODE_ADDON_API_DIR}")
 target_link_libraries(node_osrm osrm_utils osrm_routed)
 
-disclose_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env("OSRM_NODEJS_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Installation
 # as a prelude to building the nodejs package with gyp
 
 set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
 
-disclose_build_dir("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
+push_env_build_dir("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
 
 list(APPEND TARGETS node_osrm)
 foreach(binary components contract customize datastore extract partition routed)

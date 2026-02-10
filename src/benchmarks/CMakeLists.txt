@@ -5,6 +5,9 @@ set(LOG_DIR "${PROJECT_SOURCE_DIR}/test/logs")
 
 set(MONACO "${TEST_DATA_DIR}/monaco")
 
+push_env("OSRM_BENCHMARKS_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env_build_dir("OSRM_BENCHMARKS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+
 ### build the benchmarks ###
 
 add_executable(alias-bench        EXCLUDE_FROM_ALL alias.cpp)
@@ -28,8 +31,6 @@ target_include_directories(rtree-bench PUBLIC ${PROJECT_SOURCE_DIR}/unit_tests)
 set (TESTS alias-bench bench json-render-bench match-bench packedvector-bench route-bench rtree-bench)
 
 add_custom_target(benchmarks DEPENDS ${TESTS})
-
-disclose_build_dir("OSRM_BENCHMARKS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 ### run the benchmarks ###
 
