@@ -47,6 +47,7 @@ Thumbs.db
 /test/data/ch
 /test/data/mld
 /test/data/tmp
+/test/data/*.osrm.*
 /cmake/postinst
 .gradle/
 .conan2/*

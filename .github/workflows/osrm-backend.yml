@@ -246,14 +246,20 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
-            sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} ccache zlib1g-dev
+            sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} make ccache zlib1g-dev
+            echo "MAKE=make" >> $GITHUB_ENV
+            echo "TIME=/usr/bin/time" >> $GITHUB_ENV
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a version of bash that can do string lowercasing
-            brew install bash ccache gnu-time
+            brew install bash ccache make gnu-time
+            echo "MAKE=gmake" >> $GITHUB_ENV
+            echo "TIME=gtime" >> $GITHUB_ENV
             bash --version
             echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
+            echo "MAKE=make" >> $GITHUB_ENV
+            echo "TIME=time" >> $GITHUB_ENV
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
             echo "PYTHONUTF8=1" >> $GITHUB_ENV
           fi
@@ -491,17 +497,19 @@ jobs:
       - name: Run unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          make -C "$TEST_DIR/data" clean monaco
+          echo "::group::ls make -C test/data monaco"
+          $MAKE -C "$TEST_DIR/data" clean monaco
+          echo "::endgroup::"
 
           echo "::group::ls test/data/ch"
-          ls -al "$TEST_DIR/data/ch/"
+          ls -al "$TEST_DIR/data/ch/" || true
           echo "::endgroup::"
           echo "::group::ls test/data/mld"
-          ls -al "$TEST_DIR/data/mld/"
+          ls -al "$TEST_DIR/data/mld/" || true
           echo "::endgroup::"
 
-          ls -al "${OSRM_UNIT_TESTS_BUILD_DIR}" || true
-          ctest --test-dir "${OSRM_UNIT_TESTS_BUILD_DIR}" -j --verbose --output-log ${LOG_DIR}/unit_test.log
+          ctest --test-dir "${CMAKE_BINARY_DIR}" --build-config=${BUILD_TYPE} \
+            -j --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests=error
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'

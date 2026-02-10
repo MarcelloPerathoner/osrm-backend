@@ -2,6 +2,7 @@
 #
 # - test/data/ch
 # - test/data/mld
+# - test/data/tmp  # used as scratch
 #
 # Note: the files test/data/*.orsm.* may also come from library-extract-tests.
 
@@ -44,7 +45,7 @@ define OSRM_template =
 $(1): ch/$(1).osrm.hsgr mld/$(1).osrm.mldgr
 
 clean-$(1):
-	-rm -rf $(1)
+	-rm -rf ch/$(1).* mld/$(1).* tmp/$(1).*
 
 clean: clean-$(1)
 
@@ -59,7 +60,7 @@ berlin.osm.pbf:
 	$(MD5SUM) $< > $@
 
 clean:
-	-rm -rf ch mld *.osrm.*
+	-rm -rf *.osrm.*
 
 checksum: monaco.md5sum
 
