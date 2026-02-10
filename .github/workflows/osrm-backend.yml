@@ -508,8 +508,10 @@ jobs:
           ls -al "$TEST_DIR/data/mld/" || true
           echo "::endgroup::"
 
-          ctest --test-dir "${CMAKE_BINARY_DIR}" --build-config=${BUILD_TYPE} \
-            -j --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests=error
+          ctest --version
+          ctest --help
+          ctest --test-dir "${CMAKE_BINARY_DIR}" --build-config ${BUILD_TYPE} \
+            -j --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests error
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'
