@@ -510,7 +510,7 @@ jobs:
 
           ctest --version
           ctest --help
-          ctest --test-dir "${OSRM_UNIT_TEST_BUILD_DIR}" --build-config ${BUILD_TYPE} \
+          ctest --test-dir "${OSRM_UNIT_TESTS_BUILD_DIR}" --build-config ${BUILD_TYPE} \
             -j --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests=error
 
       - name: Run Cucumber tests
