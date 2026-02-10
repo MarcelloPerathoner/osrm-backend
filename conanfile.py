@@ -54,7 +54,7 @@ class OsrmConan(ConanFile):
         "shared": False,
         "node_package": False,
         "ccache": "ccache",
-        "clang_tidy": None,
+        "clang_tidy": "OFF",
     }
 
     def _getVarValue(self, varvalues):
