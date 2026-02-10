@@ -1,9 +1,9 @@
 set(TEST_DATA_DIR $ENV{OSRM_TEST_DATA_DIR})
-set(DATASET "berlin")
-set(GPS_TRACES "${TEST_DATA_DIR}/${DATASET}_gps_traces.csv.gz")
 set(LOG_DIR "${PROJECT_SOURCE_DIR}/test/logs")
 
-set(MONACO "${TEST_DATA_DIR}/monaco")
+set(MONACO "${TEST_DATA_DIR}")
+set(BERLIN "${TEST_DATA_DIR}")
+set(GPS_TRACES "${TEST_DATA_DIR}/berlin_gps_traces.csv.gz")
 
 push_env("OSRM_BENCHMARKS_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env_build_dir("OSRM_BENCHMARKS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
@@ -72,7 +72,7 @@ foreach(ALGORITHM ch mld)
             NAME "${NAME}"
             COMMAND
                 "${CMAKE_CURRENT_BINARY_DIR}/bench"
-                "${TEST_DATA_DIR}/${DATASET}/${ALGORITHM}/${DATASET}.osrm"
+                "${BERLIN}/${ALGORITHM}/berlin.osrm"
                 "${ALGORITHM}"
                 "${BENCHMARK}"
                 5
@@ -85,7 +85,7 @@ foreach(ALGORITHM ch mld)
                 COMMAND
                     node "${PROJECT_SOURCE_DIR}/scripts/ci/bench.js"
                     "$ENV{OSRM_NODEJS_INSTALL_DIR}/lib/index.js"
-                    "${TEST_DATA_DIR}/${DATASET}/${ALGORITHM}/${DATASET}.osrm"
+                    "${BERLIN}/${ALGORITHM}/berlin.osrm"
                     "${ALGORITHM}"
                     "${BENCHMARK}"
                     5
