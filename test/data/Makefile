@@ -19,19 +19,21 @@ OSRM_ROUTED:=$(OSRM_BUILD_DIR)/osrm-routed$(EXE)
 MD5SUM:=$(PROJECT_SOURCE_DIR)/scripts/md5sum.js
 PROFILE:=$(PROJECT_SOURCE_DIR)/profiles/car.lua
 
-%.osrm.edges: %.osm.pbf $(PROFILE) $(OSRM_EXTRACT)
+tmp/%.osrm.edges: %.osm.pbf $(PROFILE) $(OSRM_EXTRACT)
+	mkdir -p tmp
+	cp $< tmp/
 	@echo "Running osrm-extraction ..."
-	$(OSRM_EXTRACT) $< -p $(PROFILE) > /dev/null
+	cd tmp && $(OSRM_EXTRACT) $< -p $(PROFILE) > /dev/null
 
-ch/%.osrm.hsgr: %.osrm.edges $(OSRM_CONTRACT)
+ch/%.osrm.hsgr: tmp/%.osrm.edges $(OSRM_CONTRACT)
 	mkdir -p ch
-	cp *.osrm.* ch/
+	cp tmp/*.osrm.* ch/
 	@echo "Running osrm-contract ..."
 	cd ch && $(OSRM_CONTRACT) $*.osrm > /dev/null
 
-mld/%.osrm.mldgr: %.osrm.edges $(OSRM_PARTITION) $(OSRM_CUSTOMIZE)
+mld/%.osrm.mldgr: tmp/%.osrm.edges $(OSRM_PARTITION) $(OSRM_CUSTOMIZE)
 	mkdir -p mld
-	cp *.osrm.* mld/
+	cp tmp/*.osrm.* mld/
 	@echo "Running osrm-partition ..."
 	cd mld && $(OSRM_PARTITION) $*.osrm > /dev/null
 	@echo "Running osrm-customize ..."

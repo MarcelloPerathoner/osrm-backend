@@ -7,7 +7,7 @@ runs:
     - name: Prepare test data
       shell: bash
       run: |
-        make -C "${TEST_DIR}/data" monaco
+        make -C "${TEST_DIR}/data" clean monaco
         echo "DATASET=${TEST_DIR}/data/ch/monaco.osrm" >> $GITHUB_ENV
 
     - name: Use Node 20

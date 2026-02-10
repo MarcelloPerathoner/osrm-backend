@@ -43,13 +43,10 @@ Thumbs.db
 #######################
 /_build*
 /build/
-/test/data/berlin/
-/test/data/monaco/
-/test/data/ch/
-/test/data/mld/
 /test/data/berlin.osm.pbf
 /test/data/ch
 /test/data/mld
+/test/data/tmp
 /cmake/postinst
 .gradle/
 .conan2/*

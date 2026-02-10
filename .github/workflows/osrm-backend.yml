@@ -93,7 +93,7 @@ jobs:
             runs-on: ubuntu-24.04
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
-            ENABLE_CLANG_TIDY: ON
+            CLANG_TIDY: clang-tidy-19
             UNIT_TESTS: OFF
             CUCUMBER_TESTS: OFF
             ENABLE_LTO: OFF
@@ -217,13 +217,13 @@ jobs:
       CFLAGS:             ${{ matrix.CFLAGS }}
       CXX:                ${{ matrix.CXXCOMPILER }}
       CXXFLAGS:           ${{ matrix.CXXFLAGS }}
+      CLANG_TIDY:         ${{ matrix.CLANG_TIDY }}
 
       # default 24
       NODE_VERSION:      ${{ (matrix.NODE_VERSION == null)      && 24    || matrix.NODE_VERSION }}
 
       # default OFF
       ENABLE_ASSERTIONS: ${{ (matrix.ENABLE_ASSERTIONS == null) && 'OFF' || matrix.ENABLE_ASSERTIONS }}
-      ENABLE_CLANG_TIDY: ${{ (matrix.ENABLE_CLANG_TIDY == null) && 'OFF' || matrix.ENABLE_CLANG_TIDY }}
       ENABLE_COVERAGE:   ${{ (matrix.ENABLE_COVERAGE   == null) && 'OFF' || matrix.ENABLE_COVERAGE   }}
       ENABLE_ASAN:       ${{ (matrix.ENABLE_ASAN       == null) && 'OFF' || matrix.ENABLE_ASAN       }}
       ENABLE_UBSAN:      ${{ (matrix.ENABLE_UBSAN      == null) && 'OFF' || matrix.ENABLE_UBSAN      }}
@@ -246,7 +246,7 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
-            sudo apt-get install -y ${CC} ${CXX} ccache zlib1g-dev
+            sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} ccache zlib1g-dev
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a version of bash that can do string lowercasing
@@ -386,8 +386,8 @@ jobs:
                 -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} \
                 -DBUILD_NODE_PACKAGE=${BUILD_NODE_PACKAGE:-OFF} \
                 -DUSE_CCACHE=${USE_CCACHE} \
+                -DCLANG_TIDY=${CLANG_TIDY:-OFF} \
                 -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
-                -DENABLE_CLANG_TIDY=${ENABLE_CLANG_TIDY:-OFF} \
                 -DENABLE_COVERAGE=${ENABLE_COVERAGE:-OFF} \
                 -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
                 -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
@@ -491,7 +491,7 @@ jobs:
       - name: Run unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          make -C "$TEST_DIR/data"
+          make -C "$TEST_DIR/data" clean monaco
 
           echo "::group::ls test/data/ch"
           ls -al "$TEST_DIR/data/ch/"

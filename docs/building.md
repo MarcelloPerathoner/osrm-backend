@@ -39,11 +39,11 @@ A list of arguments for cmake:
 | `-DBUILD_SHARED_LIBS`    | `OFF`     | Build with shared libs: `ON` or `OFF`.              |
 | `-DBUILD_NODE_PACKAGE`   | `OFF`     | Build the Node package: `ON` or `OFF`.              |
 | `-DBUILD_PACKAGE`        | `OFF`     | Build OSRM package"                                 |
+| `-DCLANG_TIDY`           | `OFF`     | Which clang-tidy to use: `clang-tidy-19` ...        |
 | `-DENABLE_ASSERTIONS`    | `OFF`     | Use assertions in release mode                      |
 | `-DENABLE_CCACHE`        | `ON`      | Speed up incremental rebuilds via ccache            |
 | `-DENABLE_SCCACHE`       | `OFF`     | Speed up incremental rebuilds via sccache           |
 | `-DENABLE_LTO`           | `OFF`     | Use Link Time Optimisation                          |
-| `-DENABLE_CLANG_TIDY`    | `OFF`     | Enables clang-tidy checks                           |
 | `-DENABLE_COVERAGE`      | `OFF`     | Build with coverage instrumentalisation             |
 | `-DENABLE_DEBUG_LOGGING` | `OFF`     | Use debug logging in release mode                   |
 | `-DENABLE_FUZZING`       | `OFF`     | Fuzz testing using LLVM's libFuzzer                 |
