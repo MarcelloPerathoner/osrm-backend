@@ -693,11 +693,11 @@ add_custom_target(uninstall
 
 
 # Modular build system: each directory registered here provides its own CMakeLists.txt
-add_subdirectory(unit_tests)
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
 endif()
-# add_subdirectory(src/benchmarks)
+add_subdirectory(unit_tests)
+add_subdirectory(src/benchmarks)
 
 if(ENABLE_FUZZING)
   # Requires libosrm being built with sanitizers; make configurable and default to ubsan

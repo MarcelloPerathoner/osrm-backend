@@ -409,12 +409,12 @@ jobs:
       - name: Build unit tests
         if: env.UNIT_TESTS == 'ON'
         run: |
-          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j --target tests
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS --target tests
 
       - name: Build benchmarks
         if: env.ENABLE_BENCHMARKS == 'ON'
         run: |
-          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j --target benchmarks
+          cmake --build "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS --target benchmarks
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
@@ -511,7 +511,7 @@ jobs:
           ctest --version
           ctest --help
           ctest --test-dir "${OSRM_UNIT_TESTS_BUILD_DIR}" --build-config ${BUILD_TYPE} \
-            -j --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests=error
+            -j $JOBS --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests=error
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'
