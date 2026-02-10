@@ -697,7 +697,7 @@ add_subdirectory(unit_tests)
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
 endif()
-add_subdirectory(src/benchmarks)
+# add_subdirectory(src/benchmarks)
 
 if(ENABLE_FUZZING)
   # Requires libosrm being built with sanitizers; make configurable and default to ubsan
