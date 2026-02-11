@@ -28,13 +28,13 @@ tmp/%.osrm.edges: %.osm.pbf $(PROFILE) $(OSRM_EXTRACT)
 
 ch/%.osrm.hsgr: tmp/%.osrm.edges $(OSRM_CONTRACT)
 	mkdir -p ch
-	cp tmp/*.osrm.* ch/
+	cp tmp/$*.osrm.* ch/
 	@echo "Running osrm-contract ..."
 	cd ch && $(OSRM_CONTRACT) $*.osrm > /dev/null
 
 mld/%.osrm.mldgr: tmp/%.osrm.edges $(OSRM_PARTITION) $(OSRM_CUSTOMIZE)
 	mkdir -p mld
-	cp tmp/*.osrm.* mld/
+	cp tmp/$*.osrm.* mld/
 	@echo "Running osrm-partition ..."
 	cd mld && $(OSRM_PARTITION) $*.osrm > /dev/null
 	@echo "Running osrm-customize ..."
