@@ -44,6 +44,8 @@ define OSRM_template =
 
 $(1): ch/$(1).osrm.hsgr mld/$(1).osrm.mldgr
 
+.PRECIOUS: tmp/$(1).osrm.edges
+
 clean-$(1):
 	-rm -rf ch/$(1).* mld/$(1).* tmp/$(1).*
 

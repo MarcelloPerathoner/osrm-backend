@@ -32,8 +32,7 @@ push_env_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 # as a prelude to building the nodejs package with gyp
 
 set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
-
-push_env_build_dir("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
+push_env("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
 
 list(APPEND TARGETS node_osrm)
 foreach(binary components contract customize datastore extract partition routed)

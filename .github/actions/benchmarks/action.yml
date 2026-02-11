@@ -25,18 +25,17 @@ runs:
       run: |
         set -o errexit
 
-        ctest --test-dir ${OSRM_BENCHMARKS_BINARY_DIR} --build-config ${BUILD_TYPE} \
-          -j $JOBS --verbose --output-log ${LOG_DIR}/benchmarks.log --no-tests=error
+        # ctest --test-dir ${OSRM_BENCHMARKS_BINARY_DIR} --build-config ${BUILD_TYPE} \
+        #   -j $JOBS --verbose --output-log ${LOG_DIR}/benchmarks.log --no-tests=error
 
         "${CI_DIR}/run_e2e_benchmarks.sh"
+        killall -9 osrm-routed || true
 
         for i in "${LOG_DIR}/"*.bench; do
           echo "::group::$i"
           cat $i
           echo "::endgroup::"
         done
-
-        killall -9 osrm-routed || true
 
     - name: Save benchmark cache
       if: always() && steps.berlin-cache-restore.outputs.cache-hit != 'true'

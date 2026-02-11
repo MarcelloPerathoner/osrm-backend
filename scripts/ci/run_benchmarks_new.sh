@@ -6,12 +6,12 @@ source build/osrm-run-env.sh
 SCRIPTS_DIR="${PROJECT_SOURCE_DIR}/scripts/ci"
 LOGS_DIR="${PROJECT_SOURCE_DIR}/test/logs"
 
-MONACO="$OSRM_TEST_DATA_DIR/monaco"
+MONACO="$OSRM_TEST_DATA_DIR"
 
 DATASET=berlin
 PBF="${OSRM_TEST_DATA_DIR}/${DATASET}.osm.pbf"
 GPS_TRACES="${OSRM_TEST_DATA_DIR}/${DATASET}_gps_traces.csv.gz"
-DATA_DIR="${OSRM_TEST_DATA_DIR}/${DATASET}"
+DATA_DIR="${OSRM_TEST_DATA_DIR}"
 DATA="${DATASET}.osrm"
 
 mkdir -p "$LOGS_DIR"
@@ -49,8 +49,8 @@ for method in route match; do
         echo "Running ${method}-bench ${algorithm}"
         "$OSRM_BENCHMARKS_BUILD_DIR/${method}-bench" "$MONACO/${algorithm}/monaco.osrm" ${algorithm} \
             > "$LOGS_DIR/${method}_${algorithm}.bench"
-    endfor
-endfor
+    done
+done
 
 echo "Running alias"
 "$OSRM_BENCHMARKS_BUILD_DIR/alias-bench" > "$LOGS_DIR/alias.bench"
@@ -94,34 +94,3 @@ if [ -z "$GITHUB_STEP_SUMMARY" ]; then
 fi
 
 popd
-
-summary "### e2e benchmarks\n"
-summary "Mean time for answering 100 randomly generated requests, in ms.\n"
-summary "| Algorithm | Route | Nearest | Trip | Table | Match |\n"
-summary "| --------- | -----:| -------:| ----:| -----:| -----:|\n"
-
-for ALGORITHM in ch mld; do
-    "$OSRM_BUILD_DIR/osrm-routed" --algorithm $ALGORITHM "$DATA" > /dev/null 2>&1 &
-    OSRM_ROUTED_PID=$!
-
-    # wait for osrm-routed to start
-    if ! curl --retry-delay 3 --retry 10 --retry-all-errors \
-            "http://127.0.0.1:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true" > /dev/null 2>&1; then
-        echo "osrm-routed failed to start for algorithm $ALGORITHM"
-        kill -9 $OSRM_ROUTED_PID
-        continue
-    fi
-
-    summary "| ${ALGORITHM}"
-
-    for METHOD in route nearest trip table match; do
-        echo "Running e2e benchmark for $METHOD $ALGORITHM"
-        TIME=`python "$SCRIPTS_DIR/e2e_benchmark_simplified.py" --method $METHOD --gps_traces "$GPS_TRACES"`
-        echo $TIME
-        echo $TIME > "$LOGS_DIR/e2e_${METHOD}_${ALGORITHM}.bench"
-        summary " | $TIME"
-    done
-
-    summary " |\n"
-    kill -9 $OSRM_ROUTED_PID
-done
