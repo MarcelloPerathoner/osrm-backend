@@ -27,7 +27,7 @@ template <template <typename A> class FacadeT, typename AlgorithmT> class DataFa
     DataFacadeFactory() = default;
 
     template <typename AllocatorT>
-    DataFacadeFactory(std::shared_ptr<AllocatorT> allocator)
+    DataFacadeFactory(const std::shared_ptr<AllocatorT> &allocator)
         : DataFacadeFactory(std::move(allocator), has_exclude_flags)
     {
         BOOST_ASSERT_MSG(facades.size() >= 1, "At least one datafacade is needed");

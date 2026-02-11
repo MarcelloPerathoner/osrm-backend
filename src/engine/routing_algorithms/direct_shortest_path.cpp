@@ -48,10 +48,10 @@ InternalRouteResult directShortestPathSearch(SearchEngineData<ch::Algorithm> &en
             facade,
             packed_leg.begin(),
             packed_leg.end(),
-            [&unpacked_nodes, &unpacked_edges](std::pair<NodeID, NodeID> &edge, const auto &edge_id)
+            [&unpacked_nodes, &unpacked_edges](NodeID, NodeID second, const auto &edge_id)
             {
                 BOOST_ASSERT(edge.first == unpacked_nodes.back());
-                unpacked_nodes.push_back(edge.second);
+                unpacked_nodes.push_back(second);
                 unpacked_edges.push_back(edge_id);
             });
     }
