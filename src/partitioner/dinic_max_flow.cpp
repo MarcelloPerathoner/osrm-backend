@@ -132,7 +132,7 @@ DinicMaxFlow::ComputeLevelGraph(const BisectionGraphView &view,
     }
     // check if there is flow present on an edge
     const auto has_flow = [&](const NodeID from, const NodeID to)
-    { return flow[from].find(to) != flow[from].end(); };
+    { return flow[from].contains(to); };
 
     // perform a relaxation step in the BFS algorithm
     const auto relax_node = [&](const NodeID node_id)
@@ -272,7 +272,7 @@ std::vector<NodeID> DinicMaxFlow::GetAugmentingPath(LevelGraph &levels,
                 path.push_back(target);
 
                 // termination
-                if (source_nodes.find(target) != source_nodes.end())
+                if (source_nodes.contains(target))
                 {
                     std::reverse(path.begin(), path.end());
                     return path;
