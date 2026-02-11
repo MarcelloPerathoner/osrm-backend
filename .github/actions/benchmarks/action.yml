@@ -23,7 +23,9 @@ runs:
     - name: Run benchmarks
       shell: bash
       run: |
-        set -o errexit
+        echo "::group::ls make -C test/data monaco berlin"
+        $MAKE -C "$TEST_DIR/data" monaco berlin
+        echo "::endgroup::"
 
         # ctest --test-dir ${OSRM_BENCHMARKS_BINARY_DIR} --build-config ${BUILD_TYPE} \
         #   -j $JOBS -V -O ${LOG_DIR}/benchmarks.log --no-tests=error
