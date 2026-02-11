@@ -380,9 +380,9 @@ void unpackPath(const FacadeT &facade,
         unpackPath(facade,
                    packed_path_begin,
                    packed_path_end,
-                   [&](NodeID, NodeID second, const auto &edge_id)
+                   [&]([[maybe_unused]] NodeID first, NodeID second, const auto &edge_id)
                    {
-                       BOOST_ASSERT(edge.first == unpacked_nodes.back());
+                       BOOST_ASSERT(first == unpacked_nodes.back());
                        unpacked_nodes.push_back(second);
                        unpacked_edges.push_back(edge_id);
                    });

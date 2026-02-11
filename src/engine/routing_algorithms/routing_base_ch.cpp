@@ -19,7 +19,7 @@ void unpackEdge(const DataFacade<Algorithm> &facade,
     unpackPath(facade,
                path.begin(),
                path.end(),
-               [&unpacked_path](NodeID first, NodeID, const auto & /* data */)
+               [&unpacked_path](NodeID first, NodeID /* second */, const auto & /* data */)
                { unpacked_path.emplace_back(first); });
     unpacked_path.emplace_back(to);
 }
