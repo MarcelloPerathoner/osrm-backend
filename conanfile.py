@@ -120,11 +120,11 @@ class OsrmConan(ConanFile):
                 self.options["onetbb"].shared = True
 
     def generate(self):
-        def copy(name, option):
-            if name in os.environ:
-                tc.cache_variables[name] = os.environ[name]
+        def copy(env, cmake, option):
+            if env in os.environ:
+                tc.cache_variables[cmake] = os.environ[env]
             else:
-                tc.cache_variables[name] = option
+                tc.cache_variables[cmake] = option
 
         tc = CMakeToolchain(self)
         # cache_variables end up in CMakePresets.json
@@ -136,10 +136,10 @@ class OsrmConan(ConanFile):
         tc.cache_variables["BUILD_NODE_PACKAGE"] = (
             _getOpt("BUILD_NODE_PACKAGE") or self.options.node_package
         )
-        copy("USE_CCACHE", self.options.ccache)
-        copy("CC", self.options.cc)
-        copy("CXX", self.options.cxx)
-        copy("CLANG_TIDY", self.options.clang_tidy)
+        copy("USE_CCACHE", "USE_CCACHE", self.options.ccache)
+        copy("CC", "CMAKE_C_COMPILER", self.options.cc)
+        copy("CXX", "CMAKE_CXX_COMPILER", self.options.cxx)
+        copy("CLANG_TIDY", "CLANG_TIDY", self.options.clang_tidy)
 
         # Note: this does not mean we are supporting all of these options yet in conan
         for i in (
