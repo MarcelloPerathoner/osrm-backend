@@ -146,7 +146,6 @@ class OsrmConan(ConanFile):
             "ASAN",
             "UBSAN",
             "COVERAGE",
-            "CLANG_TIDY",
         ):
             tc.cache_variables[f"ENABLE_{i}"] = _getOpt(f"ENABLE_{i}")
 

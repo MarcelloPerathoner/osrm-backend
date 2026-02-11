@@ -196,7 +196,8 @@ function(push_env key value)
   set(${key} "${value}" PARENT_SCOPE)
 endfunction()
 
-# disclose to the afterworld the directory the built artifacts are in
+# disclose to the afterworld where the build artifacts actually are
+# this appends /Release and /Debug for multi-config generators
 # usage: push_env_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 function(push_env_build_dir key value)
   if(CMAKE_CONFIGURATION_TYPES)

@@ -167,6 +167,13 @@ build/osrm-run-env.sh`. It contains:
 | `OSRM_BENCHMARKS_BINARY_DIR` |                                                            |
 | `OSRM_NODEJS_BINARY_DIR`     |                                                            |
 
+Note: multi-config generators (like Visual Studio or Xcode) generate the artifacts in a
+`/Release` or `/Debug` subdirectory of the configured build directory. The `OSRM_BUILD_DIR`
+variants always include these subdirectories: use them to find the actual files. The
+`OSRM_BINARY_DIR` variants do not always include these subdirectories: use them as
+cmdline parameters to `cmake` / `ctest`.
+
+
 #### build/osrm-run-env.sh
 
 The file `build/osrm-run-env.sh` can be sourced to setup a runtime environment in which
