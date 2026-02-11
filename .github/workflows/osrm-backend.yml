@@ -514,7 +514,7 @@ jobs:
           echo "::endgroup::"
 
           ctest --test-dir "${OSRM_UNIT_TESTS_BINARY_DIR}" --build-config ${BUILD_TYPE} \
-            -j $JOBS --verbose --output-log ${LOG_DIR}/unit_test.log --no-tests=error
+            -j $JOBS -V -O --no-tests=error ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
         if: env.CUCUMBER_TESTS == 'ON'

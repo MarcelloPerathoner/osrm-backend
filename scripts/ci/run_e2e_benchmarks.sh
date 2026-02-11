@@ -20,13 +20,13 @@ summary "| Algorithm | Route | Nearest | Trip | Table | Match |\n"
 summary "| --------- | -----:| -------:| ----:| -----:| -----:|\n"
 
 for ALGORITHM in ch mld; do
-    "$OSRM_BUILD_DIR/osrm-routed" -a $ALGORITHM "$OSRM_TEST_DATA_DIR/$ALGORITHM/$DATASET.osrm" > /dev/null 2>&1 &
+    "$OSRM_BUILD_DIR/osrm-routed" -a $ALGORITHM "$OSRM_TEST_DATA_DIR/$ALGORITHM/$DATASET.osrm" 2>&1 > /dev/null &
     OSRM_ROUTED_PID=$!
 
     if ! curl --retry-delay 1 --retry 30 --retry-all-errors \
             "http://127.0.0.1:5000/route/v1/driving/13.388860,52.517037;13.385983,52.496891?steps=true" > /dev/null 2>&1; then
         echo "osrm-routed failed to start for algorithm $ALGORITHM"
-        kill -9 $OSRM_ROUTED_PID
+        kill -9 $OSRM_ROUTED_PID || true
         continue
     fi
 
@@ -41,5 +41,5 @@ for ALGORITHM in ch mld; do
     done
 
     summary " |\n"
-    kill -9 $OSRM_ROUTED_PID
+    kill -9 $OSRM_ROUTED_PID || true
 done
