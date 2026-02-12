@@ -203,43 +203,9 @@ jobs:
             USE_CCACHE: sccache
 
     name: ${{ matrix.name }}
+    runs-on: ${{ matrix.runs-on }}
     # default true
     continue-on-error: ${{ (matrix.continue-on-error == null) && true || matrix.continue-on-error }}
-    # continue-on-error: ${{ !matrix.continue-on-error == null && false || true }}
-    runs-on: ${{ matrix.runs-on }}
-    env:
-      PUBLISH: OFF # set later
-
-      BUILD_TYPE:         ${{ contains(matrix.name, 'debug')  && 'Debug' || 'Release' }}
-      BUILD_SHARED_LIBS:  ${{ contains(matrix.name, 'shared') && 'ON'    || 'OFF' }}
-
-      ENABLE_CONAN:       ${{ contains(matrix.name, 'conan')  && 'ON' || 'OFF' }}
-      BUILD_NODE_PACKAGE: ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
-      NODE_TESTS:         ${{ contains(matrix.name, 'node')   && 'ON' || 'OFF' }}
-
-      CC:                 ${{ matrix.CCOMPILER }}
-      CFLAGS:             ${{ matrix.CFLAGS }}
-      CXX:                ${{ matrix.CXXCOMPILER }}
-      CXXFLAGS:           ${{ matrix.CXXFLAGS }}
-      CLANG_TIDY:         ${{ matrix.CLANG_TIDY }}
-
-      # default 24
-      NODE_VERSION:      ${{ (matrix.NODE_VERSION == null)      && 24    || matrix.NODE_VERSION }}
-
-      # default OFF
-      ENABLE_ASSERTIONS:  ${{ (matrix.ENABLE_ASSERTIONS  == null) && 'OFF' || matrix.ENABLE_ASSERTIONS  }}
-      ENABLE_COVERAGE:    ${{ (matrix.ENABLE_COVERAGE    == null) && 'OFF' || matrix.ENABLE_COVERAGE    }}
-      ENABLE_ASAN:        ${{ (matrix.ENABLE_ASAN        == null) && 'OFF' || matrix.ENABLE_ASAN        }}
-      ENABLE_UBSAN:       ${{ (matrix.ENABLE_UBSAN       == null) && 'OFF' || matrix.ENABLE_UBSAN       }}
-      BUILD_BENCHMARKS:   ${{ (matrix.BUILD_BENCHMARKS   == null) && 'OFF' || matrix.BUILD__BENCHMARKS  }}
-      RUN_BENCHMARKS:     ${{ (matrix.RUN_BENCHMARKS     == null) && 'OFF' || matrix.RUN_BENCHMARKS     }}
-      # default ON
-      ENABLE_LTO:         ${{ (matrix.ENABLE_LTO         == null) && 'ON'  || matrix.ENABLE_LTO         }}
-      RUN_UNIT_TESTS:     ${{ (matrix.RUN_UNIT_TESTS     == null) && 'ON'  || matrix.RUN_UNIT_TESTS     }}
-      BUILD_UNIT_TESTS:   ${{ (matrix.BUILD_UNIT_TESTS   == null) && 'ON'  || matrix.BUILD_UNIT_TESTS   }}
-      RUN_CUCUMBER_TESTS: ${{ (matrix.RUN_CUCUMBER_TESTS == null) && 'ON'  || matrix.RUN_CUCUMBER_TESTS }}
-      # default 'ccache'
-      USE_CCACHE:        ${{ (matrix.USE_CCACHE        == null) && 'ccache' || matrix.USE_CCACHE }}
 
     steps:
       - name: Checkout repository
@@ -248,6 +214,14 @@ jobs:
       - name: Setup environment
         run: |
           uname -a
+
+          echo "PUBLISH=OFF" >> $GITHUB_ENV
+
+          echo '${{ toJSON(matrix) }}'
+          echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
+          cat job.env
+          cat job.env >> $GITHUB_ENV
+
           mkdir -p build $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
