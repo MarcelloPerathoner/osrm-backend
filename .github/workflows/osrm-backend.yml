@@ -60,7 +60,19 @@ jobs:
             runs-on: ubuntu-24.04
             CCOMPILER: clang-20
             CXXCOMPILER: clang++-20
-            ENABLE_BENCHMARKS: ON
+            BUILD_BENCHMARKS: ON
+            RUN_BENCHMARKS: ON
+
+          - name: clang-20-debug-tidy
+            continue-on-error: true
+            runs-on: ubuntu-24.04
+            CCOMPILER: clang-20
+            CXXCOMPILER: clang++-20
+            CLANG_TIDY: clang-tidy-20
+            RUN_UNIT_TESTS: OFF
+            RUN_CUCUMBER_TESTS: OFF
+            BUILD_BENCHMARKS: ON
+            ENABLE_LTO: OFF
 
           - name: clang-19-release-node
             runs-on: ubuntu-24.04
@@ -86,16 +98,6 @@ jobs:
             CCOMPILER: clang-19
             CXXCOMPILER: clang++-19
             ENABLE_UBSAN: ON
-            ENABLE_LTO: OFF
-
-          - name: clang-19-debug-tidy
-            continue-on-error: true
-            runs-on: ubuntu-24.04
-            CCOMPILER: clang-19
-            CXXCOMPILER: clang++-19
-            CLANG_TIDY: clang-tidy-19
-            UNIT_TESTS: OFF
-            CUCUMBER_TESTS: OFF
             ENABLE_LTO: OFF
 
           - name: clang-18-release
@@ -180,7 +182,8 @@ jobs:
             runs-on: macos-15 # arm64
             CCOMPILER: clang
             CXXCOMPILER: clang++
-            ENABLE_BENCHMARKS: ON
+            BUILD_BENCHMARKS: ON
+            RUN_BENCHMARKS: ON
 
           - name: conan-macos-14-arm64-release-node
             runs-on: macos-14 # arm64
@@ -190,7 +193,8 @@ jobs:
 
           - name: conan-windows-2025-x64-release-node
             runs-on: windows-2025 # x64
-            ENABLE_BENCHMARKS: ON
+            BUILD_BENCHMARKS: ON
+            RUN_BENCHMARKS: ON
             USE_CCACHE: sccache
 
           - name: conan-windows-2022-x64-release-node
@@ -223,15 +227,17 @@ jobs:
       NODE_VERSION:      ${{ (matrix.NODE_VERSION == null)      && 24    || matrix.NODE_VERSION }}
 
       # default OFF
-      ENABLE_ASSERTIONS: ${{ (matrix.ENABLE_ASSERTIONS == null) && 'OFF' || matrix.ENABLE_ASSERTIONS }}
-      ENABLE_COVERAGE:   ${{ (matrix.ENABLE_COVERAGE   == null) && 'OFF' || matrix.ENABLE_COVERAGE   }}
-      ENABLE_ASAN:       ${{ (matrix.ENABLE_ASAN       == null) && 'OFF' || matrix.ENABLE_ASAN       }}
-      ENABLE_UBSAN:      ${{ (matrix.ENABLE_UBSAN      == null) && 'OFF' || matrix.ENABLE_UBSAN      }}
-      ENABLE_BENCHMARKS: ${{ (matrix.ENABLE_BENCHMARKS == null) && 'OFF' || matrix.ENABLE_BENCHMARKS }}
+      ENABLE_ASSERTIONS:  ${{ (matrix.ENABLE_ASSERTIONS  == null) && 'OFF' || matrix.ENABLE_ASSERTIONS  }}
+      ENABLE_COVERAGE:    ${{ (matrix.ENABLE_COVERAGE    == null) && 'OFF' || matrix.ENABLE_COVERAGE    }}
+      ENABLE_ASAN:        ${{ (matrix.ENABLE_ASAN        == null) && 'OFF' || matrix.ENABLE_ASAN        }}
+      ENABLE_UBSAN:       ${{ (matrix.ENABLE_UBSAN       == null) && 'OFF' || matrix.ENABLE_UBSAN       }}
+      BUILD_BENCHMARKS:   ${{ (matrix.BUILD_BENCHMARKS   == null) && 'OFF' || matrix.BUILD__BENCHMARKS  }}
+      RUN_BENCHMARKS:     ${{ (matrix.RUN_BENCHMARKS     == null) && 'OFF' || matrix.RUN_BENCHMARKS     }}
       # default ON
-      ENABLE_LTO:        ${{ (matrix.ENABLE_LTO        == null) && 'ON'  || matrix.ENABLE_LTO     }}
-      UNIT_TESTS:        ${{ (matrix.UNIT_TESTS        == null) && 'ON'  || matrix.UNIT_TESTS     }}
-      CUCUMBER_TESTS:    ${{ (matrix.CUCUMBER_TESTS    == null) && 'ON'  || matrix.CUCUMBER_TESTS }}
+      ENABLE_LTO:         ${{ (matrix.ENABLE_LTO         == null) && 'ON'  || matrix.ENABLE_LTO         }}
+      RUN_UNIT_TESTS:     ${{ (matrix.RUN_UNIT_TESTS     == null) && 'ON'  || matrix.RUN_UNIT_TESTS     }}
+      BUILD_UNIT_TESTS:   ${{ (matrix.BUILD_UNIT_TESTS   == null) && 'ON'  || matrix.BUILD_UNIT_TESTS   }}
+      RUN_CUCUMBER_TESTS: ${{ (matrix.RUN_CUCUMBER_TESTS == null) && 'ON'  || matrix.RUN_CUCUMBER_TESTS }}
       # default 'ccache'
       USE_CCACHE:        ${{ (matrix.USE_CCACHE        == null) && 'ccache' || matrix.USE_CCACHE }}
 
@@ -407,12 +413,12 @@ jobs:
           # `cmake --build ${OSRM_BUILD_DIR} ...` will not work on Windows
 
       - name: Build unit tests
-        if: env.UNIT_TESTS == 'ON'
+        if: env.BUILD_UNIT_TESTS == 'ON'
         run: |
           cmake --build "${OSRM_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS --target tests
 
       - name: Build benchmarks
-        if: env.ENABLE_BENCHMARKS == 'ON'
+        if: env.BUILD_BENCHMARKS == 'ON'
         run: |
           cmake --build "${OSRM_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS --target benchmarks
 
@@ -495,7 +501,7 @@ jobs:
           echo "::endgroup::"
 
       - name: Run unit tests
-        if: env.UNIT_TESTS == 'ON'
+        if: env.RUN_UNIT_TESTS == 'ON'
         run: |
           echo "::group::ls make -C test/data monaco"
           $MAKE -C "$TEST_DIR/data" monaco
@@ -517,12 +523,12 @@ jobs:
             -j $JOBS --no-tests=error -V -O ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
-        if: env.CUCUMBER_TESTS == 'ON'
+        if: env.RUN_CUCUMBER_TESTS == 'ON'
         run: |
           npm test -- --parallel $JOBS
 
       - name: Run benchmarks
-        if: env.ENABLE_BENCHMARKS == 'ON'
+        if: env.RUN_BENCHMARKS == 'ON'
         continue-on-error: true
         uses: ./.github/actions/benchmarks
 
