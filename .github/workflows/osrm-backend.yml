@@ -173,9 +173,13 @@ jobs:
 
           echo "PUBLISH=OFF" >> $GITHUB_ENV
 
+          echo "::group::matrix"
           echo '${{ toJSON(matrix) }}'
+          echo "::endgroup::"
           echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
+          echo "::group::generated environment"
           cat job.env
+          echo "::endgroup::"
           source job.env
           cat job.env >> $GITHUB_ENV
 

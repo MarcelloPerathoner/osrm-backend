@@ -48,10 +48,11 @@ if m:
         values["CC"] = f"gcc-{version}"
         values["CXX"] = f"g++-{version}"
 else:
-    # default compiler is clang
-    values["CC"] = "clang"
-    values["CXX"] = "clang++"
-    values["CLANG_TIDY"] = "clang-tidy"
+    if "Windows" not in matrix["runs-on"]:
+        # default compiler is clang
+        values["CC"] = "clang"
+        values["CXX"] = "clang++"
+        values["CLANG_TIDY"] = "clang-tidy"
 
 if values["ENABLE_TIDY"] == "OFF":
     values.pop("CLANG_TIDY", None)
