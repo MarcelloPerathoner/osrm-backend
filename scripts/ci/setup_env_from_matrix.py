@@ -54,7 +54,7 @@ else:
     values["CLANG_TIDY"] = "clang-tidy"
 
 if values["ENABLE_TIDY"] == "OFF":
-    del values["CLANG_TIDY"]
+    values.pop("CLANG_TIDY", None)
 
 # fmt: off
 get("CC")

@@ -176,6 +176,7 @@ jobs:
           echo '${{ toJSON(matrix) }}'
           echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
           cat job.env
+          source job.env
           cat job.env >> $GITHUB_ENV
 
           mkdir -p build $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
