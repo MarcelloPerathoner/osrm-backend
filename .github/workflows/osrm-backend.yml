@@ -67,6 +67,10 @@ jobs:
             RUN_CUCUMBER_TESTS: OFF
             BUILD_BENCHMARKS: ON
 
+          - name: clang-20-debug-node-cov
+            continue-on-error: true
+            runs-on: ubuntu-24.04
+
           - name: clang-19-release-node
             runs-on: ubuntu-24.04
 
@@ -102,10 +106,6 @@ jobs:
             runs-on: ubuntu-24.04
 
           - name: gcc-13-release
-            runs-on: ubuntu-24.04
-            NODE_VERSION: 22
-
-          - name: gcc-13-debug-cov
             runs-on: ubuntu-24.04
             NODE_VERSION: 22
 
@@ -187,7 +187,7 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
-            sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} make cmake ccache zlib1g-dev
+            sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} ${LLVM} make cmake ccache zlib1g-dev
             echo "MAKE=make" >> $GITHUB_ENV
             echo "TIME=/usr/bin/time" >> $GITHUB_ENV
             echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
@@ -301,9 +301,6 @@ jobs:
           fi
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            if [[ "${ENABLE_COVERAGE}" == "ON" ]]; then
-              lcov --directory . --zerocounters # clean cached files
-            fi
             if [[ "$ENABLE_ASAN" == "ON" ]]; then
               export "LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH"
               echo "ASAN_OPTIONS=log_path=${LOG_DIR}/asan.log:print_suppressions=0:suppressions=${CI_DIR}/addresssanitizer.conf" >> $GITHUB_ENV
@@ -466,6 +463,19 @@ jobs:
         if: env.RUN_BENCHMARKS == 'ON'
         continue-on-error: true
         uses: ./.github/actions/benchmarks
+
+      - name: Run coverage
+        if: env.ENABLE_COVERAGE == 'XXX'
+        continue-on-error: true
+        run: |
+            # doesn't seem to work with tbb threads
+            # https://github.com/linux-test-project/lcov/discussions/234
+            cd "${OSRM_UNIT_TESTS_BUILD_DIR}"
+            lcov --directory . --zerocounters
+            llvm-profdata-${COMPILER_VERSION} merge -sparse *.profraw -o coverage.profdata
+            llvm-cov-${COMPILER_VERSION} export -format=lcov --instr-profile coverage.profdata \
+                osrm-extract -object osrm-contract -object osrm-partition -object osrm-customize > coverage.info
+            genhtml --ignore-errors inconsistent,corrupt,unsupported -o ${LOG_DIR} coverage.info
 
       - name: Run Node tests
         if: env.NODE_TESTS == 'ON'

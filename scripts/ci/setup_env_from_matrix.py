@@ -32,38 +32,6 @@ values["ENABLE_TIDY"]        = in_job_name("tidy",   "ON",    "OFF")
 values["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON",    "OFF")
 values["ENABLE_ASAN"]        = in_job_name("asan",   "ON",    "OFF")
 values["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON",    "OFF")
-# fmt: on
-
-# guess the compiler from the job name
-# may be overwritten explicitly
-m = re.search(r"(clang|gcc)-(\d+)", job_name)
-if m:
-    compiler = m.group(1)
-    version = m.group(2)
-    if compiler == "clang":
-        values["CC"] = f"clang-{version}"
-        values["CXX"] = f"clang++-{version}"
-        values["CLANG_TIDY"] = f"clang-tidy-{version}"
-    if compiler == "gcc":
-        values["CC"] = f"gcc-{version}"
-        values["CXX"] = f"g++-{version}"
-else:
-    if "windows" not in matrix["runs-on"]:
-        # default compiler is clang
-        values["CC"] = "clang"
-        values["CXX"] = "clang++"
-        values["CLANG_TIDY"] = "clang-tidy"
-
-if values["ENABLE_TIDY"] == "OFF":
-    values.pop("CLANG_TIDY", None)
-
-# fmt: off
-get("CC")
-get("CFLAGS")
-get("CXX")
-get("CXXFLAGS")
-get("CLANG_TIDY")
-get("USE_CCACHE",         "ccache")
 
 get("NODE_VERSION",       24)
 get("ENABLE_ASSERTIONS",  "OFF")
@@ -71,6 +39,7 @@ get("ENABLE_COVERAGE",    values["ENABLE_COVERAGE"])
 get("ENABLE_ASAN",        values["ENABLE_ASAN"])
 get("ENABLE_UBSAN",       values["ENABLE_UBSAN"])
 get("ENABLE_LTO",         "ON")
+get("USE_CCACHE",         "ccache")
 
 get("BUILD_UNIT_TESTS",   "ON")
 get("RUN_UNIT_TESTS",     "ON")
@@ -78,6 +47,45 @@ get("RUN_CUCUMBER_TESTS", "ON")
 get("RUN_NODE_TESTS",     values["BUILD_NODE_PACKAGE"])
 get("BUILD_BENCHMARKS",   "OFF")
 get("RUN_BENCHMARKS",     "OFF")
+
+# fmt: on
+
+compiler = None
+version = None
+
+# default compiler is clang
+if "windows" not in matrix["runs-on"]:
+    compiler = "clang"
+
+# job name explicitly mentiones compiler
+m = re.search(r"(clang|gcc)-(\d+)", job_name)
+if m:
+    compiler = m.group(1)
+    version = m.group(2)
+
+values["COMPILER_ID"] = compiler
+values["COMPILER_VERSION"] = version
+
+if compiler == "clang":
+    values["CC"] = f"clang-{version}"
+    values["CXX"] = f"clang++-{version}"
+    if values["ENABLE_TIDY"] == "ON":
+        values["CLANG_TIDY"] = f"clang-tidy-{version}"
+    if values["ENABLE_COVERAGE"] == "ON":
+        values["LLVM"] = f"llvm-{version}"
+
+if compiler == "gcc":
+    values["CC"] = f"gcc-{version}"
+    values["CXX"] = f"g++-{version}"
+
+# fmt: off
+# explicit compiler mentioned in CC and CXX
+get("CC")
+get("CFLAGS")
+get("CXX")
+get("CXXFLAGS")
+get("CLANG_TIDY")
+get("LLVM")
 
 # fmt: on
 
