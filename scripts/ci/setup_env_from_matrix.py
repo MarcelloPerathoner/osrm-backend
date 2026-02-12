@@ -48,7 +48,7 @@ if m:
         values["CC"] = f"gcc-{version}"
         values["CXX"] = f"g++-{version}"
 else:
-    if "Windows" not in matrix["runs-on"]:
+    if "windows" not in matrix["runs-on"]:
         # default compiler is clang
         values["CC"] = "clang"
         values["CXX"] = "clang++"
