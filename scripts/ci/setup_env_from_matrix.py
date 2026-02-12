@@ -66,17 +66,18 @@ if m:
 values["COMPILER_ID"] = compiler
 values["COMPILER_VERSION"] = version
 
+ver = "-" + version if version else ""
 if compiler == "clang":
-    values["CC"] = f"clang-{version}"
-    values["CXX"] = f"clang++-{version}"
+    values["CC"] = f"clang{ver}"
+    values["CXX"] = f"clang++{ver}"
     if values["ENABLE_TIDY"] == "ON":
-        values["CLANG_TIDY"] = f"clang-tidy-{version}"
+        values["CLANG_TIDY"] = f"clang-tidy{ver}"
     if values["ENABLE_COVERAGE"] == "ON":
-        values["LLVM"] = f"llvm-{version}"
+        values["LLVM"] = f"llvm{ver}"
 
 if compiler == "gcc":
-    values["CC"] = f"gcc-{version}"
-    values["CXX"] = f"g++-{version}"
+    values["CC"] = f"gcc{ver}"
+    values["CXX"] = f"g++{ver}"
 
 # fmt: off
 # explicit compiler mentioned in CC and CXX
