@@ -235,7 +235,7 @@ std::vector<NodeID> DinicMaxFlow::GetAugmentingPath(LevelGraph &levels,
                                                     const SourceSinkNodes &source_nodes) const
 {
     std::vector<NodeID> path;
-    BOOST_ASSERT(source_nodes.find(node_id) == source_nodes.end());
+    BOOST_ASSERT(!source_nodes.contains(node_id));
 
     // Keeps the local state of the DFS in forms of the iterators
     struct DFSState

@@ -74,8 +74,8 @@ struct Comparator
 
         for (const auto &key : lhs_keys)
         {
-            BOOST_ASSERT(rhs.values.find(key) != rhs.values.end());
-            BOOST_ASSERT(lhs.values.find(key) != lhs.values.end());
+            BOOST_ASSERT(rhs.values.contains(key));
+            BOOST_ASSERT(lhs.values.contains(key));
 
             const auto &rhs_child = rhs.values.find(key)->second;
             const auto &lhs_child = lhs.values.find(key)->second;

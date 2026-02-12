@@ -196,10 +196,9 @@ function(push_env key value)
   set(${key} "${value}" PARENT_SCOPE)
 endfunction()
 
-# disclose to the afterworld where the build artifacts actually are
-# this appends /Release and /Debug for multi-config generators
-# usage: push_env_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
-function(push_env_build_dir key value)
+# this functions appends /Release and /Debug for multi-config generators
+# usage: mk_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
+function(mk_build_dir key value)
   if(CMAKE_CONFIGURATION_TYPES)
     # multi-config generators (eg. Visual Studio) append /Release or /Debug
     cmake_path(APPEND dir "${value}" "${CMAKE_BUILD_TYPE}")
@@ -207,10 +206,19 @@ function(push_env_build_dir key value)
     # single-config generator (eg. Unix Makefiles)
     cmake_path(SET dir "${value}")
   endif()
-  push_env("${key}" "${dir}")
+  set(${key} "${dir}" PARENT_SCOPE)
 endfunction()
 
+mk_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env("OSRM_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
+push_env("OSRM_BUILD_DIR" "${OSRM_BUILD_DIR}")
+
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+add_custom_target(clangd-conf
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${OSRM_BUILD_DIR}/compile_commands.json"
+        "${PROJECT_SOURCE_DIR}/build/compile_commands.json")
+
 include(CheckCXXCompilerFlag)
 include(FindPackageHandleStandardArgs)
 include(GNUInstallDirs)
@@ -692,7 +700,6 @@ configure_file(
 add_custom_target(uninstall
     COMMAND ${CMAKE_COMMAND} -P ${CMAKE_CURRENT_BINARY_DIR}/cmake/cmake_uninstall.cmake)
 
-
 # Modular build system: each directory registered here provides its own CMakeLists.txt
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
@@ -733,9 +740,6 @@ foreach(header ${headers_to_check})
 endforeach()
 add_library(check-headers STATIC EXCLUDE_FROM_ALL ${sources})
 set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_headers_dir})
-
-push_env("OSRM_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
-push_env_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
