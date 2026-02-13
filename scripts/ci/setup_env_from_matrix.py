@@ -1,3 +1,18 @@
+"""Transforms the github matrix into a set of environment variables.
+
+stdin: the github matrix as json
+stdout: KEY=VALUE pairs one per line
+
+Usage example (on github CI):
+
+.. code: bash
+
+   echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
+   source job.env
+   cat job.env >> $GITHUB_ENV
+
+"""
+
 import json
 import re
 import sys
