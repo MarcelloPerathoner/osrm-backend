@@ -160,7 +160,7 @@ jobs:
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
-    continue-on-error: ${{ (matrix.continue-on-error == null) && false || matrix.continue-on-error }}
+    continue-on-error: ${{ (matrix.continue-on-error != null) && matrix.continue-on-error || false }}
 
     steps:
       - name: Checkout repository
