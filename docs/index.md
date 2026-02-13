@@ -1,0 +1,15 @@
+# OSRM Documentation
+
+- [OSRM HTTP server](http.md)
+- [OSRM Profiles](profiles.md)
+- [OSRM NodeJS API](nodejs.md)
+- [Building OSRM from Source](building.md)
+- [Building OSRM for Windows](windows-deps.md)
+- [osrm-routed environment variables](routed.md)
+
+## OSRM developers
+
+- [Developing / Debugging guidance code](developing.md)
+- [Releasing a new OSRM version](releasing.md)
+- [Testsuite](testing.md)
+  - [Cucumber](cucumber.md)

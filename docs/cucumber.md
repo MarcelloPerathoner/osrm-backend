@@ -2,9 +2,10 @@
 
 This documentation describes the technical aspects of our cucumber test suite.
 
-- See also: [on how to write Cucumber tests](testing.md).
-- See also: [about Cucumber in the OSRM wiki](https://github.com/Project-OSRM/osrm-backend/wiki/Cucumber-Test-Suite).
-- See also: [the Cucumber docs](https://github.com/cucumber/cucumber-js/tree/main/docs).
+> [!TIP]
+> - See also: [on how to write Cucumber tests](testing.md).
+> - See also: [about Cucumber in the OSRM wiki](https://github.com/Project-OSRM/osrm-backend/wiki/Cucumber-Test-Suite).
+> - See also: [the Cucumber docs](https://github.com/cucumber/cucumber-js/tree/main/docs).
 
 ## tl;dr
 
