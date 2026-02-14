@@ -1,4 +1,11 @@
+![OSRM Logo](images/osrm_logo.svg)
+
 # OSRM Documentation
+
+> [!TIP]
+> See also: [the OSRM wiki](https://github.com/Project-OSRM/osrm-backend/wiki/).
+
+## OSRM users
 
 - [OSRM HTTP server](http.md)
 - [OSRM Profiles](profiles.md)

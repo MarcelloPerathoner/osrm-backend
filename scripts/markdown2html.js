@@ -19,7 +19,7 @@ import hljs from 'highlight.js';
 import hljsCurl from'highlightjs-curl';
 
 const argv = yargs(hideBin(process.argv))
-  .usage('Usage: $0 --template filename.html --input filename.md > filename.html')
+  .usage('Usage: $0 --template template.html --input doc.md > doc.html')
   .option('template', {
     alias: 't',
     type: 'string',
@@ -48,7 +48,7 @@ const marked = new Marked(
 const tokenizer = {
   /** Turns a link to [...](file.md) into a link to file.md.html */
   link(src) {
-    const match = src.match(/^\[(.+?)\]\((.+?\.md)\)/);
+    const match = src.match(/^\[(.+?)\]\((.+?)\.md\)/);
     if (match) {
       const token = {
         type: 'link',
@@ -92,9 +92,10 @@ marked.use({
 });
 
 hljs.registerLanguage('curl', hljsCurl);
-
 const template = Handlebars.compile(fs.readFileSync(argv.template, 'utf8'));
-const markdown = marked.parse(fs.readFileSync(argv.input, 'utf8'));
-const html = template({ markdown });
+const article = marked.parse(fs.readFileSync(argv.input, 'utf8'));
+
+const title = 'OSRM Documentation';
+const html = template({ title, article });
 
 console.log(html);
