@@ -22,7 +22,7 @@ values = {}
 job_name = matrix.get("name")
 
 
-def in_job_name(needle, value, default):
+def in_job_name(needle, value, default=None):
     """Return value if the needle was found in the job name else default."""
     haystack = job_name.split("-")
     return value if needle in haystack else default
@@ -33,36 +33,38 @@ def get(key, default=None):
     if key in matrix:
         values[key] = matrix[key]
     elif default is not None:
-        # careful: do not overwrite with None
+        # careful: do not overwrite existing key with None
         values[key] = default
 
 
-# guess these values from the job name
 # fmt: off
+
+# encoded in job name
 values["BUILD_TYPE"]         = in_job_name("debug",  "Debug", "Release")
-values["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON",    "OFF")
-values["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON",    "OFF")
-values["ENABLE_CONAN"]       = in_job_name("conan",  "ON",    "OFF")
-values["ENABLE_TIDY"]        = in_job_name("tidy",   "ON",    "OFF")
-values["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON",    "OFF")
-values["ENABLE_ASAN"]        = in_job_name("asan",   "ON",    "OFF")
-values["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON",    "OFF")
+values["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
+values["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
+values["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
+values["ENABLE_TIDY"]        = in_job_name("tidy",   "ON", matrix.get("ENABLE_TIDY"))
+values["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON", matrix.get("ENABLE_COVERAGE"))
+values["ENABLE_ASAN"]        = in_job_name("asan",   "ON", matrix.get("ENABLE_ASAN"))
+values["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UBSAN"))
+
+# not encoded in job name
+get("ENABLE_ASSERTIONS")
+get("ENABLE_LTO")
+get("USE_COMPILER_CACHE")
 
 get("NODE_VERSION",       24)
-get("ENABLE_ASSERTIONS",  "OFF")
-get("ENABLE_COVERAGE",    values["ENABLE_COVERAGE"])
-get("ENABLE_ASAN",        values["ENABLE_ASAN"])
-get("ENABLE_UBSAN",       values["ENABLE_UBSAN"])
-get("ENABLE_LTO",         "ON")
-
 get("BUILD_UNIT_TESTS",   "ON")
 get("RUN_UNIT_TESTS",     "ON")
 get("RUN_CUCUMBER_TESTS", "ON")
-get("RUN_NODE_TESTS",     values["BUILD_NODE_PACKAGE"])
+get("RUN_NODE_TESTS",     values.get("BUILD_NODE_PACKAGE"))
 get("BUILD_BENCHMARKS",   "OFF")
 get("RUN_BENCHMARKS",     "OFF")
 
 # fmt: on
+
+### Decode compiler from job name ###
 
 compiler = None
 version = None
@@ -71,7 +73,7 @@ version = None
 if "windows" not in matrix["runs-on"]:
     compiler = "clang"
 
-# job name explicitly mentiones compiler
+# job name explicitly mentions compiler
 m = re.search(r"(clang|gcc)-(\d+)", job_name)
 if m:
     compiler = m.group(1)
@@ -94,7 +96,7 @@ if compiler == "gcc":
     values["CXX"] = f"g++{ver}"
 
 # fmt: off
-# explicit compiler mentioned in CC and CXX
+# user may override using CC and CXX etc.
 get("CC")
 get("CFLAGS")
 get("CXX")
@@ -105,8 +107,17 @@ get("LLVM")
 # fmt: on
 
 # store values for following job steps
+defines = []
 for key in sorted(values):
     if values[key] is not None:
         print(f"{key}={values[key]}")
+        if (
+            key.startswith("ENABLE_")
+            or key.startswith("BUILD_")
+            or key in ["USE_CCACHE", "CLANG_TIDY"]
+        ):
+            defines.append(f"-D{key}={values[key]}")
+
+print(f"CMAKE_DEFINITIONS={" ".join(defines)}")
 
 # { "name": "conan-clang-42-debug-shared-node-tidy-asan-ubsan-cov", "RUN_NODE_TESTS": "OFF" }

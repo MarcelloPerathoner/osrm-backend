@@ -329,17 +329,7 @@ jobs:
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
             cmake -B "${CONAN_BUILD_DIR}" --preset ${CONAN_CMAKE_PRESET}
           else
-            cmake -B build/ \
-                -DCMAKE_BUILD_TYPE=${BUILD_TYPE} \
-                -DBUILD_SHARED_LIBS=${BUILD_SHARED_LIBS:-OFF} \
-                -DBUILD_NODE_PACKAGE=${BUILD_NODE_PACKAGE:-OFF} \
-                -DUSE_CCACHE=${USE_CCACHE} \
-                -DCLANG_TIDY=${CLANG_TIDY:-OFF} \
-                -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS:-OFF} \
-                -DENABLE_COVERAGE=${ENABLE_COVERAGE:-OFF} \
-                -DENABLE_ASAN=${ENABLE_ASAN:-OFF} \
-                -DENABLE_UBSAN=${ENABLE_UBSAN:-OFF} \
-                -DENABLE_LTO=${ENABLE_LTO:-ON}
+            cmake -B build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_DEFINITIONS}
           fi
           cat build/osrm-run.env >> $GITHUB_ENV
 
