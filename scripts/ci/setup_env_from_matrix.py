@@ -54,7 +54,6 @@ get("ENABLE_COVERAGE",    values["ENABLE_COVERAGE"])
 get("ENABLE_ASAN",        values["ENABLE_ASAN"])
 get("ENABLE_UBSAN",       values["ENABLE_UBSAN"])
 get("ENABLE_LTO",         "ON")
-get("USE_CCACHE",         "ccache")
 
 get("BUILD_UNIT_TESTS",   "ON")
 get("RUN_UNIT_TESTS",     "ON")

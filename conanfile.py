@@ -158,10 +158,10 @@ class OsrmConan(ConanFile):
         cache_bool("ENABLE_FUZZING",       self.options.fuzzing)
         cache_bool("ENABLE_DEBUG_LOGGING", self.options.debug_logging)
 
-        cache("USE_CCACHE", "USE_CCACHE",         self.options.ccache)
-        cache("CC",         "CMAKE_C_COMPILER",   self.options.cc)
-        cache("CXX",        "CMAKE_CXX_COMPILER", self.options.cxx)
-        cache("CLANG_TIDY", "CLANG_TIDY",         self.options.clang_tidy)
+        cache("USE_COMPILER_CACHE", "USE_COMPILER_CACHE", self.options.ccache)
+        cache("CC",                 "CMAKE_C_COMPILER",   self.options.cc)
+        cache("CXX",                "CMAKE_CXX_COMPILER", self.options.cxx)
+        cache("CLANG_TIDY",         "CLANG_TIDY",         self.options.clang_tidy)
         # fmt: on
 
         # OSRM uses C++20

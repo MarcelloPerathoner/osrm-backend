@@ -43,7 +43,6 @@ option(BUILD_PACKAGE        "Build the OSRM package")
 option(BUILD_NODE_PACKAGE   "Build the NodeJS package")
 option(ENABLE_ASSERTIONS    "Use assertions in release mode")
 option(ENABLE_CCACHE        "Speed up incremental rebuilds via ccache (default ON)" ON)
-option(ENABLE_SCCACHE       "Speed up incremental rebuilds via sccache")
 option(ENABLE_COVERAGE      "Build with coverage instrumentalisation")
 option(ENABLE_DEBUG_LOGGING "Use debug logging in release mode")
 option(ENABLE_FUZZING       "Fuzz testing using LLVM's libFuzzer")
@@ -52,12 +51,9 @@ option(ENABLE_ASAN          "Use address sanitizer for Debug build")
 option(ENABLE_TSAN          "Use thread sanitizer for Debug build (experimental)")
 option(ENABLE_UBSAN         "Use undefined behaviour sanitizer for Debug build")
 
-if(ENABLE_CCACHE)
-  # there can only be one compiler cache
-  set(USE_CCACHE "ccache")
-endif()
-if(ENABLE_SCCACHE)
-  set(USE_CCACHE "sccache")
+# ENABLE_CCACHE kept for compatibilty
+if(NOT USE_COMPILER_CACHE AND ENABLE_CCACHE)
+  set(USE_COMPILER_CACHE "ccache")
 endif()
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
@@ -65,8 +61,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 project(OSRM C CXX)
 
 # use ccache/sccache if available
-if(USE_CCACHE)
-  find_program(ccache_bin ${USE_CCACHE})
+if(USE_COMPILER_CACHE)
+  find_program(ccache_bin ${USE_COMPILER_CACHE})
   if(ccache_bin)
     set(CMAKE_C_COMPILER_LAUNCHER ${ccache_bin})
     set(CMAKE_CXX_COMPILER_LAUNCHER ${ccache_bin})
@@ -747,6 +743,7 @@ set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
 push_env("PROJECT_SOURCE_DIR" "${PROJECT_SOURCE_DIR}")
+push_env("USE_COMPILER_CACHE" "${USE_COMPILER_CACHE}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
 
 # debug print the list of include dirs
