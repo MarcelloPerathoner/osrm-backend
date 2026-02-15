@@ -212,6 +212,7 @@ endfunction()
 mk_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env("OSRM_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env("OSRM_BUILD_DIR" "${OSRM_BUILD_DIR}")
+push_env("CMAKE_BUILD_TYPE" "${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 add_custom_target(clangd-conf

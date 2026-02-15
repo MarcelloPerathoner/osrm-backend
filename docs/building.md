@@ -132,11 +132,10 @@ The binaries will be in `build/Debug`. You can have a `build/Release` at the sam
 
 ### Build Node package
 
-To build the Node package, you should use, for Conan builds:
+To build the Node package, for Conan builds:
 
 ```bash
 conan build -pr home --build=missing -o node_package=True
-scripts/ci/build_node_package.sh
 ```
 
 For apt-get builds:

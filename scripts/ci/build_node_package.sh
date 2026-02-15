@@ -2,16 +2,18 @@
 
 set -e -o pipefail
 
-NPM_FLAGS="--directory build/nodejs"
-if [[ "${BUILD_TYPE:-}" == "Debug" ]]; then
-    NPM_FLAGS="$NPM_FLAGS --debug"
-fi
+source build/osrm-run.env
 
 echo "node version is:"
 which node
 node -v
 
-cmake --install "${CMAKE_BINARY_DIR}" --config ${BUILD_TYPE} --component node_osrm -v
+NPM_FLAGS="--directory build/nodejs"
+if [[ "${CMAKE_BUILD_TYPE:-}" == "Debug" ]]; then
+    NPM_FLAGS="$NPM_FLAGS --debug"
+fi
+
+cmake --install "${CMAKE_BINARY_DIR}" --config "${CMAKE_BUILD_TYPE}" --component node_osrm -v
 
 echo "dumping binary meta..."
 ./node_modules/.bin/node-pre-gyp reveal $NPM_FLAGS

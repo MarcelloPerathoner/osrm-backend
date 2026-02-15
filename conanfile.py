@@ -1,5 +1,6 @@
 import os
 import re
+import subprocess
 import textwrap
 
 from conan import ConanFile
@@ -189,6 +190,7 @@ class OsrmConan(ConanFile):
             fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
             fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
+            fp.write(f"BUILD_TYPE={self.settings.build_type}\n")
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because
@@ -206,6 +208,10 @@ class OsrmConan(ConanFile):
         cmake = CMake(self)
         cmake.configure()
         cmake.build()
+        if _getOpt("BUILD_NODE_PACKAGE") or self.options.node_package:
+            subprocess.call(
+                "scripts/ci/build_node_package.sh", shell=True, cwd=self.recipe_folder
+            )
 
 
 if __name__ == "__main__":
