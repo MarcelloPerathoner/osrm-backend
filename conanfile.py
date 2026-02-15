@@ -44,21 +44,25 @@ def _bash_path(path):
 class OsrmConan(ConanFile):
     settings = "os", "compiler", "build_type", "arch"
 
+    # all options default to None because the real defaults are set in CMakeLists.txt
+    # fmt: off
     options = {
-        "shared": [True, False],
-        "node_package": [True, False],
-        "ccache": [False, "ccache", "sccache"],
-        "cc": [None, "ANY"],
-        "cxx": [None, "ANY"],
-        "clang_tidy": ["ANY"],
+        "asan":          [None, False, True],
+        "assertions":    [None, False, True],
+        "coverage":      [None, False, True],
+        "debug_logging": [None, False, True],
+        "fuzzing":       [None, False, True],
+        "lto":           [None, False, True],
+        "node_package":  [None, False, True],
+        "shared":        [None, False, True],
+        "tsan":          [None, False, True],
+        "ubsan":         [None, False, True],
+        "cc":            [None, "ANY"],
+        "clang_tidy":    [None, "ANY"],
+        "cxx":           [None, "ANY"],
+        "ccache":        [None, "ccache", "sccache"],
     }
-
-    default_options = {
-        "shared": False,
-        "node_package": False,
-        "ccache": "ccache",
-        "clang_tidy": "OFF",
-    }
+    # fmt: on
 
     def _getVarValue(self, varvalues):
         """Returns var value as string, drops placeholders"""
@@ -121,38 +125,44 @@ class OsrmConan(ConanFile):
                 self.options["onetbb"].shared = True
 
     def generate(self):
-        def copy(env, cmake, option):
-            if env in os.environ:
-                tc.cache_variables[cmake] = os.environ[env]
-            else:
-                tc.cache_variables[cmake] = option
+        def cache(env_name, cmake_name, option):
+            if env_name in os.environ:
+                tc.cache_variables[cmake_name] = os.environ[env_name]
+            # why != ? see: https://docs.conan.io/2/reference/conanfile/attributes.html#options
+            elif option != None:  # noqa: E711
+                tc.cache_variables[cmake_name] = option
+
+        def cache_bool(name, option):
+            if option != None:  # noqa: E711
+                tc.cache_variables[name] = option
+            elif name in os.environ:
+                tc.cache_variables[name] = (
+                    os.environ.get(name).lower() in boolean_true_expressions
+                )
 
         tc = CMakeToolchain(self)
-        # cache_variables end up in CMakePresets.json
-        # and can be recalled with `cmake --preset conan-release`
         tc.cache_variables["USE_CONAN"] = True
-        tc.cache_variables["BUILD_SHARED_LIBS"] = (
-            _getOpt("BUILD_SHARED_LIBS") or self.options.shared
-        )
-        tc.cache_variables["BUILD_NODE_PACKAGE"] = (
-            _getOpt("BUILD_NODE_PACKAGE") or self.options.node_package
-        )
-        copy("USE_CCACHE", "USE_CCACHE", self.options.ccache)
-        copy("CC", "CMAKE_C_COMPILER", self.options.cc)
-        copy("CXX", "CMAKE_CXX_COMPILER", self.options.cxx)
-        copy("CLANG_TIDY", "CLANG_TIDY", self.options.clang_tidy)
 
-        # Note: this does not mean we are supporting all of these options yet in conan
-        for i in (
-            "ASSERTIONS",
-            "CCACHE",
-            "LTO",
-            "SCCACHE",
-            "ASAN",
-            "UBSAN",
-            "COVERAGE",
-        ):
-            tc.cache_variables[f"ENABLE_{i}"] = _getOpt(f"ENABLE_{i}")
+        # CAVEAT: MISNOMER! cache_variables end up in CMakePresets.json
+        # and must be recalled with `cmake --preset conan-release`
+        # they do *NOT* automatically end up as cache variables in Cmake
+        # fmt: off
+        cache_bool("BUILD_SHARED_LIBS",    self.options.shared)
+        cache_bool("BUILD_NODE_PACKAGE",   self.options.node_package)
+        cache_bool("ENABLE_ASSERTIONS",    self.options.assertions)
+        cache_bool("ENABLE_COVERAGE",      self.options.coverage)
+        cache_bool("ENABLE_LTO",           self.options.lto)
+        cache_bool("ENABLE_ASAN",          self.options.asan)
+        cache_bool("ENABLE_TSAN",          self.options.tsan)
+        cache_bool("ENABLE_UBSAN",         self.options.ubsan)
+        cache_bool("ENABLE_FUZZING",       self.options.fuzzing)
+        cache_bool("ENABLE_DEBUG_LOGGING", self.options.debug_logging)
+
+        cache("USE_CCACHE", "USE_CCACHE",         self.options.ccache)
+        cache("CC",         "CMAKE_C_COMPILER",   self.options.cc)
+        cache("CXX",        "CMAKE_CXX_COMPILER", self.options.cxx)
+        cache("CLANG_TIDY", "CLANG_TIDY",         self.options.clang_tidy)
+        # fmt: on
 
         # OSRM uses C++20
         # replace the block that would set the cpp standard with our own custom block

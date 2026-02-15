@@ -6,7 +6,7 @@ Conan is supported.
 
 ```mermaid
 graph LR;
-    clone[<a href="#clone">Clone the github repository</a>]
+    clone[<a href="#clone">Clone the repository</a>]
     conan[<a href="#conan">Build with Conan</a>]
     manually[<a href="#build-manually">Build manually</a><br/>Linux only]
     test[<a href="#tests">Run tests</a>]
@@ -52,11 +52,20 @@ Note: you need to activate Conan only once for every shell you open.
 
 A list of arguments for Conan:
 
-| Argument          | Default   | Description                                  |
-| ----------------- | --------- | -------------------------------------------- |
-| `-s build_type`   | `Release` | Specify the build type: `Release` or `Debug` |
-| `-o shared`       | `False`   | Build with shared libs: `True` or `False`.   |
-| `-o node_package` | `False`   | Build the Node package: `True` or `False`.   |
+| Argument          | Default   | Description                                             |
+| ----------------- | --------- | ------------------------------------------------------- |
+| `-s build_type`   | `Release` | Specify the build type: `Release` or `Debug`            |
+| `-o shared`       | `False`   | Build with shared libs: `True` or `False`.              |
+| `-o node_package` | `False`   | Build the Node package: `True` or `False`.              |
+| `-o cc`           |           | Use this binary as C Compiler                           |
+| `-o cxx`          |           | Use this binary as C++ Compiler                         |
+| `-o clang-tidy`   | `OFF`     | Use this binary as mop                                  |
+| `-o ccache`       | `ccache`  | Use this binary as compiler cache                       |
+| `-o assertions`   | `False`   | Enable Assertions in Release Code:`True` or `False`.    |
+| `-o coverage`     | `False`   | Enable Coverage:`True` or `False`.                      |
+| `-o lto`          | `True`    | Enable Link-Time-Optimization: `True` or `False`.       |
+| `-o asan`         | `True`    | Enable Address Sanitizer `True` or `False`.             |
+| `-o ubsan`        | `True`    | Enable Undifined Behaviour Sanitizer `True` or `False`. |
 
 Proceed with [testing](#tests).
 
@@ -106,7 +115,13 @@ Proceed with [testing](#tests).
 
 ### Specify compiler
 
-To build with a specified compiler, eg. clang-21 when gcc is the default, before building say:
+To build with a specified compiler, eg. clang-21 when gcc is the default, for Conan builds:
+
+```bash
+conan build -pr home --build=missing -o cc=clang-21 -o cxx=clang++-21
+```
+
+For apt-get builds, before building say:
 
 ```bash
 export CC=clang-21
@@ -174,7 +189,7 @@ npm test -- --parallel 16
 ## Install
 
 ```bash
-cmake --install build/Release --install-prefix /tmp
+cmake --install build/Release --prefix /usr/local/or/whatever
 ```
 
 

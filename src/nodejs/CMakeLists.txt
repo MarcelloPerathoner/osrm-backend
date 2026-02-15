@@ -36,6 +36,8 @@ set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
 push_env("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
 
 list(APPEND TARGETS node_osrm)
+list(APPEND TARGETS osrm_routed)
+list(APPEND TARGETS osrm_utils)
 foreach(binary components contract customize datastore extract partition routed)
   list(APPEND TARGETS "osrm-${binary}")
 endforeach()
