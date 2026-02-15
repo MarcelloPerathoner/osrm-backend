@@ -32,7 +32,7 @@ dataset dependent tests.
 
 To prepare the test data run:
 
-```
+```bash
 make -C test/data
 ```
 
@@ -40,20 +40,21 @@ make -C test/data
 
 To build the unit tests:
 
-```
-make -C build/Release -j 16 tests
+```bash
+make -C build/Release -j tests
 ```
 
-You should see the compiled binaries in `build/Release/unit_tests`, you can then run each suite individually:
+You should see the compiled binaries in `build/Release/unit_tests`, you can then run
+each suite individually, eg:
 
-```
+```bash
 build/Release/engine-tests
 ```
 
 or use ctest to run them all:
 
-```
-ctest --test-dir build/Release/unit_tests/ -j 0
+```bash
+ctest --test-dir build/Release/unit_tests/ -j
 ```
 
 ## Cucumber
@@ -75,7 +76,7 @@ OSRM is a navigation engine. Tests should always consider this context.
 An important implication is the grid size. If tests use a very small grid size, you run into the chance of instructions being omitted.
 For example:
 
-```
+```gherkin
 Background:
     Given the profile "car"
     Given a grid size of 10 meters
@@ -114,7 +115,7 @@ To prevent such surprises, always consider the availability of other roads and u
 
 If you specify many nodes in close succession to present a specific road geometry, consider using `name` to indicate to OSRM that the segment is a single road.
 
-```
+```gherkin
 Background:
     Given the profile "car"
     Given a grid size of 10 meters
@@ -141,7 +142,7 @@ Guidance guarantees only essential maneuvers. You will always see `depart` and `
 
 So the following scenario does not change the instructions
 
-```
+```gherkin
 Background:
     Given the profile "car"
     Given a grid size of 10 meters
@@ -166,7 +167,7 @@ Scenario: Testbot - Straight Road
 
 but if we modify it to
 
-```
+```gherkin
 Background:
     Given the profile "car"
     Given a grid size of 10 meters
@@ -195,7 +196,7 @@ Scenario: Testbot - Straight Road
 Modelling a road as roundabout has an implied oneway tag associated with it. In the following case, we can route from `a` to `d` but not from `d` to `a`.
 To discover those errors, make sure to check for all allowed directions.
 
-```
+```gherkin
 Scenario: Enter and Exit mini roundabout with sharp angle   # features/guidance/mini-roundabout.feature:37
     Given the profile "car"                                   # features/step_definitions/data.js:8
     Given a grid size of 10 meters                            # features/step_definitions/data.js:20
@@ -229,7 +230,7 @@ Some features in OSRM can result in strange experiences during testcases. To pre
 Using grid nodes as waypoints offers the chance of unwanted side effects.
 OSRM converts the grid into a so called edge-based graph.
 
-```
+```gherkin
 Scenario: Testbot - Intersection
     Given the node map
         """
@@ -249,7 +250,7 @@ Selecting `a` as a `waypoint` results in four possible starting locations. Which
 
 To guarantee discovery, use:
 
-```
+```gherkin
 Scenario: Testbot - Intersection
     Given the node map
         """
@@ -287,7 +288,7 @@ We specify them in a table with the header `| type | way:from | way:to | node:vi
 It is important that turn restrictions require micro segmentation.
 
 Consider the following scenario:
-```
+```gherkin
 Given the node map:
     """
           e
@@ -313,7 +314,7 @@ The forbidden right turn could be either a superfluous addition, forbidding the 
 To model turn-restrictions correctly and uniquely, we need to split segments that contribute to the restriction into the smallest possible parts.
 E.g. the above scenario could correctly be expressed as:
 
-```
+```gherkin
 Given the node map:
     """
           e
@@ -354,7 +355,7 @@ For broad streets, you will see stronger angles than the actual turns.
 
 If we have a test that looks like this:
 
-```
+```gherkin
 Given a grid size of 5 m
 Given the node map
 """
@@ -376,7 +377,7 @@ In such a case it is, of course, reasonable to change the expected route to repo
 However, you should never adjust the test itself.
 If you look at a failure, the other way around
 
-```
+```gherkin
 Given a grid size of 5 m
 Given the node map
 """

@@ -1,0 +1,10 @@
+# source this from the project root directory
+# needed only once for every new shell
+# usage: source scripts/activate-conan
+
+export CONAN_HOME=`pwd`/.conan2
+if [[ $(uname) == 'Windows' ]]; then
+  source .venv/Scripts/activate
+else
+  source .venv/bin/activate
+fi

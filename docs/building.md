@@ -1,26 +1,75 @@
 # Building OSRM from Source
 
-## Prerequisites
+OSRM depends on external libraries. On Linux you can choose to install those libraries
+either with a package manager (Conan) or manually (apt-get). On macOS and Windows only
+Conan is supported.
 
-Check out the repository:
+```mermaid
+graph LR;
+    clone[<a href="#clone">Clone the github repository</a>]
+    conan[<a href="#conan">Build with Conan</a>]
+    manually[<a href="#build-manually">Build manually</a><br/>Linux only]
+    test[<a href="#tests">Run tests</a>]
+    install[<a href="#install">Install</a>]
+    clone-->conan;    conan-->test;
+    clone-->manually; manually-->test;
+    test-->install
+```
+
+## Prerequisites {#clone}
+
+Clone the github repository:
 
 ```bash
 git clone https://github.com/Project-OSRM/osrm-backend.git
 cd osrm-backend
+npm ci --ignore-scripts
+```
+Note: here `ci` means "clean install" and not "continuous integration".
+
+## Build using Conan {#conan}
+
+This build method works on Linux, macOS and Windows (Tested on Ubuntu-24.04,
+Ubuntu-22.04, macOS-24, macOS-15, macOS-14, Windows-Server-2025, and Windows-Server-2022.)
+On Windows a Linux-compatible toolset like mingw is needed.
+
+First install Conan. You have to do this only once after a git clone.
+
+```bash
+scripts/install_conan.sh
 ```
 
-The project depends on external libraries. You can install those dependencies with a
-package manager (Conan) or install them  manually (apt-get).
+Then say:
+
+```bash
+source scripts/activate_conan
+conan build -pr home --build=missing
+```
+
+The binaries are now in `build/Release`.
+
+Note: you need to activate Conan only once for every shell you open.
+
+A list of arguments for Conan:
+
+| Argument          | Default   | Description                                  |
+| ----------------- | --------- | -------------------------------------------- |
+| `-s build_type`   | `Release` | Specify the build type: `Release` or `Debug` |
+| `-o shared`       | `False`   | Build with shared libs: `True` or `False`.   |
+| `-o node_package` | `False`   | Build the Node package: `True` or `False`.   |
+
+Proceed with [testing](#tests).
 
 ## Build manually
+
+This alternative build method is supported on Linux only. (It probably works on macOS
+too, if using `brew` instead of `apt-get`. Patches to the docs are welcome.)
 
 Install dependencies:
 
 ```bash
 sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
-npm ci --ignore-scripts
 ```
-Note: here `ci` means "clean install" and not "continuous integration".
 
 Build:
 
@@ -29,7 +78,7 @@ cmake -B build/Release
 make -C build/Release -j
 ```
 
-The binaries will be in `build/Release`.  Proceed with [running the tests](#Run-tests).
+The binaries are now in `build/Release`.
 
 A list of arguments for cmake:
 
@@ -38,7 +87,7 @@ A list of arguments for cmake:
 | `-DCMAKE_BUILD_TYPE`     | `Release` | Specify the build type: `Release` or `Debug`        |
 | `-DBUILD_SHARED_LIBS`    | `OFF`     | Build with shared libs: `ON` or `OFF`.              |
 | `-DBUILD_NODE_PACKAGE`   | `OFF`     | Build the Node package: `ON` or `OFF`.              |
-| `-DBUILD_PACKAGE`        | `OFF`     | Build OSRM package"                                 |
+| `-DBUILD_PACKAGE`        | `OFF`     | Build OSRM package.                                 |
 | `-DCLANG_TIDY`           | `OFF`     | Which clang-tidy to use: `clang-tidy-19` ...        |
 | `-DENABLE_ASSERTIONS`    | `OFF`     | Use assertions in release mode                      |
 | `-DENABLE_CCACHE`        | `ON`      | Speed up incremental rebuilds via ccache            |
@@ -51,63 +100,62 @@ A list of arguments for cmake:
 | `-DENABLE_TSAN`          | `OFF`     | Use thread sanitizer for Debug build (experimental) |
 | `-DENABLE_UBSAN`         | `OFF`     | Use undefined behaviour sanitizer for Debug build   |
 
-### Node Package
+Proceed with [testing](#tests).
 
-If you want to build the Node package, you should use:
+## Build variations
 
-```bash
-cmake -B build/Release -DBUILD_NODE_PACKAGE=ON
-make -C build/Release -j
-scripts/ci/build_node_package.sh
-```
+### Specify compiler
 
-The node binaries should be in `build/nodejs/lib/binding_napi_v8`.
-
-## Build using Conan
-
-First install Conan. You have to do this only once.
+To build with a specified compiler, eg. clang-21 when gcc is the default, before building say:
 
 ```bash
-python -m venv .venv
-source .venv/bin/activate
-pip install -r requirements*.txt
-export CONAN_HOME=`pwd`/.conan2
-conan profile detect --force
+export CC=clang-21
+export CXX=clang++-21
 ```
+Then run the build as shown above.
 
-Then say:
+### Debug build
+
+To do a debug build, for Conan builds:
 
 ```bash
-source .venv/bin/activate
-export CONAN_HOME=`pwd`/.conan2
-conan build -pr home --build=missing
+conan build -pr home --build=missing -s build_type=Debug
 ```
 
-N.B. you need to enter the `source` and `export` commands only once per shell
-invocation.
+For apt-get builds:
 
-A list of arguments for Conan:
+```bash
+cmake -B build/Debug -DCMAKE_BUILD_TYPE=Debug
+make -C build/Debug -j
+```
+The binaries will be in `build/Debug`. You can have a `build/Release` at the same time.
 
-| Argument          | Default   | Description                                  |
-| ----------------- | --------- | -------------------------------------------- |
-| `-s build_type`   | `Release` | Specify the build type: `Release` or `Debug` |
-| `-o shared`       | `False`   | Build with shared libs: `True` or `False`.   |
-| `-o node_package` | `False`   | Build the Node package: `True` or `False`.   |
+### Build Node package
 
-The binaries are now in `build/Release`.
-
-### Node Package
-
-If you want to build the Node package, you should use:
+To build the Node package, you should use, for Conan builds:
 
 ```bash
 conan build -pr home --build=missing -o node_package=True
 scripts/ci/build_node_package.sh
 ```
 
-The node binaries should be in `build/nodejs/lib/binding_napi_v8`.
+For apt-get builds:
 
-## Run tests
+```bash
+cmake -B build/Release -DBUILD_NODE_PACKAGE=ON
+make -C build/Release -j
+scripts/ci/build_node_package.sh
+```
+The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
+
+### Other tricks
+
+To learn how OSRM is built on the github CI you may consult the file
+`.github/workflows/osrm-backend.yml` and the files under `.github/actions`.
+
+## Tests {#tests}
+
+### Unit tests {#unit-tests}
 
 To run the unit tests:
 
@@ -116,11 +164,20 @@ make -C build/Release -j tests benchmarks
 ctest --test-dir build/Release/unit_tests/ -j
 ```
 
+### Cucumber tests {#cucumber}
+
 To run the Cucumber tests:
 
 ```bash
 npm test -- --parallel 16
 ```
+
+## Install
+
+```bash
+cmake --install build/Release --install-prefix /tmp
+```
+
 
 ## The Build Process
 

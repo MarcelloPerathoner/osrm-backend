@@ -11,8 +11,8 @@
 #   browser build/docs/index.html
 
 PROJECT=..
-DOCS=.
 
+DOCS=$(PROJECT)/docs
 BUILD=$(PROJECT)/build/docs
 NODE=$(PROJECT)/node_modules
 SCRIPTS=$(PROJECT)/scripts
@@ -39,7 +39,7 @@ $(DOCS)/generated/nodejs.md : $(BUILD)/nodejs.jsdoc
 	npx -- documentation build $< --markdown-toc=false -f md >> $@
 
 # Build the HTML files
-$(BUILD)/%.html : %.md $(SCRIPTS)/markdown2html.js
+$(BUILD)/%.html : %.md $(DOCS)/templates/article.html $(SCRIPTS)/markdown2html.js
 	node $(SCRIPTS)/markdown2html.js -t $(DOCS)/templates/article.html -i $< > $@
 
 # Copy images and css into the build dir

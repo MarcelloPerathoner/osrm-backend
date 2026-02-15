@@ -3,12 +3,7 @@ name: "Install Python"
 description: |
   Installs python dependencies from requirements*.txt.
 
-  Prepends .venv/bin to PATH, so there is no need to activate at every step.
-
-  Output environment variables:
-
-  PATH will contain the Python venv.
-  VIRTUAL_ENV the Python venv.
+  Prepends .venv/bin to PATH, so there is no need to activate at every future step.
 
 runs:
   using: 'composite'
@@ -26,29 +21,12 @@ runs:
       id: install-conan
       shell: bash
       run: |
-        python -m venv .venv
+        scripts/install_conan.sh
         if [[ ${{ runner.os }} == 'Windows' ]]; then
-          source .venv/Scripts/activate
-          python.exe -m pip install --upgrade pip
-        else
-          source .venv/bin/activate
-          python -m pip install --upgrade pip
-        fi
-        pip install -r requirements*.txt
-
-    - name: Activate Python Venv
-      id: activate-venv
-      shell: bash
-      run: |
-        if [[ ${{ runner.os }} == 'Windows' ]]; then
-          source .venv/Scripts/activate
           echo "$VIRTUAL_ENV/Scripts" >> $GITHUB_PATH
         else
-          source .venv/bin/activate
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH
         fi
-        echo "VIRTUAL_ENV=$VIRTUAL_ENV" >> $GITHUB_ENV
-        echo "venv=$VIRTUAL_ENV"        >> $GITHUB_OUTPUT
 
     - name: Save Pip cache
       if: steps.pip-cache-restore.outputs.cache-hit != 'true'

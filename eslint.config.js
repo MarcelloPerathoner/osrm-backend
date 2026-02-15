@@ -1,7 +1,7 @@
 /** @type {Linter.Config} */
 const config = [
   {
-    files: ['**/*.js'],
+    files: ['**/*.js', '**/*.mjs', '**/*.cjs'],
     languageOptions: {
       ecmaVersion: 2024,
       sourceType: 'module',

@@ -8,27 +8,19 @@
     <link rel="stylesheet" href="css/github-markdown.css">
     <link rel="stylesheet" href="css/highlight-js.css">
     <link rel="stylesheet" href="css/osrm-custom.css">
-    <style>
-        .markdown-body {
-            box-sizing: border-box;
-            min-width: 200px;
-            max-width: 980px;
-            margin: 0 auto;
-            padding: 45px;
-        }
-
-        @media (max-width: 767px) {
-            .markdown-body {
-                padding: 15px;
-            }
-        }
-    </style>
+    <link rel="icon" type="image/x-icon" href="images/favicon.ico">
 </head>
 
 <body>
     <article class="markdown-body entry-content container-lg">
         {{{ article }}}
     </article>
+    {{#if needs_mermaid}}
+    {{! mermaid, broken by design, does not work on the server }}
+    <script type="module">
+        import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+    </script>
+    {{/if}}
 </body>
 
 </html>
