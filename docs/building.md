@@ -59,13 +59,13 @@ A list of arguments for Conan:
 | `-o node_package` | `False`   | Build the Node package: `True` or `False`.              |
 | `-o cc`           |           | Use this binary as C Compiler                           |
 | `-o cxx`          |           | Use this binary as C++ Compiler                         |
-| `-o clang-tidy`   | `OFF`     | Use this binary as mop                                  |
+| `-o clang-tidy`   |           | Use this binary as linter                               |
 | `-o ccache`       | `ccache`  | Use this binary as compiler cache                       |
 | `-o assertions`   | `False`   | Enable Assertions in Release Code:`True` or `False`.    |
 | `-o coverage`     | `False`   | Enable Coverage:`True` or `False`.                      |
 | `-o lto`          | `True`    | Enable Link-Time-Optimization: `True` or `False`.       |
-| `-o asan`         | `True`    | Enable Address Sanitizer `True` or `False`.             |
-| `-o ubsan`        | `True`    | Enable Undifined Behaviour Sanitizer `True` or `False`. |
+| `-o asan`         | `False`   | Enable Address Sanitizer `True` or `False`.             |
+| `-o ubsan`        | `False`   | Enable Undefined Behaviour Sanitizer `True` or `False`. |
 
 Proceed with [testing](#tests).
 
@@ -101,8 +101,8 @@ A list of arguments for cmake:
 | `-DENABLE_ASSERTIONS`    | `OFF`     | Use assertions in release mode                      |
 | `-DENABLE_CCACHE`        | `ON`      | Speed up incremental rebuilds via ccache            |
 | `-DENABLE_SCCACHE`       | `OFF`     | Speed up incremental rebuilds via sccache           |
-| `-DENABLE_LTO`           | `OFF`     | Use Link Time Optimisation                          |
-| `-DENABLE_COVERAGE`      | `OFF`     | Build with coverage instrumentalisation             |
+| `-DENABLE_LTO`           | `ON`      | Use Link Time Optimization                          |
+| `-DENABLE_COVERAGE`      | `OFF`     | Build with coverage instrumentalization             |
 | `-DENABLE_DEBUG_LOGGING` | `OFF`     | Use debug logging in release mode                   |
 | `-DENABLE_FUZZING`       | `OFF`     | Fuzz testing using LLVM's libFuzzer                 |
 | `-DENABLE_ASAN`          | `OFF`     | Use address sanitizer for Debug build               |

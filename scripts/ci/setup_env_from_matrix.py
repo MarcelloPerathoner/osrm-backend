@@ -118,6 +118,7 @@ for key in sorted(values):
         ):
             defines.append(f"-D{key}={values[key]}")
 
-print(f"CMAKE_DEFINITIONS={" ".join(defines)}")
+defines = " ".join(defines)
+print(f'CMAKE_DEFINITIONS="{defines}"')
 
 # { "name": "conan-clang-42-debug-shared-node-tidy-asan-ubsan-cov", "RUN_NODE_TESTS": "OFF" }
