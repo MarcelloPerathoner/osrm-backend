@@ -165,6 +165,9 @@ jobs:
     continue-on-error: ${{ (matrix.continue-on-error != null) && matrix.continue-on-error || false }}
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
       - name: Decode matrix
         run: |
           echo "::group::matrix"
@@ -177,9 +180,6 @@ jobs:
           echo "::group::generated github environment"
           cat job.env
           echo "::endgroup::"
-
-      - name: Checkout repository
-        uses: actions/checkout@v4
 
       - name: Setup environment
         run: |
