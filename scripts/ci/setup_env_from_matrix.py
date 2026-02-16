@@ -135,32 +135,35 @@ cdefs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
 
 # fmt: on
 
-# params for cmake -B build -DFOO=ON -DBAR=OFF
-#                  ^^^^^^^^
-params = []
-for key in sorted(cparams):
-    if cparams[key] is not None:
-        params.append(f"{key} {cparams[key]}")
-
-# definitions for cmake -B build -DFOO=ON -DBAR=OFF
-#                                ^^^^^^^^^^^^^^^^^^
-for key in sorted(cdefs):
-    if cdefs[key] is not None:
-        params.append(f"-D{key}={cdefs[key]}")
-
-print(f"CMAKE_CONFIGURE_PARAMETERS={" ".join(params)}")
-
-# params for cmake --build build --config Release
-#                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-params = []
-for key in sorted(bparams):
-    if bparams[key] is not None:
-        params.append(f"{key} {bparams[key]}")
-
-print(f"CMAKE_BUILD_PARAMETERS={" ".join(params)}")
-
 # values for piping into >> $GITHUB_ENV
 envs.update(cdefs)
 for key in sorted(envs):
     if envs[key] is not None:
         print(f"{key}={envs[key]}")
+
+# Conan will write its own version of these entries
+if cdefs["ENABLE_CONAN"] != "ON":
+
+    # params for cmake -B build -DFOO=ON -DBAR=OFF
+    #                  ^^^^^^^^
+    params = []
+    for key in sorted(cparams):
+        if cparams[key] is not None:
+            params.append(f"{key} {cparams[key]}")
+
+    # definitions for cmake -B build -DFOO=ON -DBAR=OFF
+    #                                ^^^^^^^^^^^^^^^^^^
+    for key in sorted(cdefs):
+        if cdefs[key] is not None:
+            params.append(f"-D{key}={cdefs[key]}")
+
+    print(f'CMAKE_CONFIGURE_PARAMETERS={" ".join(params)}')
+
+    # params for cmake --build build --config Release
+    #                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    params = []
+    for key in sorted(bparams):
+        if bparams[key] is not None:
+            params.append(f"{key} {bparams[key]}")
+
+    print(f'CMAKE_BUILD_PARAMETERS={" ".join(params)}')
