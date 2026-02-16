@@ -148,7 +148,6 @@ class OsrmConan(ConanFile):
         # and must be recalled with `cmake --preset conan-release`
         # they do *NOT* automatically end up as cache variables in Cmake
         # fmt: off
-        cache_bool("CMAKE_BUILD_TYPE",     self.settings.build_type)
         cache_bool("BUILD_SHARED_LIBS",    self.options.shared)
         cache_bool("BUILD_NODE_PACKAGE",   self.options.node_package)
         cache_bool("ENABLE_ASSERTIONS",    self.options.assertions)
@@ -204,7 +203,10 @@ class OsrmConan(ConanFile):
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
             fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
             # handy for tools that do not read CMakePresets
-            fp.write(f"CMAKE_BUILD_TYPE={self.settings.build_type}\n")
+            fp.write(f"OSRM_BUILD_TYPE={self.settings.build_type}\n")
+            fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
+            fp.write(f"CMAKE_CONFIGURE_PARAMETERS=--preset {preset}\n")
+            fp.write(f"CMAKE_BUILD_PARAMETERS=--build --preset {preset} \n")
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because

@@ -10,18 +10,23 @@ Usage example (on github CI):
    echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py >> $GITHUB_ENV
    ...
    # later step
-   cmake -B build ${MATRIX_CMAKE_DEFINITIONS}
+   cmake -B build ${CMAKE_CONFIGURE_PARAMETERS}
+   cmake ${CMAKE_BUILD_PARAMETERS}
 
 """
 
 import json
+import os
 import re
 import sys
 
 matrix = json.load(sys.stdin)
-defs = {}  # these go into cmake -D... and into the .env file
-envs = {}  # these go into the .env file only
 job_name = matrix.get("name")
+
+cdefs = {}  # definitions for cmake configure stage
+cparams = {}  # parameters for cmake configure stage
+bparams = {}  # parameters for cmake build stage
+envs = {}  # environment variables
 
 
 def in_job_name(needle, value, default=None):
@@ -43,30 +48,44 @@ def get(d, key, default=None):
 
 # fmt: off
 # encoded in job name
-defs["CMAKE_BUILD_TYPE"]   = in_job_name("debug",  "Debug", "Release")
-defs["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
-defs["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
-defs["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
-defs["ENABLE_TIDY"]        = in_job_name("tidy",   "ON", matrix.get("ENABLE_TIDY"))
-defs["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON", matrix.get("ENABLE_COVERAGE"))
-defs["ENABLE_ASAN"]        = in_job_name("asan",   "ON", matrix.get("ENABLE_ASAN"))
-defs["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UBSAN"))
+envs["OSRM_CONFIG"]         = in_job_name("debug",  "Debug", "Release")
+cdefs["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
+cdefs["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
+cdefs["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
+cdefs["ENABLE_TIDY"]        = in_job_name("tidy",   "ON", matrix.get("ENABLE_TIDY"))
+cdefs["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON", matrix.get("ENABLE_COVERAGE"))
+cdefs["ENABLE_ASAN"]        = in_job_name("asan",   "ON", matrix.get("ENABLE_ASAN"))
+cdefs["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UBSAN"))
 
 # not encoded in job name
-get(defs, "ENABLE_ASSERTIONS")
-get(defs, "ENABLE_CCACHE")
-get(defs, "ENABLE_LTO")
-get(defs, "ENABLE_SCCACHE")
+get(cdefs, "ENABLE_ASSERTIONS")
+get(cdefs, "ENABLE_CCACHE")
+get(cdefs, "ENABLE_LTO")
+get(cdefs, "ENABLE_SCCACHE")
 
 get(envs, "NODE_VERSION",       24)
 get(envs, "BUILD_UNIT_TESTS",   "ON")
 get(envs, "BUILD_BENCHMARKS",   "OFF")
 get(envs, "RUN_UNIT_TESTS",     "ON")
 get(envs, "RUN_CUCUMBER_TESTS", "ON")
-get(envs, "RUN_NODE_TESTS",     defs.get("BUILD_NODE_PACKAGE"))
+get(envs, "RUN_NODE_TESTS",     cdefs.get("BUILD_NODE_PACKAGE"))
 get(envs, "RUN_BENCHMARKS",     "OFF")
 
 # fmt: on
+
+# In Cmake single-config generators like "Unix Makefiles" need different parameters as
+# multi-config generators like "Visual Studio" and "Xcode". Currently the only
+# multi-config generator is on Windows.
+
+if "windows" in matrix["runs-on"]:
+    build_dir = "build"
+    bparams["--build"] = build_dir
+    bparams["--config"] = envs.get("OSRM_CONFIG")
+else:
+    build_dir = os.path.join("build", envs.get("OSRM_CONFIG"))
+    cparams["-B"] = build_dir
+    cdefs["CMAKE_BUILD_TYPE"] = envs.get("OSRM_CONFIG")
+    bparams["--build"] = build_dir
 
 ### Decode compiler from job name ###
 
@@ -90,9 +109,9 @@ ver = "-" + version if version else ""
 if compiler == "clang":
     envs["CC"] = f"clang{ver}"
     envs["CXX"] = f"clang++{ver}"
-    if defs["ENABLE_TIDY"] == "ON":
+    if cdefs["ENABLE_TIDY"] == "ON":
         envs["CLANG_TIDY"] = f"clang-tidy{ver}"
-    if defs["ENABLE_COVERAGE"] == "ON":
+    if cdefs["ENABLE_COVERAGE"] == "ON":
         envs["LLVM"] = f"llvm{ver}"
 
 if compiler == "gcc":
@@ -108,25 +127,40 @@ get(envs, "CXXFLAGS")
 get(envs, "CLANG_TIDY")
 get(envs, "LLVM")
 
-defs["CMAKE_C_COMPILER"]     = envs.get("CC")
-defs["CMAKE_CXX_COMPILER"]   = envs.get("CXX")
-defs["CMAKE_CXX_CLANG_TIDY"] = envs.get("CLANG_TIDY")
-defs["CMAKE_C_FLAGS"]        = envs.get("CFLAGS")
-defs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
+cdefs["CMAKE_C_COMPILER"]     = envs.get("CC")
+cdefs["CMAKE_CXX_COMPILER"]   = envs.get("CXX")
+cdefs["CMAKE_CXX_CLANG_TIDY"] = envs.get("CLANG_TIDY")
+cdefs["CMAKE_C_FLAGS"]        = envs.get("CFLAGS")
+cdefs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
+
 # fmt: on
 
-# store definitions for cmake -D...
-definitions = []
-for key in sorted(defs):
-    if defs[key] is not None:
-        definitions.append(f"-D{key}={defs[key]}")
-definitions = " ".join(definitions)
+# params for cmake -B build -DFOO=ON -DBAR=OFF
+#                  ^^^^^^^^
+params = []
+for key in sorted(cparams):
+    if cparams[key] is not None:
+        params.append(f"{key} {cparams[key]}")
 
-print(f"MATRIX_CMAKE_DEFINITIONS={definitions}")
+# definitions for cmake -B build -DFOO=ON -DBAR=OFF
+#                                ^^^^^^^^^^^^^^^^^^
+for key in sorted(cdefs):
+    if cdefs[key] is not None:
+        params.append(f"-D{key}={cdefs[key]}")
 
-# values for storing into GITHUB_ENV
-envs.update(defs)
+print(f"CMAKE_CONFIGURE_PARAMETERS={" ".join(params)}")
+
+# params for cmake --build build --config Release
+#                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+params = []
+for key in sorted(bparams):
+    if bparams[key] is not None:
+        params.append(f"{key} {bparams[key]}")
+
+print(f"CMAKE_BUILD_PARAMETERS={" ".join(params)}")
+
+# values for piping into >> $GITHUB_ENV
+envs.update(cdefs)
 for key in sorted(envs):
     if envs[key] is not None:
-        # into .env file
         print(f"{key}={envs[key]}")

@@ -84,17 +84,20 @@ sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-d
 Build:
 
 ```bash
-cmake -B build/Release
-make -C build/Release -j
+cmake -B build
+make -C build -j
 ```
 
-The binaries are now in `build/Release`.
+The binaries are now in `build`.
 
 A list of arguments for cmake:
 
 | Argument                 | Default   | Description                                         |
 | ------------------------ | --------- | --------------------------------------------------- |
 | `-DCMAKE_BUILD_TYPE`     | `Release` | Specify the build type: `Release` or `Debug`        |
+| `-DCMAKE_C_COMPILER`     | standard  | Which C compiler to use: `clang-19` ...             |
+| `-DCMAKE_CXX_COMPILER`   | standard  | Which C++ compiler to use: `clang++-19` ...         |
+| `-DCMAKE_CXX_CLANG_TIDY` | none      | Which clang-tidy to use: `clang-tidy-19` ...        |
 | `-DBUILD_SHARED_LIBS`    | `OFF`     | Build with shared libs                              |
 | `-DBUILD_NODE_PACKAGE`   | `OFF`     | Build the Node package                              |
 | `-DBUILD_PACKAGE`        | `OFF`     | Build OSRM package                                  |
@@ -108,9 +111,6 @@ A list of arguments for cmake:
 | `-DENABLE_ASAN`          | `OFF`     | Use address sanitizer for Debug build               |
 | `-DENABLE_TSAN`          | `OFF`     | Use thread sanitizer for Debug build (experimental) |
 | `-DENABLE_UBSAN`         | `OFF`     | Use undefined behaviour sanitizer for Debug build   |
-| `-DCMAKE_C_COMPILER`     | standard  | Which C compiler to use: `clang-19` ...             |
-| `-DCMAKE_CXX_COMPILER`   | standard  | Which C++ compiler to use: `clang++-19` ...         |
-| `-DCMAKE_CXX_CLANG_TIDY` | none      | Which clang-tidy to use: `clang-tidy-19` ...        |
 
 Proceed with [testing](#tests).
 
@@ -143,10 +143,13 @@ conan build -pr home --build=missing -s build_type=Debug
 For apt-get builds:
 
 ```bash
-cmake -B build/Debug -DCMAKE_BUILD_TYPE=Debug
-make -C build/Debug -j
+cmake -B build -DCMAKE_BUILD_TYPE=Debug
+make -C build -j
 ```
-The binaries will be in `build/Debug`. You can have a `build/Release` at the same time.
+The binaries will be in `build`.
+
+You could also specify `build/Release` or `build/Debug` as build directories, to keep
+binaries in both directories at the same time.
 
 ### Build Node package
 
@@ -159,8 +162,8 @@ conan build -pr home --build=missing -o node_package=True
 For apt-get builds:
 
 ```bash
-cmake -B build/Release -DBUILD_NODE_PACKAGE=ON
-make -C build/Release -j
+cmake -B build -DBUILD_NODE_PACKAGE=ON
+make -C build -j
 scripts/ci/build_node_package.sh
 ```
 The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
