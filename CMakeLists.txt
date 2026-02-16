@@ -14,7 +14,8 @@ elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 elseif(CMAKE_BUILD_TYPE MATCHES MinRelSize)
   message(STATUS "Configuring OSRM in release mode with minimized size")
 else()
-  message(FATAL_ERROR "Unrecognized -DCMAKE_BUILD_TYPE. Use Release, Debug, RelWithDebInfo, or MinRelSize")
+  message(FATAL_ERROR "Unrecognized -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}.
+Please use Release, Debug, RelWithDebInfo, or MinRelSize.")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)

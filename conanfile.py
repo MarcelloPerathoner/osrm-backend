@@ -148,6 +148,7 @@ class OsrmConan(ConanFile):
         # and must be recalled with `cmake --preset conan-release`
         # they do *NOT* automatically end up as cache variables in Cmake
         # fmt: off
+        cache_bool("CMAKE_BUILD_TYPE",     self.settings.build_type)
         cache_bool("BUILD_SHARED_LIBS",    self.options.shared)
         cache_bool("BUILD_NODE_PACKAGE",   self.options.node_package)
         cache_bool("ENABLE_ASSERTIONS",    self.options.assertions)
