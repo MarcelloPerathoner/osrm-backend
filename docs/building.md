@@ -118,27 +118,32 @@ Proceed with [testing](#tests).
 
 ### Specify compiler
 
-To build with a specified compiler, eg. clang-21 when gcc is the default, for Conan builds:
+To build with a specified compiler, eg. clang-21 when gcc-15 is the default.
+
+For Conan builds:
 
 ```bash
 conan build -pr home --build=missing -o cc=clang-21 -o cxx=clang++-21
 ```
 
-For apt-get builds, before building say:
+For apt-get builds:
 
 ```bash
-export CC=clang-21
-export CXX=clang++-21
+cmake -B build -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21
+make -C build -j
 ```
-Then run the build as shown above.
 
 ### Debug build
 
-To do a debug build, for Conan builds:
+To do a debug build.
+
+For Conan builds:
 
 ```bash
 conan build -pr home --build=missing -s build_type=Debug
 ```
+The binaries will be in `build/Debug`.
+
 
 For apt-get builds:
 
@@ -148,8 +153,8 @@ make -C build -j
 ```
 The binaries will be in `build`.
 
-You could also specify `build/Release` or `build/Debug` as build directories, to keep
-binaries in both directories at the same time.
+You may also specify `build/Release` or `build/Debug` as build directories, so you can
+keep binaries in both directories at the same time.
 
 ### Build Node package
 

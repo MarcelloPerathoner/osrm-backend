@@ -1,27 +1,6 @@
 cmake_minimum_required(VERSION 3.31)
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
-if(NOT CMAKE_CONFIGURATION_TYPES)
-  # single-config build generators like Unix Makefiles need a build type specified
-  # multi-config generators take the cmake --config parameter later
-  if(NOT CMAKE_BUILD_TYPE)
-    set(CACHE{CMAKE_BUILD_TYPE} VALUE Release)
-  endif()
-
-  if(CMAKE_BUILD_TYPE MATCHES Release)
-    message(STATUS "Configuring OSRM in release mode")
-  elseif(CMAKE_BUILD_TYPE MATCHES Debug)
-    message(STATUS "Configuring OSRM in debug mode")
-  elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
-    message(STATUS "Configuring OSRM in release mode with debug flags")
-  elseif(CMAKE_BUILD_TYPE MATCHES MinRelSize)
-    message(STATUS "Configuring OSRM in release mode with minimized size")
-  else()
-    message(FATAL_ERROR "Unrecognized -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}.
-Please use `Release', `Debug', `RelWithDebInfo', or `MinRelSize'.")
-  endif()
-endif()
-
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -250,6 +229,27 @@ set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
   set_target_properties(SERVER PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
+
+if(NOT CMAKE_CONFIGURATION_TYPES)
+  # single-config build generators like Unix Makefiles need a build type specified
+  # multi-config generators take the cmake --config parameter later
+  if(NOT CMAKE_BUILD_TYPE)
+    set(CACHE{CMAKE_BUILD_TYPE} VALUE Release)
+  endif()
+
+  if(CMAKE_BUILD_TYPE MATCHES Release)
+    message(STATUS "Configuring OSRM in release mode")
+  elseif(CMAKE_BUILD_TYPE MATCHES Debug)
+    message(STATUS "Configuring OSRM in debug mode")
+  elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
+    message(STATUS "Configuring OSRM in release mode with debug flags")
+  elseif(CMAKE_BUILD_TYPE MATCHES MinRelSize)
+    message(STATUS "Configuring OSRM in release mode with minimized size")
+  else()
+    message(FATAL_ERROR "Unrecognized CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}.
+Please use `Release', `Debug', `RelWithDebInfo', or `MinRelSize'.")
+  endif()
 endif()
 
 # Additional logic for the different build types
