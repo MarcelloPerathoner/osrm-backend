@@ -43,7 +43,7 @@ def get(d, key, default=None):
 
 # fmt: off
 # encoded in job name
-defs["BUILD_TYPE"]         = in_job_name("debug",  "Debug", "Release")
+defs["CMAKE_BUILD_TYPE"]   = in_job_name("debug",  "Debug", "Release")
 defs["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
 defs["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
 defs["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
@@ -121,7 +121,7 @@ for key in sorted(defs):
     if defs[key] is not None:
         definitions.append(f"-D{key}={defs[key]}")
 definitions = " ".join(definitions)
-print(f'MATRIX_CMAKE_DEFINITIONS="{definitions}"')
+print(f"MATRIX_CMAKE_DEFINITIONS={definitions}")
 
 # values for storing into GITHUB_ENV
 envs.update(defs)
