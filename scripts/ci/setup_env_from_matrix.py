@@ -7,9 +7,9 @@ Usage example (on github CI):
 
 .. code: bash
 
-   echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
-   cat job.env >> $GITHUB_ENV  # store for later
-   source job.env              # use now
+   echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py >> $GITHUB_ENV
+   ...
+   # later step
    cmake -B build ${MATRIX_CMAKE_DEFINITIONS}
 
 """
@@ -121,6 +121,7 @@ for key in sorted(defs):
     if defs[key] is not None:
         definitions.append(f"-D{key}={defs[key]}")
 definitions = " ".join(definitions)
+
 print(f"MATRIX_CMAKE_DEFINITIONS={definitions}")
 
 # values for storing into GITHUB_ENV
