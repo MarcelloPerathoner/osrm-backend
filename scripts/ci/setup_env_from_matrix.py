@@ -107,13 +107,13 @@ get(envs, "CXX")
 get(envs, "CXXFLAGS")
 get(envs, "CLANG_TIDY")
 get(envs, "LLVM")
-# fmt: on
 
-defs["CMAKE_C_COMPILER"] = envs["CC"]
-defs["CMAKE_CXX_COMPILER"] = envs["CXX"]
-defs["CMAKE_CXX_CLANG_TIDY"] = envs["CLANG_TIDY"]
-defs["CMAKE_C_FLAGS"] = envs["CFLAGS"]
-defs["CMAKE_CXX_FLAGS"] = envs["CXXFLAGS"]
+defs["CMAKE_C_COMPILER"]     = envs.get("CC")
+defs["CMAKE_CXX_COMPILER"]   = envs.get("CXX")
+defs["CMAKE_CXX_CLANG_TIDY"] = envs.get("CLANG_TIDY")
+defs["CMAKE_C_FLAGS"]        = envs.get("CFLAGS")
+defs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
+# fmt: on
 
 # store definitions for cmake -D...
 definitions = []
