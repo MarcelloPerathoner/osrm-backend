@@ -49,14 +49,8 @@ runs:
         conan profile detect --force
         conan install -pr ${CONAN_OS_PROFILE} --build=missing -s build_type=${OSRM_CONFIG}
         cat build/conan.env >> $GITHUB_ENV
-        source build/conan.env
         conan remove "*" --lru=4w -c
         echo "::endgroup::"
-
-        # Set Conan build environment for future bash invocations. We cannot simply `cat
-        # conan-build-env.sh >> $GITHUB_ENV` because tecnically it is a shell file and
-        # may in future version contain commands.
-        echo "BASH_ENV=$CONAN_GENERATORS_DIR/conan-build-env.sh" >> $GITHUB_ENV
 
         # outputs
         echo "conan-cache-hit=${{ steps.conan-cache-restore.outputs.cache-hit }}" >> "$GITHUB_OUTPUT"
@@ -95,6 +89,11 @@ runs:
         echo "::group::Conan cache contents"
         conan list
         echo "::endgroup::"
+
+        # Set Conan build environment for future bash invocations. We cannot simply `cat
+        # conan-build-env.sh >> $GITHUB_ENV` because tecnically it is a shell file and
+        # may in future version contain commands.
+        echo "BASH_ENV=$CONAN_GENERATORS_DIR/conan-build-env.sh" >> $GITHUB_ENV
 
     - name: Save Conan download cache
       uses: actions/cache/save@v4

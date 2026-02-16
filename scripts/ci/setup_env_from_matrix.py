@@ -9,9 +9,9 @@ Usage example (on github CI):
 
    echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py >> $GITHUB_ENV
    ...
-   # later step
-   cmake -B build ${CMAKE_CONFIGURE_PARAMETERS}
-   cmake ${CMAKE_BUILD_PARAMETERS}
+   # later step (remove quotes!)
+   cmake ${CMAKE_CONFIGURE_PARAMETERS:1:-1}
+   cmake ${CMAKE_BUILD_PARAMETERS:1:-1}
 
 """
 
@@ -157,7 +157,9 @@ if cdefs["ENABLE_CONAN"] != "ON":
         if cdefs[key] is not None:
             params.append(f"-D{key}={cdefs[key]}")
 
-    print(f'CMAKE_CONFIGURE_PARAMETERS={" ".join(params)}')
+    p = " ".join(params)
+    # quotes to be able to source the file
+    print(f'CMAKE_CONFIGURE_PARAMETERS="{p}"')
 
     # params for cmake --build build --config Release
     #                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -166,4 +168,5 @@ if cdefs["ENABLE_CONAN"] != "ON":
         if bparams[key] is not None:
             params.append(f"{key} {bparams[key]}")
 
-    print(f'CMAKE_BUILD_PARAMETERS={" ".join(params)}')
+    p = " ".join(params)
+    print(f'CMAKE_BUILD_PARAMETERS="{p}"')

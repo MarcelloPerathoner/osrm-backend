@@ -327,22 +327,22 @@ jobs:
 
       - name: Cmake configure
         run: |
-          cmake ${CMAKE_CONFIGURE_PARAMETERS}
+          cmake ${CMAKE_CONFIGURE_PARAMETERS:1:-1}
           cat build/osrm-run.env >> $GITHUB_ENV
 
       - name: Build core
         run: |
-          cmake ${CMAKE_BUILD_PARAMETERS} -j $JOBS
+          cmake ${CMAKE_BUILD_PARAMETERS:1:-1} -j $JOBS
 
       - name: Build unit tests
         if: env.BUILD_UNIT_TESTS == 'ON'
         run: |
-          cmake ${CMAKE_BUILD_PARAMETERS} -j $JOBS --target tests
+          cmake ${CMAKE_BUILD_PARAMETERS:1:-1} -j $JOBS --target tests
 
       - name: Build benchmarks
         if: env.BUILD_BENCHMARKS == 'ON'
         run: |
-          cmake ${CMAKE_BUILD_PARAMETERS} -j $JOBS --target benchmarks
+          cmake ${CMAKE_BUILD_PARAMETERS:1:-1} -j $JOBS --target benchmarks
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'

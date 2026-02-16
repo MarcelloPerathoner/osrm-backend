@@ -205,8 +205,8 @@ class OsrmConan(ConanFile):
             # handy for tools that do not read CMakePresets
             fp.write(f"OSRM_BUILD_TYPE={self.settings.build_type}\n")
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
-            fp.write(f"CMAKE_CONFIGURE_PARAMETERS=--preset {preset}\n")
-            fp.write(f"CMAKE_BUILD_PARAMETERS=--build --preset {preset} \n")
+            fp.write(f'CMAKE_CONFIGURE_PARAMETERS="--preset {preset}"\n')
+            fp.write(f'CMAKE_BUILD_PARAMETERS="--build --preset {preset}"\n')
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because
