@@ -52,20 +52,21 @@ Note: you need to activate Conan only once for every shell you open.
 
 A list of arguments for Conan:
 
-| Argument          | Default   | Description                                             |
-| ----------------- | --------- | ------------------------------------------------------- |
-| `-s build_type`   | `Release` | Specify the build type: `Release` or `Debug`            |
-| `-o shared`       | `False`   | Build with shared libs: `True` or `False`.              |
-| `-o node_package` | `False`   | Build the Node package: `True` or `False`.              |
-| `-o cc`           |           | Use this binary as C Compiler                           |
-| `-o cxx`          |           | Use this binary as C++ Compiler                         |
-| `-o clang-tidy`   |           | Use this binary as linter                               |
-| `-o ccache`       | `ccache`  | Use this binary as compiler cache                       |
-| `-o assertions`   | `False`   | Enable Assertions in Release Code:`True` or `False`.    |
-| `-o coverage`     | `False`   | Enable Coverage:`True` or `False`.                      |
-| `-o lto`          | `True`    | Enable Link-Time-Optimization: `True` or `False`.       |
-| `-o asan`         | `False`   | Enable Address Sanitizer `True` or `False`.             |
-| `-o ubsan`        | `False`   | Enable Undefined Behaviour Sanitizer `True` or `False`. |
+| Argument          | Default   | Description                                  |
+| ----------------- | --------- | -------------------------------------------- |
+| `-s build_type`   | `Release` | Specify the build type: `Release` or `Debug` |
+| `-o asan`         | `False`   | Enable Address SANitizer                     |
+| `-o assertions`   | `False`   | Enable assertions in release build           |
+| `-o ccache`       | `True`    | Use ccache if available                      |
+| `-o coverage`     | `False`   | Enable coverage instrumentation              |
+| `-o lto`          | `True`    | Enable Link-Time-Optimization                |
+| `-o node_package` | `False`   | Build the Node package                       |
+| `-o sccache`      | `False`   | Use sccache if available                     |
+| `-o shared`       | `False`   | Build with shared libs                       |
+| `-o ubsan`        | `False`   | Enable Undefined Behaviour SANitizer         |
+| `-o cc`           | standard  | Use this binary as C Compiler                |
+| `-o cxx`          | standard  | Use this binary as C++ Compiler              |
+| `-o clang-tidy`   | none      | Use this binary as linter                    |
 
 Proceed with [testing](#tests).
 
@@ -165,7 +166,7 @@ The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
 ### Other tricks
 
 To learn how OSRM is built on the github CI you may consult the file
-`.github/workflows/osrm-backend.yml` and the files under `.github/actions`.
+`.github/workflows/osrm-backend.yml` and the files under `.github/actions/`.
 
 ## Tests {#tests}
 

@@ -152,13 +152,13 @@ jobs:
             continue-on-error: true
             BUILD_BENCHMARKS: ON
             RUN_BENCHMARKS: ON
-            USE_COMPILER_CACHE: sccache
+            ENABLE_SCCACHE: ON
 
           - name: conan-windows-2022-x64-release-node
             runs-on: windows-2022 # x64
             continue-on-error: true
             NODE_VERSION: 22
-            USE_COMPILER_CACHE: sccache
+            ENABLE_SCCACHE: ON
 
     name: ${{ matrix.name }}
     runs-on: ${{ matrix.runs-on }}
@@ -242,7 +242,7 @@ jobs:
       - name: Restore CCache
         id: cache-ccache-restore
         uses: actions/cache/restore@v4
-        if: env.USE_COMPILER_CACHE == 'ccache'
+        if: env.ENABLE_CCACHE == 'ON'
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ccache-${{ matrix.name }}-${{ github.sha }}
@@ -250,7 +250,7 @@ jobs:
             ccache-${{ matrix.name }}-
 
       - name: Install SCCache
-        if: env.USE_COMPILER_CACHE == 'sccache'
+        if: env.ENABLE_SCCACHE == 'ON'
         uses: mozilla-actions/sccache-action@v0.0.9
         with:
           disable_annotations: true
@@ -258,7 +258,7 @@ jobs:
       - name: Restore SCCache
         id: cache-sccache-restore
         uses: actions/cache/restore@v4
-        if: env.USE_COMPILER_CACHE == 'sccache'
+        if: env.ENABLE_SCCACHE == 'ON'
         with:
           path: ${{ env.SCCACHE_DIR }}
           key: sccache-${{ matrix.name }}-${{ github.sha }}
@@ -298,7 +298,7 @@ jobs:
         run: |
           echo "Boost_DIR=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
 
-          if [[ "${USE_COMPILER_CACHE}" == "ccache" ]]; then
+          if [[ "${ENABLE_CCACHE}" == "ON" ]]; then
             ccache --version
             ccache --max-size=256M
             ccache --zero-stats
@@ -379,14 +379,14 @@ jobs:
       # Save compiler cache
 
       - name: Save CCache
-        if: always() && env.USE_COMPILER_CACHE == 'ccache'
+        if: always() && env.ENABLE_CCACHE == 'ON'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.CCACHE_DIR }}
           key: ${{ steps.cache-ccache-restore.outputs.cache-primary-key }}
 
       - name: Show CCache statistics
-        if: always() && env.USE_COMPILER_CACHE == 'ccache'
+        if: always() && env.ENABLE_CCACHE == 'ON'
         run: |
           ccache -s
           echo "::group::ccache -p"
@@ -394,14 +394,14 @@ jobs:
           echo "::endgroup::"
 
       - name: Save SCCache
-        if: always() && env.USE_COMPILER_CACHE == 'sccache'
+        if: always() && env.ENABLE_SCCACHE == 'ON'
         uses: actions/cache/save@v4
         with:
           path: ${{ env.SCCACHE_DIR }}
           key: ${{ steps.cache-sccache-restore.outputs.cache-primary-key }}
 
       - name: Show SCCache statistics
-        if: always() && env.USE_COMPILER_CACHE == 'sccache'
+        if: always() && env.ENABLE_SCCACHE == 'ON'
         run: |
           sccache --show-stats
           echo "::group::show log file"

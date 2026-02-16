@@ -51,8 +51,9 @@ values["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UB
 
 # not encoded in job name
 get("ENABLE_ASSERTIONS")
+get("ENABLE_CCACHE")
 get("ENABLE_LTO")
-get("USE_COMPILER_CACHE")
+get("ENABLE_SCCACHE")
 
 get("NODE_VERSION",       24)
 get("BUILD_UNIT_TESTS",   "ON")

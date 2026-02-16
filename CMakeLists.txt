@@ -6,7 +6,7 @@ message(STATUS "CMake version: ${CMAKE_VERSION}")
 # non-debug build, which almost nobody wants.
 if(NOT CMAKE_BUILD_TYPE)
   message(STATUS "No build type specified, defaulting to Release")
-  set(CMAKE_BUILD_TYPE Release)
+  set(CACHE{CMAKE_BUILD_TYPE} VALUE Release)
 endif()
 
 if(CMAKE_BUILD_TYPE MATCHES Release)
@@ -41,6 +41,7 @@ endif()
 
 option(BUILD_PACKAGE        "Build the OSRM package")
 option(BUILD_NODE_PACKAGE   "Build the NodeJS package")
+option(BUILD_SHARED_LIBS    "Build with shared libs")
 option(ENABLE_ASSERTIONS    "Use assertions in release mode")
 option(ENABLE_CCACHE        "Speed up incremental rebuilds via ccache (default ON)" ON)
 option(ENABLE_COVERAGE      "Build with coverage instrumentalisation")
@@ -51,38 +52,39 @@ option(ENABLE_ASAN          "Use address sanitizer for Debug build")
 option(ENABLE_TSAN          "Use thread sanitizer for Debug build (experimental)")
 option(ENABLE_UBSAN         "Use undefined behaviour sanitizer for Debug build")
 
-# ENABLE_CCACHE kept for compatibilty
-if(NOT USE_COMPILER_CACHE AND ENABLE_CCACHE)
-  set(USE_COMPILER_CACHE "ccache")
-endif()
-
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(OSRM C CXX)
 
 # use ccache/sccache if available
-if(USE_COMPILER_CACHE)
-  find_program(ccache_bin ${USE_COMPILER_CACHE})
-  if(ccache_bin)
-    set(CMAKE_C_COMPILER_LAUNCHER ${ccache_bin})
-    set(CMAKE_CXX_COMPILER_LAUNCHER ${ccache_bin})
-    if(MSVC)
-      # By default Visual Studio generators will use /Zi which is not compatible
-      # with ccache, so tell Visual Studio to use /Z7 instead.
-      set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
-      cmake_policy(SET CMP0141 NEW) # re. MSVC debug information
-      # Note: The CMAKE_<LANG>_COMPILER_LAUNCHER trick does not work with the Visual Studio generator!
-      # This is a workaround:
-      file(COPY_FILE "${ccache_bin}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
-      set(CMAKE_VS_GLOBALS
-        "CLToolExe=cl.exe"
-        "CLToolPath=${CMAKE_BINARY_DIR}"
-        "UseMultiToolTask=true"
-        "TrackFileAccess=false"
-      )
-      # sccache (v0.13.0) thinks the /scanDependencies argument is "multiple input files"
-      set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
-    endif()
+if(ENABLE_CCACHE)
+  set(USE_CCACHE "ccache")
+endif()
+if(ENABLE_SCCACHE)
+  set(USE_CCACHE "sccache")
+endif()
+if(USE_CCACHE)
+  find_program(CCACHE_BINARY ${USE_CCACHE})
+endif()
+if(CCACHE_BINARY)
+  set(CMAKE_C_COMPILER_LAUNCHER ${CCACHE_BINARY})
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE_BINARY})
+  if(MSVC)
+    # By default Visual Studio generators will use /Zi which is not compatible
+    # with ccache, so tell Visual Studio to use /Z7 instead.
+    set(CMAKE_MSVC_DEBUG_INFORMATION_FORMAT "$<$<CONFIG:Debug,RelWithDebInfo>:Embedded>")
+    cmake_policy(SET CMP0141 NEW) # re. MSVC debug information
+    # Note: The CMAKE_<LANG>_COMPILER_LAUNCHER trick does not work with the Visual Studio generator!
+    # This is a workaround:
+    file(COPY_FILE "${CCACHE_BINARY}" "${CMAKE_BINARY_DIR}/cl.exe" ONLY_IF_DIFFERENT)
+    set(CMAKE_VS_GLOBALS
+      "CLToolExe=cl.exe"
+      "CLToolPath=${CMAKE_BINARY_DIR}"
+      "UseMultiToolTask=true"
+      "TrackFileAccess=false"
+    )
+    # sccache (v0.13.0) thinks the /scanDependencies argument is "multiple input files"
+    set(CMAKE_CXX_SCAN_FOR_MODULES OFF)
   endif()
 endif()
 
@@ -98,12 +100,12 @@ if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES 
 endif()
 
 if(CLANG_TIDY)
-  find_program(CLANG_TIDY_COMMAND NAMES "${CLANG_TIDY}")
-  if(NOT CLANG_TIDY_COMMAND)
+  find_program(CLANG_TIDY_BINARY NAMES "${CLANG_TIDY}")
+  if(NOT CLANG_TIDY_BINARY)
     message(FATAL_ERROR "CLANG_TIDY is set but ${CLANG_TIDY} is not found!")
   else()
-    message(STATUS "Found clang-tidy at ${CLANG_TIDY_COMMAND}")
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_COMMAND};--warnings-as-errors=*;--header-filter=.*")
+    message(STATUS "Found clang-tidy at ${CLANG_TIDY_BINARY}")
+    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_BINARY};--warnings-as-errors=*;--header-filter=.*")
   endif()
 endif()
 
@@ -743,7 +745,7 @@ set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
 push_env("PROJECT_SOURCE_DIR" "${PROJECT_SOURCE_DIR}")
-push_env("USE_COMPILER_CACHE" "${USE_COMPILER_CACHE}")
+push_env("USE_CCACHE" "${USE_CCACHE}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
 
 # debug print the list of include dirs
@@ -756,10 +758,12 @@ message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")
 message(STATUS "C compiler is:          ${CMAKE_C_COMPILER}")
 message(STATUS "CXX compiler is:        ${CMAKE_CXX_COMPILER}")
-if(CLANG_TIDY_COMMAND)
-message(STATUS "Tidy is:                ${CLANG_TIDY_COMMAND}")
+if(CLANG_TIDY_BINARY)
+message(STATUS "Clang Tidy is:          ${CLANG_TIDY_BINARY}")
 endif()
-message(STATUS "Compiler cache is:      ${ccache_bin}")
+if(CCACHE_BINARY)
+message(STATUS "Compiler cache is:      ${CCACHE_BINARY}")
+endif()
 message(STATUS "CMAKE_BUILD_TYPE is:    ${CMAKE_BUILD_TYPE}")
 message(STATUS "BUILD_SHARED_LIBS is:   ${BUILD_SHARED_LIBS}")
 message(STATUS "BUILD_NODE_PACKAGE is:  ${BUILD_NODE_PACKAGE}")

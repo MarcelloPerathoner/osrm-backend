@@ -49,18 +49,19 @@ class OsrmConan(ConanFile):
     options = {
         "asan":          [None, False, True],
         "assertions":    [None, False, True],
+        "ccache":        [None, False, True],
         "coverage":      [None, False, True],
         "debug_logging": [None, False, True],
         "fuzzing":       [None, False, True],
         "lto":           [None, False, True],
         "node_package":  [None, False, True],
+        "sccache":       [None, False, True],
         "shared":        [None, False, True],
         "tsan":          [None, False, True],
         "ubsan":         [None, False, True],
         "cc":            [None, "ANY"],
         "clang_tidy":    [None, "ANY"],
         "cxx":           [None, "ANY"],
-        "ccache":        [None, "ccache", "sccache"],
     }
     # fmt: on
 
@@ -152,13 +153,14 @@ class OsrmConan(ConanFile):
         cache_bool("ENABLE_ASSERTIONS",    self.options.assertions)
         cache_bool("ENABLE_COVERAGE",      self.options.coverage)
         cache_bool("ENABLE_LTO",           self.options.lto)
+        cache_bool("ENABLE_CCACHE",        self.options.ccache)
+        cache_bool("ENABLE_SCCACHE",       self.options.sccache)
         cache_bool("ENABLE_ASAN",          self.options.asan)
         cache_bool("ENABLE_TSAN",          self.options.tsan)
         cache_bool("ENABLE_UBSAN",         self.options.ubsan)
         cache_bool("ENABLE_FUZZING",       self.options.fuzzing)
         cache_bool("ENABLE_DEBUG_LOGGING", self.options.debug_logging)
 
-        cache("USE_COMPILER_CACHE", "USE_COMPILER_CACHE", self.options.ccache)
         cache("CC",                 "CMAKE_C_COMPILER",   self.options.cc)
         cache("CXX",                "CMAKE_CXX_COMPILER", self.options.cxx)
         cache("CLANG_TIDY",         "CLANG_TIDY",         self.options.clang_tidy)
