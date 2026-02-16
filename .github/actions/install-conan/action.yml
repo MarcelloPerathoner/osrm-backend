@@ -9,7 +9,7 @@ description: |
 
   Input environment variables:
 
-  BUILD_TYPE           The cmake build type: Release or Debug.
+  CMAKE_BUILD_TYPE     The cmake build type: Release or Debug.
   BUILD_SHARED_LIBS    Whether to build shared libs or static ones.
   CONAN_HOME           The Conan home directory to use.
   CONAN_CACHE          The Conan cache directory to use.
@@ -28,16 +28,16 @@ runs:
       id: conan-download-cache-restore
       with:
         path: ${{ env.CONAN_DOWNLOAD_CACHE }}
-        key: conan-download-${{ runner.os }}-${{ runner.arch }}-${{ env.BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
-        restore-keys: conan-download-${{ runner.os }}-${{ runner.arch }}-${{ env.BUILD_TYPE }}-
+        key: conan-download-${{ runner.os }}-${{ runner.arch }}-${{ env.CMAKE_BUILD_TYPE }}-${{ hashFiles('conanfile.py') }}
+        restore-keys: conan-download-${{ runner.os }}-${{ runner.arch }}-${{ env.CMAKE_BUILD_TYPE }}-
 
     - name: Restore Conan cache
       uses: actions/cache/restore@v4
       id: conan-cache-restore
       with:
         path: ${{ env.CONAN_CACHE }}
-        key: conan-${{ runner.os }}-${{ runner.arch }}-${{ env.BUILD_TYPE }}-${{ env.BUILD_SHARED_LIBS}}-${{ hashFiles('conanfile.py', '.conan2/profiles/*', '.conan2/*.conf') }}
-        restore-keys: conan-${{ runner.os }}-${{ runner.arch }}-${{ env.BUILD_TYPE }}-${{ env.BUILD_SHARED_LIBS}}-
+        key: conan-${{ runner.os }}-${{ runner.arch }}-${{ env.CMAKE_BUILD_TYPE }}-${{ env.BUILD_SHARED_LIBS}}-${{ hashFiles('conanfile.py', '.conan2/profiles/*', '.conan2/*.conf') }}
+        restore-keys: conan-${{ runner.os }}-${{ runner.arch }}-${{ env.CMAKE_BUILD_TYPE }}-${{ env.BUILD_SHARED_LIBS}}-
 
     - name: Setup Conan environment
       shell: bash
@@ -47,7 +47,7 @@ runs:
 
         echo "::group::conan install"
         conan profile detect --force
-        conan install -pr ${CONAN_OS_PROFILE} --build=missing -s build_type=${BUILD_TYPE}
+        conan install -pr ${CONAN_OS_PROFILE} --build=missing -s build_type=${CMAKE_BUILD_TYPE}
         cat build/conan.env >> $GITHUB_ENV
         source build/conan.env
         conan remove "*" --lru=4w -c

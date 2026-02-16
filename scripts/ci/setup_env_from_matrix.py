@@ -1,6 +1,6 @@
-"""Transforms the github matrix into a set of environment variables.
+"""Transforms the github matrix into a set of environment variables and cmake definitions.
 
-stdin: the github matrix as json
+stdin: the github matrix converted to json.
 stdout: KEY=VALUE pairs one per line
 
 Usage example (on github CI):
@@ -8,8 +8,9 @@ Usage example (on github CI):
 .. code: bash
 
    echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
-   source job.env
-   cat job.env >> $GITHUB_ENV
+   cat job.env >> $GITHUB_ENV  # store for later
+   source job.env              # use now
+   cmake -B build ${MATRIX_CMAKE_DEFINITIONS}
 
 """
 
@@ -18,7 +19,8 @@ import re
 import sys
 
 matrix = json.load(sys.stdin)
-values = {}
+defs = {}  # these go into cmake -D... and into the .env file
+envs = {}  # these go into the .env file only
 job_name = matrix.get("name")
 
 
@@ -28,40 +30,41 @@ def in_job_name(needle, value, default=None):
     return value if needle in haystack else default
 
 
-def get(key, default=None):
+def get(d, key, default=None):
     """Get a value from the job matrix with default."""
     if key in matrix:
-        values[key] = matrix[key]
+        d[key] = matrix[key]
     elif default is not None:
         # careful: do not overwrite existing key with None
-        values[key] = default
+        d[key] = default
 
+
+# { "name": "conan-clang-42-debug-shared-node-tidy-asan-ubsan-cov", "RUN_NODE_TESTS": "OFF" }
 
 # fmt: off
-
 # encoded in job name
-values["BUILD_TYPE"]         = in_job_name("debug",  "Debug", "Release")
-values["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
-values["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
-values["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
-values["ENABLE_TIDY"]        = in_job_name("tidy",   "ON", matrix.get("ENABLE_TIDY"))
-values["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON", matrix.get("ENABLE_COVERAGE"))
-values["ENABLE_ASAN"]        = in_job_name("asan",   "ON", matrix.get("ENABLE_ASAN"))
-values["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UBSAN"))
+defs["BUILD_TYPE"]         = in_job_name("debug",  "Debug", "Release")
+defs["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
+defs["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
+defs["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
+defs["ENABLE_TIDY"]        = in_job_name("tidy",   "ON", matrix.get("ENABLE_TIDY"))
+defs["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON", matrix.get("ENABLE_COVERAGE"))
+defs["ENABLE_ASAN"]        = in_job_name("asan",   "ON", matrix.get("ENABLE_ASAN"))
+defs["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UBSAN"))
 
 # not encoded in job name
-get("ENABLE_ASSERTIONS")
-get("ENABLE_CCACHE")
-get("ENABLE_LTO")
-get("ENABLE_SCCACHE")
+get(defs, "ENABLE_ASSERTIONS")
+get(defs, "ENABLE_CCACHE")
+get(defs, "ENABLE_LTO")
+get(defs, "ENABLE_SCCACHE")
 
-get("NODE_VERSION",       24)
-get("BUILD_UNIT_TESTS",   "ON")
-get("RUN_UNIT_TESTS",     "ON")
-get("RUN_CUCUMBER_TESTS", "ON")
-get("RUN_NODE_TESTS",     values.get("BUILD_NODE_PACKAGE"))
-get("BUILD_BENCHMARKS",   "OFF")
-get("RUN_BENCHMARKS",     "OFF")
+get(envs, "NODE_VERSION",       24)
+get(envs, "BUILD_UNIT_TESTS",   "ON")
+get(envs, "BUILD_BENCHMARKS",   "OFF")
+get(envs, "RUN_UNIT_TESTS",     "ON")
+get(envs, "RUN_CUCUMBER_TESTS", "ON")
+get(envs, "RUN_NODE_TESTS",     defs.get("BUILD_NODE_PACKAGE"))
+get(envs, "RUN_BENCHMARKS",     "OFF")
 
 # fmt: on
 
@@ -80,46 +83,49 @@ if m:
     compiler = m.group(1)
     version = m.group(2)
 
-values["COMPILER_ID"] = compiler
-values["COMPILER_VERSION"] = version
+envs["COMPILER_ID"] = compiler
+envs["COMPILER_VERSION"] = version
 
 ver = "-" + version if version else ""
 if compiler == "clang":
-    values["CC"] = f"clang{ver}"
-    values["CXX"] = f"clang++{ver}"
-    if values["ENABLE_TIDY"] == "ON":
-        values["CLANG_TIDY"] = f"clang-tidy{ver}"
-    if values["ENABLE_COVERAGE"] == "ON":
-        values["LLVM"] = f"llvm{ver}"
+    envs["CC"] = f"clang{ver}"
+    envs["CXX"] = f"clang++{ver}"
+    if defs["ENABLE_TIDY"] == "ON":
+        envs["CLANG_TIDY"] = f"clang-tidy{ver}"
+    if defs["ENABLE_COVERAGE"] == "ON":
+        envs["LLVM"] = f"llvm{ver}"
 
 if compiler == "gcc":
-    values["CC"] = f"gcc{ver}"
-    values["CXX"] = f"g++{ver}"
+    envs["CC"] = f"gcc{ver}"
+    envs["CXX"] = f"g++{ver}"
 
 # fmt: off
-# user may override using CC and CXX etc.
-get("CC")
-get("CFLAGS")
-get("CXX")
-get("CXXFLAGS")
-get("CLANG_TIDY")
-get("LLVM")
-
+# let the user override our choice using explicit CC, CXX etc.
+get(envs, "CC")
+get(envs, "CFLAGS")
+get(envs, "CXX")
+get(envs, "CXXFLAGS")
+get(envs, "CLANG_TIDY")
+get(envs, "LLVM")
 # fmt: on
 
-# store values for following job steps
-defines = []
-for key in sorted(values):
-    if values[key] is not None:
-        print(f"{key}={values[key]}")
-        if (
-            key.startswith("ENABLE_")
-            or key.startswith("BUILD_")
-            or key in ["USE_CCACHE", "CLANG_TIDY"]
-        ):
-            defines.append(f"-D{key}={values[key]}")
+defs["CMAKE_C_COMPILER"] = envs["CC"]
+defs["CMAKE_CXX_COMPILER"] = envs["CXX"]
+defs["CMAKE_CXX_CLANG_TIDY"] = envs["CLANG_TIDY"]
+defs["CMAKE_C_FLAGS"] = envs["CFLAGS"]
+defs["CMAKE_CXX_FLAGS"] = envs["CXXFLAGS"]
 
-defines = " ".join(defines)
-print(f'CMAKE_DEFINITIONS="{defines}"')
+# store definitions for cmake -D...
+definitions = []
+for key in sorted(defs):
+    if defs[key] is not None:
+        definitions.append(f"-D{key}={defs[key]}")
+definitions = " ".join(definitions)
+print(f'MATRIX_CMAKE_DEFINITIONS="{definitions}"')
 
-# { "name": "conan-clang-42-debug-shared-node-tidy-asan-ubsan-cov", "RUN_NODE_TESTS": "OFF" }
+# values for storing into GITHUB_ENV
+envs.update(defs)
+for key in sorted(envs):
+    if envs[key] is not None:
+        # into .env file
+        print(f"{key}={envs[key]}")

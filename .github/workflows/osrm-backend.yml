@@ -329,24 +329,24 @@ jobs:
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
             cmake -B "${CONAN_BUILD_DIR}" --preset ${CONAN_CMAKE_PRESET}
           else
-            cmake -B build -DCMAKE_BUILD_TYPE=${BUILD_TYPE} ${CMAKE_DEFINITIONS}
+            cmake -B build ${MATRIX_CMAKE_DEFINITIONS}
           fi
           cat build/osrm-run.env >> $GITHUB_ENV
 
       - name: Build core
         run: |
-          cmake --build "${OSRM_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS
+          cmake --build "${OSRM_BINARY_DIR}" --config ${CMAKE_BUILD_TYPE} -j $JOBS
           # `cmake --build ${OSRM_BUILD_DIR} ...` will not work on Windows
 
       - name: Build unit tests
         if: env.BUILD_UNIT_TESTS == 'ON'
         run: |
-          cmake --build "${OSRM_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS --target tests
+          cmake --build "${OSRM_BINARY_DIR}" --config ${CMAKE_BUILD_TYPE} -j $JOBS --target tests
 
       - name: Build benchmarks
         if: env.BUILD_BENCHMARKS == 'ON'
         run: |
-          cmake --build "${OSRM_BINARY_DIR}" --config ${BUILD_TYPE} -j $JOBS --target benchmarks
+          cmake --build "${OSRM_BINARY_DIR}" --config ${CMAKE_BUILD_TYPE} -j $JOBS --target benchmarks
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
@@ -445,7 +445,7 @@ jobs:
           ctest --help
           echo "::endgroup::"
 
-          ctest --test-dir "${OSRM_UNIT_TESTS_BINARY_DIR}" --build-config ${BUILD_TYPE} \
+          ctest --test-dir "${OSRM_UNIT_TESTS_BINARY_DIR}" --build-config ${CMAKE_BUILD_TYPE} \
             -j $JOBS --no-tests=error -V -O ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests

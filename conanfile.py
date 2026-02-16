@@ -161,9 +161,9 @@ class OsrmConan(ConanFile):
         cache_bool("ENABLE_FUZZING",       self.options.fuzzing)
         cache_bool("ENABLE_DEBUG_LOGGING", self.options.debug_logging)
 
-        cache("CC",                 "CMAKE_C_COMPILER",   self.options.cc)
-        cache("CXX",                "CMAKE_CXX_COMPILER", self.options.cxx)
-        cache("CLANG_TIDY",         "CLANG_TIDY",         self.options.clang_tidy)
+        cache("CC",         "CMAKE_C_COMPILER",     self.options.cc)
+        cache("CXX",        "CMAKE_CXX_COMPILER",   self.options.cxx)
+        cache("CLANG_TIDY", "CMAKE_CXX_CLANG_TIDY", self.options.clang_tidy)
         # fmt: on
 
         # OSRM uses C++20
@@ -202,7 +202,8 @@ class OsrmConan(ConanFile):
             fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
             fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
-            fp.write(f"BUILD_TYPE={self.settings.build_type}\n")
+            # handy for tools that do not read CMakePresets
+            fp.write(f"CMAKE_BUILD_TYPE={self.settings.build_type}\n")
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because

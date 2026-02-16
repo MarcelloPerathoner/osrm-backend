@@ -9,7 +9,7 @@ which node
 node -v
 
 NPM_FLAGS="--directory build/nodejs"
-if [[ "${CMAKE_BUILD_TYPE:-}" == "Debug" ]]; then
+if [[ "$CMAKE_BUILD_TYPE" == "Debug" ]]; then
     NPM_FLAGS="$NPM_FLAGS --debug"
 fi
 

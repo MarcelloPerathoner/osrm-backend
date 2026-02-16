@@ -27,7 +27,7 @@ runs:
         $MAKE -C "$TEST_DIR/data" monaco berlin
         echo "::endgroup::"
 
-        # ctest --test-dir ${OSRM_BENCHMARKS_BINARY_DIR} --build-config ${BUILD_TYPE} \
+        # ctest --test-dir ${OSRM_BENCHMARKS_BINARY_DIR} --build-config ${CMAKE_BUILD_TYPE} \
         #   -j $JOBS -V -O ${LOG_DIR}/benchmarks.log --no-tests=error
 
         "${CI_DIR}/run_e2e_benchmarks.sh"

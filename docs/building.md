@@ -95,10 +95,9 @@ A list of arguments for cmake:
 | Argument                 | Default   | Description                                         |
 | ------------------------ | --------- | --------------------------------------------------- |
 | `-DCMAKE_BUILD_TYPE`     | `Release` | Specify the build type: `Release` or `Debug`        |
-| `-DBUILD_SHARED_LIBS`    | `OFF`     | Build with shared libs: `ON` or `OFF`.              |
-| `-DBUILD_NODE_PACKAGE`   | `OFF`     | Build the Node package: `ON` or `OFF`.              |
-| `-DBUILD_PACKAGE`        | `OFF`     | Build OSRM package.                                 |
-| `-DCLANG_TIDY`           | `OFF`     | Which clang-tidy to use: `clang-tidy-19` ...        |
+| `-DBUILD_SHARED_LIBS`    | `OFF`     | Build with shared libs                              |
+| `-DBUILD_NODE_PACKAGE`   | `OFF`     | Build the Node package                              |
+| `-DBUILD_PACKAGE`        | `OFF`     | Build OSRM package                                  |
 | `-DENABLE_ASSERTIONS`    | `OFF`     | Use assertions in release mode                      |
 | `-DENABLE_CCACHE`        | `ON`      | Speed up incremental rebuilds via ccache            |
 | `-DENABLE_SCCACHE`       | `OFF`     | Speed up incremental rebuilds via sccache           |
@@ -109,6 +108,9 @@ A list of arguments for cmake:
 | `-DENABLE_ASAN`          | `OFF`     | Use address sanitizer for Debug build               |
 | `-DENABLE_TSAN`          | `OFF`     | Use thread sanitizer for Debug build (experimental) |
 | `-DENABLE_UBSAN`         | `OFF`     | Use undefined behaviour sanitizer for Debug build   |
+| `-DCMAKE_C_COMPILER`     | standard  | Which C compiler to use: `clang-19` ...             |
+| `-DCMAKE_CXX_COMPILER`   | standard  | Which C++ compiler to use: `clang++-19` ...         |
+| `-DCMAKE_CXX_CLANG_TIDY` | none      | Which clang-tidy to use: `clang-tidy-19` ...        |
 
 Proceed with [testing](#tests).
 

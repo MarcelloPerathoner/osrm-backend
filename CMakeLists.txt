@@ -1,11 +1,7 @@
 cmake_minimum_required(VERSION 3.31)
 message(STATUS "CMake version: ${CMAKE_VERSION}")
 
-# Explicitly set the build type to Release if no other type is specified
-# on the command line.  Without this, cmake defaults to an unoptimized,
-# non-debug build, which almost nobody wants.
 if(NOT CMAKE_BUILD_TYPE)
-  message(STATUS "No build type specified, defaulting to Release")
   set(CACHE{CMAKE_BUILD_TYPE} VALUE Release)
 endif()
 
@@ -18,7 +14,7 @@ elseif(CMAKE_BUILD_TYPE MATCHES RelWithDebInfo)
 elseif(CMAKE_BUILD_TYPE MATCHES MinRelSize)
   message(STATUS "Configuring OSRM in release mode with minimized size")
 else()
-  message(STATUS "Unrecognized build type - will use cmake defaults")
+  message(FATAL_ERROR "Unrecognized -DCMAKE_BUILD_TYPE. Use Release, Debug, RelWithDebInfo, or MinRelSize")
 endif()
 
 set(CMAKE_CXX_STANDARD 20)
@@ -88,6 +84,10 @@ if(CCACHE_BINARY)
   endif()
 endif()
 
+if(CLANG_CXX_CLANG_TIDY)
+  find_program(CLANG_CXX_CLANG_TIDY ${CLANG_CXX_CLANG_TIDY})
+endif()
+
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
 if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES MinRelSize OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
   include(CheckIPOSupported)
@@ -96,16 +96,6 @@ if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES 
     set(CMAKE_INTERPROCEDURAL_OPTIMIZATION TRUE)
   else()
     message(FATAL_ERROR "IPO / LTO not supported: <${error}>")
-  endif()
-endif()
-
-if(CLANG_TIDY)
-  find_program(CLANG_TIDY_BINARY NAMES "${CLANG_TIDY}")
-  if(NOT CLANG_TIDY_BINARY)
-    message(FATAL_ERROR "CLANG_TIDY is set but ${CLANG_TIDY} is not found!")
-  else()
-    message(STATUS "Found clang-tidy at ${CLANG_TIDY_BINARY}")
-    set(CMAKE_CXX_CLANG_TIDY "${CLANG_TIDY_BINARY};--warnings-as-errors=*;--header-filter=.*")
   endif()
 endif()
 
@@ -758,8 +748,8 @@ message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")
 message(STATUS "C compiler is:          ${CMAKE_C_COMPILER}")
 message(STATUS "CXX compiler is:        ${CMAKE_CXX_COMPILER}")
-if(CLANG_TIDY_BINARY)
-message(STATUS "Clang Tidy is:          ${CLANG_TIDY_BINARY}")
+if(CMAKE_CXX_CLANG_TIDY)
+message(STATUS "Clang Tidy is:          ${CMAKE_CXX_CLANG_TIDY}")
 endif()
 if(CCACHE_BINARY)
 message(STATUS "Compiler cache is:      ${CCACHE_BINARY}")
