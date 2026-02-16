@@ -169,7 +169,7 @@ endfunction()
 function(mk_build_dir key value)
   if(CMAKE_CONFIGURATION_TYPES)
     # multi-config generators (eg. Visual Studio) append /Release or /Debug
-    cmake_path(APPEND dir "${value}" "${CMAKE_BUILD_TYPE}")
+    cmake_path(APPEND dir "${value}" "$ENV{OSRM_CONFIG}")
   else()
     # single-config generator (eg. Unix Makefiles)
     cmake_path(SET dir "${value}")

@@ -195,18 +195,20 @@ class OsrmConan(ConanFile):
         with open(os.path.join(self.recipe_folder, "build/conan.env"), "w") as fp:
             build_dir = _bash_path(self.folders.build_folder)
             generators_dir = _bash_path(self.folders.generators_folder)
-            preset = f"conan-{self.settings.build_type}".lower()
+            config_preset = f"conan-{self.settings.build_type}".lower()
+            build_preset = config_preset
             if self.settings.os == "Windows":
-                preset = "conan-default"
+                config_preset = "conan-default"
 
             fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
-            fp.write(f"CONAN_CMAKE_PRESET={preset}\n")
+            fp.write(f"CONAN_CONFIG_CMAKE_PRESET={config_preset}\n")
+            fp.write(f"CONAN_BUILD_CMAKE_PRESET={build_preset}\n")
+            fp.write(f'CMAKE_CONFIGURE_PARAMETERS="--preset {config_preset}"\n')
+            fp.write(f'CMAKE_BUILD_PARAMETERS="--build --preset {build_preset}"\n')
+
             # handy for tools that do not read CMakePresets
-            fp.write(f"OSRM_BUILD_TYPE={self.settings.build_type}\n")
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
-            fp.write(f'CMAKE_CONFIGURE_PARAMETERS="--preset {preset}"\n')
-            fp.write(f'CMAKE_BUILD_PARAMETERS="--build --preset {preset}"\n')
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
             # but we need it during the cmake configure stage because
