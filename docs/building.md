@@ -281,8 +281,9 @@ It contains:
 
 | Environment Variable          | Description                                           |
 | ----------------------------- | ----------------------------------------------------- |
-| `CMAKE_CONFIGURE_PRESET_NAME` | The preset CMake should use for configure.            |
-| `CMAKE_BUILD_PRESET_NAME`     | The preset CMake should use for build.                |
+| `CMAKE_CONFIGURE_PRESET_NAME` | The preset `cmake` should use for configure.          |
+| `CMAKE_BUILD_PRESET_NAME`     | The preset `cmake --build` should use.                |
+| `CMAKE_TEST_PRESET_NAME`      | The preset `ctest` should use.                        |
 | `CONAN_GENERATORS_DIR`        | Where `CMakePresets.json` is emitted. (for debugging) |
 | `OSRM_CONFIG`                 | The chosen config: `Release` or `Debug`               |
 

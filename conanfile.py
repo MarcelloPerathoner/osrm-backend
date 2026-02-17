@@ -219,11 +219,13 @@ class OsrmConan(ConanFile):
             generators_dir = _bash_path(self.folders.generators_folder)
             configure_preset = f"conan-{self.settings.build_type}".lower()
             build_preset = configure_preset
+            test_preset = configure_preset
             if self.settings.os == "Windows":
                 configure_preset = "conan-default"
 
-            fp.write(f"CMAKE_BUILD_PRESET_NAME={build_preset}\n")
             fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={configure_preset}\n")
+            fp.write(f"CMAKE_BUILD_PRESET_NAME={build_preset}\n")
+            fp.write(f"CMAKE_TEST_PRESET_NAME={test_preset}\n")
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
 
             # for tools that do not understand CMakePresets.json like eg. cmake --install

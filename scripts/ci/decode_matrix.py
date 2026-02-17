@@ -20,6 +20,7 @@ Usage example for the presets:
 
    cmake --preset $CMAKE_CONFIG_PRESET_NAME
    cmake --build --preset $CMAKE_BUILD_PRESET_NAME
+   ctest --preset $CMAKE_TEST_PRESET_NAME
 
 """
 
@@ -122,9 +123,11 @@ config = envs["OSRM_CONFIG"]
 preset_name = config.lower()
 
 cdefs["CMAKE_BUILD_TYPE"] = config
-# Conan gives two different names (on multi-config), but we do not
+
+# Conan sets different names on multi-config builds, but we do not
 envs["CMAKE_CONFIGURE_PRESET_NAME"] = preset_name
 envs["CMAKE_BUILD_PRESET_NAME"] = preset_name
+envs["CMAKE_TEST_PRESET_NAME"] = preset_name
 
 # our "well-known" build root
 binary_dir = os.path.join("${sourceDir}", "build")

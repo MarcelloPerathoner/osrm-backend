@@ -444,7 +444,7 @@ jobs:
           echo "::endgroup::"
 
           # ctest --test-dir "${OSRM_UNIT_TESTS_BINARY_DIR}" --build-config ${OSRM_CONFIG} -j $JOBS \
-          ctest --preset conan-release -L test --no-tests=error -V -O ${LOG_DIR}/unit_test.log
+          ctest --preset ${CMAKE_TEST_PRESET_NAME} -L test --no-tests=error -V -O ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
         if: env.RUN_CUCUMBER_TESTS == 'ON'
