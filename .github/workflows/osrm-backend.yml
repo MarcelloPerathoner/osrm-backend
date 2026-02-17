@@ -176,7 +176,7 @@ jobs:
 
           echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py \
                --cmake-presets-template scripts/ci/CMakePresets.template.json \
-               --cmake-presets CMakePresets.json > job.env
+               --cmake-presets CMakePresets.json - > job.env
 
           echo "::group::generated github environment"
           cat job.env
