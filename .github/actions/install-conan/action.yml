@@ -73,11 +73,11 @@ runs:
         echo "::endgroup::"
 
         echo "::group::cat conan-build-env.sh"
-        cat "$CONAN_GENERATORS_DIR/conan-build-env.sh"
+        cat "build/conan-build-env.sh"
         echo "::endgroup::"
 
         echo "::group::cat conan-run-env.sh"
-        cat "$CONAN_GENERATORS_DIR/conan-run-env.sh"
+        cat "build/conan-run-env.sh"
         echo "::endgroup::"
 
         echo "::group::Conan cache contents"
@@ -87,7 +87,7 @@ runs:
         # Set Conan build environment for future bash invocations. We cannot simply `cat
         # conan-build-env.sh >> $GITHUB_ENV` because tecnically it is a shell file and
         # may in future version contain commands.
-        echo "BASH_ENV=$CONAN_GENERATORS_DIR/conan-build-env.sh" >> $GITHUB_ENV
+        echo "BASH_ENV=build/conan-build-env.sh" >> $GITHUB_ENV
 
     - name: Save Conan download cache
       uses: actions/cache/save@v4

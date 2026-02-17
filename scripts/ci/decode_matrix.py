@@ -10,7 +10,7 @@ Usage example (use this on github CI):
 
 .. code: bash
 
-   echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py \
+   echo '${{ toJSON(matrix) }}' | python scripts/ci/decode_matrix.py \
         --cmake-presets-template scripts/ci/CMakePresets.template.json \
         --cmake-presets CMakePresets.json - >> $GITHUB_ENV
 
@@ -40,6 +40,13 @@ parser.add_argument(
     type=argparse.FileType("r"),
     metavar="FILENAME",
     help="the github matrix as json",
+)
+parser.add_argument(
+    "-o",
+    "--output",
+    type=argparse.FileType("w"),
+    metavar="FILENAME",
+    help="the output .env file",
 )
 parser.add_argument(
     "--cmake-presets-template",
@@ -112,12 +119,12 @@ get(envs, "RUN_BENCHMARKS",     "OFF")
 # multi-config generator we use is "Visual Studio".
 
 config = envs["OSRM_CONFIG"]
-config_name = config.lower()
+preset_name = config.lower()
 
 cdefs["CMAKE_BUILD_TYPE"] = config
 # Conan gives two different names (on multi-config), but we do not
-envs["CMAKE_CONFIGURE_PRESET_NAME"] = config_name
-envs["CMAKE_BUILD_PRESET_NAME"] = config_name
+envs["CMAKE_CONFIGURE_PRESET_NAME"] = preset_name
+envs["CMAKE_BUILD_PRESET_NAME"] = preset_name
 
 # our "well-known" build root
 binary_dir = os.path.join("${sourceDir}", "build")
@@ -175,17 +182,17 @@ cdefs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
 
 # fmt: on
 
-# values for piping into >> $GITHUB_ENV
+# write KEY=VALUE pairs
 envs.update(cdefs)
 for key in sorted(envs):
     if envs[key] is not None:
-        print(f"{key}={envs[key]}")
+        print(f"{key}={envs[key]}", file=args.output)
 
 # Write CMakePresets.json
 
 if args.cmake_presets_template and args.cmake_presets:
     s = string.Template(args.cmake_presets_template.read())
-    s = s.substitute(name=config_name, binary_dir=binary_dir, jobs=jobs)
+    s = s.substitute(name=preset_name, config=config, binary_dir=binary_dir, jobs=jobs)
     js = json.loads(s)
 
     cache_vars = {"CMAKE_POLICY_DEFAULT_CMP0091": "NEW"}

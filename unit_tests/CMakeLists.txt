@@ -78,6 +78,8 @@ endforeach()
 
 list(APPEND TESTS "library-tests")
 
+add_definitions (-DBOOST_TEST_DYN_LINK)
+
 add_executable(contractor-tests	       EXCLUDE_FROM_ALL ${ContractorTestsSources})
 add_executable(customizer-tests	       EXCLUDE_FROM_ALL ${CustomizerTestsSources})
 add_executable(engine-tests	           EXCLUDE_FROM_ALL	${EngineTestsSources})
@@ -136,14 +138,12 @@ target_link_libraries(util-tests                            osrm_utils ${BOOST_U
 
 ### run the tests ###
 
-enable_testing()
-
 add_test(NAME test-fixture COMMAND make -C "${OSRM_TEST_DATA_DIR}" monaco)
 set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 
 foreach(t ${TESTS})
   add_test(NAME "${t}" COMMAND "${t}")
-  set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup)
+  set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup LABELS test)
 endforeach()
 
 add_custom_target(tests DEPENDS ${TESTS})

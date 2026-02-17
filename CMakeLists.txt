@@ -696,6 +696,7 @@ add_custom_target(uninstall
 if(BUILD_NODE_PACKAGE)
   add_subdirectory(src/nodejs nodejs)
 endif()
+enable_testing()  # enable here so tests will be visible from root
 add_subdirectory(unit_tests)
 add_subdirectory(src/benchmarks)
 

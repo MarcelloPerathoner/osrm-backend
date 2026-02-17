@@ -174,19 +174,19 @@ jobs:
           echo '${{ toJSON(matrix) }}'
           echo "::endgroup::"
 
-          echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py \
+          echo '${{ toJSON(matrix) }}' | python scripts/ci/decode_matrix.py \
                --cmake-presets-template scripts/ci/CMakePresets.template.json \
-               --cmake-presets CMakePresets.json - > job.env
+               --cmake-presets CMakePresets.json --output matrix.env -
 
           echo "::group::generated CMakePresets.json"
           cat CMakePresets.json
           echo "::endgroup::"
 
           echo "::group::generated github environment"
-          cat job.env
+          cat matrix.env
           echo "::endgroup::"
 
-          cat job.env >> $GITHUB_ENV
+          cat matrix.env >> $GITHUB_ENV
 
       - name: Setup environment
         run: |
@@ -411,10 +411,10 @@ jobs:
       - name: Prepare for testing
         run: |
           if [[ "${ENABLE_CONAN}" == "ON" ]]; then
-            cat "$CONAN_GENERATORS_DIR/conan-run-env.sh"
-            source "$CONAN_GENERATORS_DIR/conan-run-env.sh"
+            cat "build/conan-run-env.sh"
+            source "build/conan-run-env.sh"
             # set this environment for future bash invocations
-            echo "BASH_ENV=$CONAN_GENERATORS_DIR/conan-run-env.sh" >> $GITHUB_ENV
+            echo "BASH_ENV=build/conan-run-env.sh" >> $GITHUB_ENV
           fi
 
           echo "::group::PATH"
@@ -443,8 +443,8 @@ jobs:
           ctest --help
           echo "::endgroup::"
 
-          ctest --test-dir "${OSRM_UNIT_TESTS_BINARY_DIR}" --build-config ${OSRM_CONFIG} \
-            -j $JOBS --no-tests=error -V -O ${LOG_DIR}/unit_test.log
+          # ctest --test-dir "${OSRM_UNIT_TESTS_BINARY_DIR}" --build-config ${OSRM_CONFIG} -j $JOBS \
+          ctest --preset conan-release -L test --no-tests=error -V -O ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
         if: env.RUN_CUCUMBER_TESTS == 'ON'
@@ -470,7 +470,7 @@ jobs:
             genhtml --ignore-errors inconsistent,corrupt,unsupported -o ${LOG_DIR} coverage.info
 
       - name: Run Node tests
-        if: env.NODE_TESTS == 'ON'
+        if: env.RUN_NODE_TESTS == 'ON'
         uses: ./.github/actions/node-package-tests
 
       - name: Publish Node package

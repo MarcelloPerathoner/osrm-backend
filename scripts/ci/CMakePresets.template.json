@@ -22,6 +22,7 @@
         {
             "name": "$name",
             "configurePreset": "$name",
+            "configuration": "$config",
             "jobs": $jobs
         }
     ],
@@ -29,6 +30,7 @@
         {
             "name": "$name",
             "configurePreset": "$name",
+            "configuration": "$config",
             "execution": {
                 "jobs": $jobs
             }

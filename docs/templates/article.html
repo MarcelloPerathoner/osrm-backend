@@ -19,6 +19,9 @@
     {{! mermaid, broken by design, does not work on the server }}
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs';
+        mermaid.parseError = function (err, hash) {
+            alert(err);
+        };
     </script>
     {{/if}}
 </body>

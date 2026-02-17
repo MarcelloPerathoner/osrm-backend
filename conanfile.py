@@ -1,3 +1,4 @@
+import json
 import os
 import re
 import subprocess
@@ -90,7 +91,7 @@ class OsrmConan(ConanFile):
         bypass Conan and write the file ourselves. Here goes:
         """
         scope = env_vars._scope
-        env_path = os.path.join(self.folders.generators_folder, f"conan-{scope}-env.sh")
+        env_path = os.path.join(self.recipe_folder, BUILD_ROOT, f"conan-{scope}-env.sh")
         with open(env_path, "w") as fp:
             for varname, varvalues in env_vars._values.items():
                 values = []
@@ -147,7 +148,16 @@ class OsrmConan(ConanFile):
                 )
 
         tc = CMakeToolchain(self)
-        tc.cache_variables["USE_CONAN"] = True
+
+        # if there is a /CMakePresets.json, output by `decode_matrix.py``, copy the
+        # cacheVariables section
+        try:
+            cmake_presets = os.path.join(self.recipe_folder, "CMakePresets.json")
+            with open(cmake_presets, "r") as fp:
+                js = json.loads(fp.read())
+                tc.cache_variables.update(js["configurePresets"][0]["cacheVariables"])
+        except IOError:
+            pass
 
         # CAVEAT: MISNOMER! cache_variables end up in CMakePresets.json
         # and must be recalled with `cmake --preset conan-release`
@@ -175,7 +185,6 @@ class OsrmConan(ConanFile):
         # replace the block that would set the cpp standard with our own custom block
         # tc.blocks["cppstd"] = OsrmGenericBlock
         tc.blocks["generic"] = OsrmGenericBlock
-        tc.generate()
 
         # add variable names compatible with the non-conan build
         # eg. "LUA_LIBRARIES" in addition to "lua_LIBRARIES"
@@ -193,36 +202,32 @@ class OsrmConan(ConanFile):
         self._writeEnvSh(vbe.environment().vars(self, scope="build"))
         self._writeEnvSh(vre.environment().vars(self, scope="run"))
 
-        # Put a bootstrap environment into the well-known location `build/conan.env` to
-        # aid in finding `conan-build-env.sh` and `conan-run-env.sh` since these do not
-        # always end in the same place.
-        os.path.join(self.recipe_folder, "build/conan.env")
+        # HACK: Conan emits the search PATH for libraries in the "run" environment but
+        # we need it much earlier as a parameter for install(RUNTIME_DEPENDENCIES)
+        # otherwise cmake is too dumb to look into the PATH when searching for DLLs on
+        # Windows.
+        values = vre.environment().vars(self, scope="run")._values
+        if "PATH" in values:
+            path = self._getVarValue(values["PATH"])
+            tc.cache_variables["CONAN_RUN_PATH"] = path
+
+        tc.cache_variables["USE_CONAN"] = True
+        tc.generate()
+
+        # Put an environment into the well-known location `build/conan.env`
         with open(os.path.join(self.recipe_folder, "build/conan.env"), "w") as fp:
-            build_dir = _bash_path(self.folders.build_folder)
             generators_dir = _bash_path(self.folders.generators_folder)
-            config_preset = f"conan-{self.settings.build_type}".lower()
-            build_preset = config_preset
+            configure_preset = f"conan-{self.settings.build_type}".lower()
+            build_preset = configure_preset
             if self.settings.os == "Windows":
-                config_preset = "conan-default"
+                configure_preset = "conan-default"
 
-            fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
-            fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
-            fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={config_preset}\n")
             fp.write(f"CMAKE_BUILD_PRESET_NAME={build_preset}\n")
-            fp.write(f'CMAKE_CONFIGURE_PARAMETERS="--preset {config_preset}"\n')
-            fp.write(f'CMAKE_BUILD_PARAMETERS="--build --preset {build_preset}"\n')
+            fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={configure_preset}\n")
+            fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
 
-            # handy for tools that do not read CMakePresets
+            # for tools that do not understand CMakePresets.json like eg. cmake --install
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
-
-            # HACK: Conan emits the search PATH for libraries in the "run" environment
-            # but we need it much earlier as a parameter for
-            # install(RUNTIME_DEPENDENCIES) otherwise cmake is too dumb to look into the
-            # PATH when searching for DLLs on Windows.
-            values = vre.environment().vars(self, scope="run")._values
-            if "PATH" in values:
-                path = self._getVarValue(values["PATH"])
-                fp.write(f"CONAN_LIBRARY_PATH={path}\n")
 
     def layout(self):
         cmake_layout(self, build_folder=BUILD_ROOT)
