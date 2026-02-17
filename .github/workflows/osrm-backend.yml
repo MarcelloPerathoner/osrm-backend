@@ -178,6 +178,10 @@ jobs:
                --cmake-presets-template scripts/ci/CMakePresets.template.json \
                --cmake-presets CMakePresets.json - > job.env
 
+          echo "::group::generated CMakePresets.json"
+          cat CMakePresets.json
+          echo "::endgroup::"
+
           echo "::group::generated github environment"
           cat job.env
           echo "::endgroup::"

@@ -111,8 +111,10 @@ get(envs, "RUN_BENCHMARKS",     "OFF")
 # multi-config generators like "Visual Studio" and "Xcode". Currently the only
 # multi-config generator we use is "Visual Studio".
 
-config_name = envs["OSRM_CONFIG"].lower()
+config = envs["OSRM_CONFIG"]
+config_name = config.lower()
 
+cdefs["CMAKE_BUILD_TYPE"] = config
 # Conan gives two different names (on multi-config), but we do not
 envs["CMAKE_CONFIGURE_PRESET_NAME"] = config_name
 envs["CMAKE_BUILD_PRESET_NAME"] = config_name
