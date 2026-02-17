@@ -10,6 +10,11 @@ from conan.tools.env import VirtualBuildEnv, VirtualRunEnv
 from conan.tools.env.environment import _EnvVarPlaceHolder
 
 
+BUILD_ROOT = "build"
+""" The topmost directory in the build hierarchy. The binaries will be output in
+`Release` and `Debug` subdirectories of this directory. """
+
+
 class OsrmGenericBlock:
     # Everything here is copied verbatim into the toolchain file
     template = textwrap.dedent(
@@ -75,15 +80,15 @@ class OsrmConan(ConanFile):
 
     def _writeEnvSh(self, env_vars):
         """
-        Usually Conan puts the environments for building and running into `conanbuild.sh`
-        and `conanrun.sh` and you are supposed to source those files.  The troubles start
-        when we run under Windows and use a bash shell, like we do on github CI.
+        Usually Conan puts the environments for building and running into
+        `conanbuild.sh` and `conanrun.sh` and you are supposed to source those files.
+        The trouble starts when you run under Windows but use a bash shell, like we do
+        on github CI.
 
-        Setting 5 different configuration entries we could configure Conan almost but not
-        quite entirely unlike the way we want.  To avoid that config hell we just write
-        the file ourselves.
+        Setting 5 different configuration entries we can configure Conan almost but not
+        quite entirely unlike the way we want.  To avoid that configuration hell we just
+        bypass Conan and write the file ourselves. Here goes:
         """
-
         scope = env_vars._scope
         env_path = os.path.join(self.folders.generators_folder, f"conan-{scope}-env.sh")
         with open(env_path, "w") as fp:
@@ -202,8 +207,8 @@ class OsrmConan(ConanFile):
 
             fp.write(f"CONAN_BUILD_DIR={build_dir}\n")
             fp.write(f"CONAN_GENERATORS_DIR={generators_dir}\n")
-            fp.write(f"CONAN_CONFIG_CMAKE_PRESET={config_preset}\n")
-            fp.write(f"CONAN_BUILD_CMAKE_PRESET={build_preset}\n")
+            fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={config_preset}\n")
+            fp.write(f"CMAKE_BUILD_PRESET_NAME={build_preset}\n")
             fp.write(f'CMAKE_CONFIGURE_PARAMETERS="--preset {config_preset}"\n')
             fp.write(f'CMAKE_BUILD_PARAMETERS="--build --preset {build_preset}"\n')
 
@@ -211,16 +216,16 @@ class OsrmConan(ConanFile):
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
 
             # HACK: Conan emits the search PATH for libraries in the "run" environment
-            # but we need it during the cmake configure stage because
-            # GET_RUNTIME_DEPENDENCIES() in cmake install is too dumb to look into the
+            # but we need it much earlier as a parameter for
+            # install(RUNTIME_DEPENDENCIES) otherwise cmake is too dumb to look into the
             # PATH when searching for DLLs on Windows.
             values = vre.environment().vars(self, scope="run")._values
             if "PATH" in values:
-                conan_deps = self._getVarValue(values["PATH"])
-                fp.write(f"CONAN_LIBRARY_PATH={conan_deps}\n")
+                path = self._getVarValue(values["PATH"])
+                fp.write(f"CONAN_LIBRARY_PATH={path}\n")
 
     def layout(self):
-        cmake_layout(self)
+        cmake_layout(self, build_folder=BUILD_ROOT)
 
     def build(self):
         cmake = CMake(self)

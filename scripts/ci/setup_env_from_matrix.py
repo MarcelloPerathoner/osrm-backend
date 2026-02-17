@@ -1,32 +1,66 @@
-"""Transforms the github matrix into a set of environment variables and cmake definitions.
+"""
+Transforms the github matrix into a `CMakePresets.json` and a set of environment variables.
 
-stdin: the github matrix converted to json.
-stdout: KEY=VALUE pairs one per line
+The idea is to produce a build environment that is similar and interchangeable with the
+build environment produced by Conan. So always keep this in sync with `conanfile.py`.
 
-Usage example (on github CI):
+See also: https://cmake.org/cmake/help/latest/manual/cmake-presets.7.html
+
+Usage example (use this on github CI):
 
 .. code: bash
 
-   echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py >> $GITHUB_ENV
-   ...
-   # later step (remove quotes!)
-   cmake ${CMAKE_CONFIGURE_PARAMETERS:1:-1}
-   cmake ${CMAKE_BUILD_PARAMETERS:1:-1}
+   echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py \
+        --cmake-presets-template scripts/ci/CMakePresets.template.json \
+        --cmake-presets CMakePresets.json - >> $GITHUB_ENV
+
+Usage example for the presets:
+
+.. code: bash
+
+   cmake --preset $CMAKE_CONFIG_PRESET_NAME
+   cmake --build --preset $CMAKE_BUILD_PRESET_NAME
 
 """
 
+import argparse
 import json
+import multiprocessing
 import os
 import re
-import sys
+import string
 
-matrix = json.load(sys.stdin)
+
+parser = argparse.ArgumentParser(
+    description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
+)
+
+parser.add_argument(
+    "matrix",
+    type=argparse.FileType("r"),
+    metavar="FILENAME",
+    help="the github matrix as json",
+)
+parser.add_argument(
+    "--cmake-presets-template",
+    type=argparse.FileType("r"),
+    metavar="FILENAME",
+    help="the CMakePresets.json template file",
+)
+parser.add_argument(
+    "--cmake-presets",
+    type=argparse.FileType("w"),
+    metavar="FILENAME",
+    help="the generated CMakePresets.json file",
+)
+
+args = parser.parse_args()
+
+matrix = json.load(args.matrix)
 job_name = matrix.get("name")
 
-cdefs = {}  # definitions for cmake configure stage
-cparams = {}  # parameters for cmake configure stage
-bparams = {}  # parameters for cmake build stage
-envs = {}  # environment variables
+envs = {}  # environment variables only for $GITHUB_ENV
+cdefs = {}  # definitions for CmakePresets.json and $GITHUB_ENV
 
 
 def in_job_name(needle, value, default=None):
@@ -75,17 +109,21 @@ get(envs, "RUN_BENCHMARKS",     "OFF")
 
 # In Cmake single-config generators like "Unix Makefiles" need different parameters as
 # multi-config generators like "Visual Studio" and "Xcode". Currently the only
-# multi-config generator is on Windows.
+# multi-config generator we use is "Visual Studio".
 
-if "windows" in matrix["runs-on"]:
-    build_dir = "build"
-    bparams["--build"] = build_dir
-    bparams["--config"] = envs.get("OSRM_CONFIG")
-else:
-    build_dir = os.path.join("build", envs.get("OSRM_CONFIG"))
-    cparams["-B"] = build_dir
-    cdefs["CMAKE_BUILD_TYPE"] = envs.get("OSRM_CONFIG")
-    bparams["--build"] = build_dir
+config_name = envs["OSRM_CONFIG"].lower()
+
+# Conan gives two different names (on multi-config), but we do not
+envs["CMAKE_CONFIGURE_PRESET_NAME"] = config_name
+envs["CMAKE_BUILD_PRESET_NAME"] = config_name
+
+# our "well-known" build root
+binary_dir = os.path.join("${sourceDir}", "build")
+if "windows" not in matrix["runs-on"]:
+    binary_dir = os.path.join(binary_dir, envs["OSRM_CONFIG"])
+
+jobs = multiprocessing.cpu_count()
+envs["JOBS"] = jobs
 
 ### Decode compiler from job name ###
 
@@ -141,32 +179,17 @@ for key in sorted(envs):
     if envs[key] is not None:
         print(f"{key}={envs[key]}")
 
-# Conan will write its own version of these entries
-if cdefs["ENABLE_CONAN"] != "ON":
+# Write CMakePresets.json
 
-    # params for cmake -B build -DFOO=ON -DBAR=OFF
-    #                  ^^^^^^^^
-    params = []
-    for key in sorted(cparams):
-        if cparams[key] is not None:
-            params.append(f"{key} {cparams[key]}")
+if args.cmake_presets_template and args.cmake_presets:
+    s = string.Template(args.cmake_presets_template.read())
+    s = s.substitute(name=config_name, binary_dir=binary_dir, jobs=jobs)
+    js = json.loads(s)
 
-    # definitions for cmake -B build -DFOO=ON -DBAR=OFF
-    #                                ^^^^^^^^^^^^^^^^^^
-    for key in sorted(cdefs):
-        if cdefs[key] is not None:
-            params.append(f"-D{key}={cdefs[key]}")
+    cache_vars = {"CMAKE_POLICY_DEFAULT_CMP0091": "NEW"}
+    for key, value in cdefs.items():
+        if value is not None:
+            cache_vars[key] = value
 
-    p = " ".join(params)
-    # quotes to be able to source the file
-    print(f'CMAKE_CONFIGURE_PARAMETERS="{p}"')
-
-    # params for cmake --build build --config Release
-    #                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-    params = []
-    for key in sorted(bparams):
-        if bparams[key] is not None:
-            params.append(f"{key} {bparams[key]}")
-
-    p = " ".join(params)
-    print(f'CMAKE_BUILD_PARAMETERS="{p}"')
+    js["configurePresets"][0]["cacheVariables"] = cache_vars
+    json.dump(js, args.cmake_presets, indent=4)

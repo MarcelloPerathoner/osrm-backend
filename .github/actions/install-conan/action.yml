@@ -11,14 +11,8 @@ description: |
 
   OSRM_CONFIG          The build type: Release or Debug.
   BUILD_SHARED_LIBS    Whether to build shared libs or static ones.
-  CONAN_HOME           The Conan home directory to use.
   CONAN_CACHE          The Conan cache directory to use.
   CONAN_DOWNLOAD_CACHE The Conan download cache directory to use.
-
-  Output environment variables:
-
-  CONAN_BUILD_DIR    The build directory for Cmake.
-  CONAN_CMAKE_PRESET The cmake --preset to use.
 
 runs:
   using: 'composite'

@@ -174,12 +174,15 @@ jobs:
           echo '${{ toJSON(matrix) }}'
           echo "::endgroup::"
 
-          echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py > job.env
-          cat job.env >> $GITHUB_ENV
+          echo '${{ toJSON(matrix) }}' | python scripts/ci/setup_env_from_matrix.py \
+               --cmake-presets-template scripts/ci/CMakePresets.template.json \
+               --cmake-presets CMakePresets.json > job.env
 
           echo "::group::generated github environment"
           cat job.env
           echo "::endgroup::"
+
+          cat job.env >> $GITHUB_ENV
 
       - name: Setup environment
         run: |
@@ -188,25 +191,20 @@ jobs:
 
           mkdir -p build $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
 
-          echo "PUBLISH=OFF" >> $GITHUB_ENV
-
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
             sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} ${LLVM} make cmake ccache zlib1g-dev
             echo "MAKE=make" >> $GITHUB_ENV
             echo "TIME=/usr/bin/time" >> $GITHUB_ENV
-            echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
             # install a current version of bash on macos
             brew install bash make ccache gnu-time
+            bash --version
             echo "MAKE=gmake" >> $GITHUB_ENV
             echo "TIME=gtime" >> $GITHUB_ENV
-            bash --version
-            echo "JOBS=$((`sysctl -n hw.ncpu` + 1))" >>  $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "Windows" ]]; then
             echo "MAKE=make" >> $GITHUB_ENV
             echo "TIME=time" >> $GITHUB_ENV
-            echo "JOBS=$((`nproc` + 1))" >>  $GITHUB_ENV
             echo "PYTHONUTF8=1" >> $GITHUB_ENV
           fi
 
@@ -327,22 +325,22 @@ jobs:
 
       - name: Cmake configure
         run: |
-          cmake ${CMAKE_CONFIGURE_PARAMETERS:1:-1}
+          cmake --preset ${CMAKE_CONFIGURE_PRESET_NAME}
           cat build/osrm-run.env >> $GITHUB_ENV
 
       - name: Build core
         run: |
-          cmake ${CMAKE_BUILD_PARAMETERS:1:-1} -j $JOBS
-
+          cmake --build --preset ${CMAKE_BUILD_PRESET_NAME}
       - name: Build unit tests
+
         if: env.BUILD_UNIT_TESTS == 'ON'
         run: |
-          cmake ${CMAKE_BUILD_PARAMETERS:1:-1} -j $JOBS --target tests
+          cmake --build --preset ${CMAKE_BUILD_PRESET_NAME} --target tests
 
       - name: Build benchmarks
         if: env.BUILD_BENCHMARKS == 'ON'
         run: |
-          cmake ${CMAKE_BUILD_PARAMETERS:1:-1} -j $JOBS --target benchmarks
+          cmake --build --preset ${CMAKE_BUILD_PRESET_NAME} --target benchmarks
 
       - name: Build Node package
         if: env.BUILD_NODE_PACKAGE == 'ON'
