@@ -78,7 +78,7 @@ endforeach()
 
 list(APPEND TESTS "library-tests")
 
-add_definitions (-DBOOST_TEST_DYN_LINK)
+# add_definitions (-DBOOST_TEST_DYN_LINK)
 
 add_executable(contractor-tests	       EXCLUDE_FROM_ALL ${ContractorTestsSources})
 add_executable(customizer-tests	       EXCLUDE_FROM_ALL ${CustomizerTestsSources})
