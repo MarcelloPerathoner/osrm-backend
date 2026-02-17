@@ -255,11 +255,11 @@ flowchart TD
 The `build` directory is a hardcoded 'well-known' location for bootstrapping build- and
 runtime configurations.  The `build` directory is used for communication between the
 stages of the build toolchain even if the actual build of the binaries should take place
-elsewhere.
+in `build/Release`, `build/Debug`, or elsewhere.
 
 `decode_matrix.py`, Conan and Cmake all put an `.env` file in the `build` directory.
-These `.env` files only contain `KEY=VALUE` pairs, so that they can safely be sourced
-into a shell or piped into `$GITHUB_ENV`.
+These `.env` files only contain `KEY=VALUE` pairs, so that they can be safely sourced
+into a shell, or piped into `$GITHUB_ENV`.
 
 `decode_matrix.py` also puts a file `CMakePresets.json` into the project root directory.
 This file can be consumed by CMake or by Conan.

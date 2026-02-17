@@ -55,6 +55,8 @@ endforeach()
 # GET_RUNTIME_DEPENDENCIES() is too dumb to use the PATH when searching
 # for DLLs. We have to spoon-feed it.
 string(REPLACE ":" ";" WIN_PATH "${CONAN_RUN_PATH}")
+message(STATUS "Conan run path is: ${CONAN_RUN_PATH} and ${WIN_PATH}")
+message(STATUS "Conan env run path is: $ENV{CONAN_RUN_PATH}")
 
 install(
   TARGETS ${TARGETS}

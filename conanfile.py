@@ -199,20 +199,18 @@ class OsrmConan(ConanFile):
         vre.generate()
         vbe.generate()
 
+        run_vars = vre.environment().vars(self, scope="run")
         self._writeEnvSh(vbe.environment().vars(self, scope="build"))
-        self._writeEnvSh(vre.environment().vars(self, scope="run"))
+        self._writeEnvSh(run_vars)
 
         # HACK: Conan emits the search PATH for libraries in the "run" environment but
         # we need it much earlier as a parameter for install(RUNTIME_DEPENDENCIES)
         # otherwise cmake is too dumb to look into the PATH when searching for DLLs on
         # Windows.
-        values = vre.environment().vars(self, scope="run")._values
-        if "PATH" in values:
-            path = self._getVarValue(values["PATH"])
+        run_values = run_vars._values
+        if "PATH" in run_values:
+            path = self._getVarValue(run_values["PATH"])
             tc.cache_variables["CONAN_RUN_PATH"] = path
-
-        tc.cache_variables["USE_CONAN"] = True
-        tc.generate()
 
         # Put an environment into the well-known location `build/conan.env`
         with open(os.path.join(self.recipe_folder, "build/conan.env"), "w") as fp:
@@ -230,6 +228,12 @@ class OsrmConan(ConanFile):
 
             # for tools that do not understand CMakePresets.json like eg. cmake --install
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
+            if "PATH" in run_values:
+                path = self._getVarValue(run_values["PATH"])
+                fp.write(f"CONAN_RUN_PATH={path}\n")
+
+        tc.cache_variables["USE_CONAN"] = True
+        tc.generate()
 
     def layout(self):
         cmake_layout(self, build_folder=BUILD_ROOT)
