@@ -624,10 +624,6 @@ install(DIRECTORY profiles DESTINATION share/osrm COMPONENT applications)
 install(DIRECTORY data DESTINATION share/osrm COMPONENT applications)
 
 if(BUILD_PACKAGE)
-  set(CPACK_PACKAGE_NAME "OSRM")
-  set(CPACK_PACKAGE_VENDOR "OSRM developers")
-  set(CPACK_DEBIAN_PACKAGE_DEPENDS libbz2-1.0 libxml2 libzip5 liblua5.2 libtbb12)
-
   include(CPackConfig)
   include(CPack)
 
@@ -635,9 +631,9 @@ if(BUILD_PACKAGE)
   cpack_add_component_group(Development DISPLAY_NAME "Development")
 
   cpack_add_component(applications GROUP Runtime     DISPLAY_NAME "OSRM Application")
-  cpack_add_component(libraries    GROUP Development DISPLAY_NAME "Libraries")
-  cpack_add_component(headers      GROUP Development DISPLAY_NAME "C++ Headers" DEPENDS libraries)
-  cpack_add_component(flatbuffers  GROUP Development DISPLAY_NAME "3rd Party Flatbuffers Headers" DEPENDS libraries DISABLED)
+  cpack_add_component(libraries    GROUP Development DISPLAY_NAME "OSRM Libraries")
+  cpack_add_component(headers      GROUP Development DISPLAY_NAME "OSRM Headers"      DEPENDS libraries)
+  cpack_add_component(flatbuffers  GROUP Development DISPLAY_NAME "3rd-Party Headers" DEPENDS libraries DISABLED)
 endif()
 
 function(JOIN VALUES GLUE OUTPUT)
@@ -751,14 +747,9 @@ push_env("PROJECT_SOURCE_DIR" "${PROJECT_SOURCE_DIR}")
 push_env("USE_CCACHE" "${USE_CCACHE}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
 
-# debug print the list of include dirs
-get_property(dirs DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR} PROPERTY INCLUDE_DIRECTORIES)
-foreach(dir ${dirs})
-  message(STATUS "-I ${dir}")
-endforeach()
-
 message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")
+message(STATUS "Generator is:           ${CMAKE_GENERATOR}")
 message(STATUS "C compiler is:          ${CMAKE_C_COMPILER}")
 message(STATUS "CXX compiler is:        ${CMAKE_CXX_COMPILER}")
 if(CMAKE_CXX_CLANG_TIDY)

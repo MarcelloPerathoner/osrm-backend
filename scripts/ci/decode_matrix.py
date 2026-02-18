@@ -97,19 +97,19 @@ def get(d, key, default=None):
 envs["OSRM_CONFIG"]         = in_job_name("debug",  "Debug", "Release")
 cdefs["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
 cdefs["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
-cdefs["ENABLE_CONAN"]       = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
+envs["ENABLE_CONAN"]        = in_job_name("conan",  "ON", matrix.get("ENABLE_CONAN"))
 cdefs["ENABLE_TIDY"]        = in_job_name("tidy",   "ON", matrix.get("ENABLE_TIDY"))
 cdefs["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON", matrix.get("ENABLE_COVERAGE"))
 cdefs["ENABLE_ASAN"]        = in_job_name("asan",   "ON", matrix.get("ENABLE_ASAN"))
 cdefs["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON", matrix.get("ENABLE_UBSAN"))
 
 # not encoded in job name
+get(cdefs, "CMAKE_GENERATOR")
 get(cdefs, "ENABLE_ASSERTIONS")
 get(cdefs, "ENABLE_CCACHE")
 get(cdefs, "ENABLE_LTO")
 get(cdefs, "ENABLE_SCCACHE")
 
-get(envs, "CMAKE_GENERATOR")
 get(envs, "NODE_VERSION",       24)
 get(envs, "BUILD_UNIT_TESTS",   "ON")
 get(envs, "BUILD_BENCHMARKS",   "OFF")
