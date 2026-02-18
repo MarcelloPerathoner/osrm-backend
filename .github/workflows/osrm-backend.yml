@@ -148,7 +148,12 @@ jobs:
             runs-on: macos-14 # arm64
             NODE_VERSION: 22
 
-          - name: conan-windows-2025-x64-release-node
+          - name: conan-windows-2025-vs2026-x64-release-node
+            runs-on: windows-2025-vs2026 # x64
+            continue-on-error: true
+            ENABLE_SCCACHE: ON
+
+          - name: conan-windows-2025-vs2022-x64-release-node
             runs-on: windows-2025 # x64
             continue-on-error: true
             BUILD_BENCHMARKS: ON

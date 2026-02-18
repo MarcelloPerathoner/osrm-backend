@@ -178,7 +178,7 @@ if compiler == "gcc":
     envs["CXX"] = f"g++{ver}"
     apt_get_deps.append(f"g++{ver}")
 
-if envs["ENABLE_CCACHE"] == "ON":
+if envs.get("ENABLE_CCACHE") == "ON":
     apt_get_deps.append("ccache")
 
 # Note: `APT_GET_DEPS="clang llvm"` (with double quotes) in the file will not work if
