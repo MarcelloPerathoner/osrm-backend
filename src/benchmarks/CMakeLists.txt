@@ -7,7 +7,6 @@ set(GPS_TRACES "${TEST_DATA_DIR}/berlin_gps_traces.csv.gz")
 
 mk_build_dir("OSRM_BENCHMARKS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env("OSRM_BENCHMARKS_BUILD_DIR" "${OSRM_BENCHMARKS_BUILD_DIR}")
-push_env("OSRM_BENCHMARKS_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 ### build the benchmarks ###
 

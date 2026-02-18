@@ -177,7 +177,6 @@ function(mk_build_dir key value)
 endfunction()
 
 mk_build_dir("OSRM_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
-push_env("OSRM_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env("OSRM_BUILD_DIR" "${OSRM_BUILD_DIR}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
@@ -234,7 +233,8 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
   # single-config build generators like Unix Makefiles need a build type specified
   # multi-config generators take the cmake --config parameter later
   if(NOT CMAKE_BUILD_TYPE)
-    set(CACHE{CMAKE_BUILD_TYPE} VALUE Release)
+    # set(CACHE{CMAKE_BUILD_TYPE} VALUE "Release")
+    set(CMAKE_BUILD_TYPE "Release")
   endif()
 
   if(CMAKE_BUILD_TYPE MATCHES Release)
@@ -246,7 +246,7 @@ if(NOT CMAKE_CONFIGURATION_TYPES)
   elseif(CMAKE_BUILD_TYPE MATCHES MinRelSize)
     message(STATUS "Configuring OSRM in release mode with minimized size")
   else()
-    message(FATAL_ERROR "Unrecognized CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}.
+    message(FATAL_ERROR "Unrecognized CMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE}
 Please use `Release', `Debug', `RelWithDebInfo', or `MinRelSize'.")
   endif()
 endif()

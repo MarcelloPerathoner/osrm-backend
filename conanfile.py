@@ -149,8 +149,8 @@ class OsrmConan(ConanFile):
 
         tc = CMakeToolchain(self)
 
-        # if there is a /CMakePresets.json, output by `decode_matrix.py``, copy the
-        # cacheVariables section
+        # if `decode_matrix.py` output a `/CMakePresets.json`, copy the `cacheVariables`
+        # section
         try:
             cmake_presets = os.path.join(self.recipe_folder, "CMakePresets.json")
             with open(cmake_presets, "r") as fp:

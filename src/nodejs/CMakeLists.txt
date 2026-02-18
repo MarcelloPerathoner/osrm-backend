@@ -27,7 +27,6 @@ target_link_libraries(node_osrm osrm_utils osrm_routed)
 
 mk_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env("OSRM_NODEJS_BUILD_DIR" "${OSRM_NODEJS_BUILD_DIR}")
-push_env("OSRM_NODEJS_BINARY_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 
 # Installation
 # as a prelude to building the nodejs package with gyp

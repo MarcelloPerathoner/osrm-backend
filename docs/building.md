@@ -92,12 +92,14 @@ Build:
 
 ```bash
 cmake -B build
-make -C build -j
+cmake --build build -j
 ```
 
-The binaries are now in `build`.
+The binaries are now in `build`. You may specify `build/Release` instead of `build` if
+you plan to use different build types at the same time.
 
-A list of arguments for cmake:
+A list of further arguments for `cmake`.
+Example: `cmake -B build --DCMAKE_BUILD_TYPE=Debug -DBUILD_NODE_PACKAGE=ON`.
 
 | Argument                 | Default   | Description                                         |
 | ------------------------ | --------- | --------------------------------------------------- |
@@ -206,12 +208,17 @@ npm test -- --parallel 16
 
 ## Install
 
+Install OSRM. You might have to `sudo` to install into system directories.
+
 ```bash
-cmake --install build/Release --prefix /usr/local/or/whatever
+cmake --install build/Release --config Release --prefix /usr/local/or/whatever
 ```
 
 
-## The Various Build Processes
+## The Build Processes Variants
+
+If you hack the build process, be aware of these 4 variants: with Conan or manually and at
+home or on github.
 
 ```mermaid
 flowchart TD
@@ -293,24 +300,18 @@ This file contains information about the build environment setup by Conan. Usage
 This file contains information about the build environment setup by CMake. Usage:
 `source build/osrm-run-env.sh`. It contains:
 
-| Environment Variable         | Description                                                |
-| ---------------------------- | ---------------------------------------------------------- |
-| `OSRM_BUILD_DIR`             | The directory where the OSRM binaries will be built.       |
-| `OSRM_UNIT_TESTS_BUILD_DIR`  | The directory where the unit tests will be built.          |
-| `OSRM_BENCHMARKS_BUILD_DIR`  | The directory where the benchmarks will be built.          |
-| `OSRM_NODEJS_BUILD_DIR`      | The directory where the node bindings will be built.       |
-| `OSRM_NODEJS_INSTALL_DIR`    | The directory where the node bindings will be installed.   |
-| `OSRM_TEST_DATA_DIR`         | The directory containing the curated test data.            |
-| `OSRM_BINARY_DIR`            | 'build' on MSVC 'build/Release' else                       |
-| `OSRM_UNIT_TESTS_BINARY_DIR` | 'build/unit_tests' on MSVC 'build/Release/unit_tests' else |
-| `OSRM_BENCHMARKS_BINARY_DIR` |                                                            |
-| `OSRM_NODEJS_BINARY_DIR`     |                                                            |
+| Environment Variable        | Description                                              |
+| --------------------------- | -------------------------------------------------------- |
+| `OSRM_BUILD_DIR`            | The directory where the OSRM binaries will be built.     |
+| `OSRM_UNIT_TESTS_BUILD_DIR` | The directory where the unit tests will be built.        |
+| `OSRM_BENCHMARKS_BUILD_DIR` | The directory where the benchmarks will be built.        |
+| `OSRM_NODEJS_BUILD_DIR`     | The directory where the node bindings will be built.     |
+| `OSRM_NODEJS_INSTALL_DIR`   | The directory where the node bindings will be installed. |
+| `OSRM_TEST_DATA_DIR`        | The directory containing the curated test data.          |
 
 Note: multi-config generators (like Visual Studio or Xcode) generate the artifacts in a
-`Release` or `Debug` subdirectory of the `build` directory. The `OSRM_BUILD_DIR`
-variants always include these subdirectories: use them to find the actual files. The
-`OSRM_BINARY_DIR` variants do not always include these subdirectories: use them as
-cmdline parameters to `cmake` / `ctest`.
+`Release` or `Debug` subdirectory of the `build` directory. The `OSRM_*_BUILD_DIR`
+variants always include these subdirectories: use them to find the actual files.
 
 
 #### build/osrm-run-env.sh
