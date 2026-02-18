@@ -223,8 +223,15 @@ cmake --install build/Release --config Release --prefix /usr/local/or/whatever
 
 ## The Build Processes Variants
 
-If you hack the build process, be aware of these 4 variants: with Conan or manually and at
-home or on github.
+Theoretical combinations:
+
+| Machine | OS      | Deps    | Builder | Compiler | Linker | Type    |
+| ------- | ------- | ------- | ------- | -------- | ------ | ------- |
+| home    | Linux   | Conan   | Make    | clang    | static | Release |
+| github  | macOS   | apt-get | Ninja   | gcc      | shared | Debug   |
+|         | Windows |         | MSBuild | msvc     |        |         |
+
+Not all of these combinations are feasible, but many of them work.
 
 ```mermaid
 flowchart TD

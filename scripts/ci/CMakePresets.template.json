@@ -13,7 +13,6 @@
             "name": "$name",
             "displayName": "'$name' config",
             "description": "'$name' configure using 'Unix Makefiles' generator",
-            "cacheVariables": { "placeholder": "nil"},
             "binaryDir": "$binary_dir"
         }
     ],

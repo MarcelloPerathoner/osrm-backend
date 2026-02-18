@@ -230,11 +230,16 @@ if args.cmake_presets_template and args.cmake_presets:
         jobs=jobs,
     )
     js = json.loads(s)
+    preset = js["configurePresets"][0]
+
+    if "CMAKE_GENERATOR" in cdefs:
+        preset["generator"] = cdefs["CMAKE_GENERATOR"]
+        del cdefs["CMAKE_GENERATOR"]
 
     cache_vars = {"CMAKE_POLICY_DEFAULT_CMP0091": "NEW"}
     for key, value in cdefs.items():
         if value is not None:
             cache_vars[key] = value
 
-    js["configurePresets"][0]["cacheVariables"] = cache_vars
+    preset["cacheVariables"] = cache_vars
     json.dump(js, args.cmake_presets, indent=4)

@@ -148,7 +148,8 @@ class OsrmConan(ConanFile):
                     os.environ.get(name).lower() in boolean_true_expressions
                 )
 
-        tc = CMakeToolchain(self)
+        cache_variables = {}
+        generator = None
 
         # if `decode_matrix.py` output a `/CMakePresets.json`, copy the `cacheVariables`
         # section
@@ -157,14 +158,16 @@ class OsrmConan(ConanFile):
             with open(cmake_presets, "r") as fp:
                 js = json.loads(fp.read())
                 preset = js["configurePresets"][0]
-                tc.cache_variables.update(preset.get("cacheVariables", {}))
-                if "generator" in preset:
-                    tc.generator = preset["generator"]
+                cache_variables.update(preset.get("cacheVariables", {}))
+                generator = preset.get("generator")
         except IOError:
             pass
 
-        if self.options.generator:
-            tc.generator = str(self.options.generator)
+        if self.options.generator != None:  # noqa: E711
+            generator = str(self.options.generator)
+
+        tc = CMakeToolchain(self, generator=generator)
+        tc.cache_variables.update(cache_variables)
 
         # CAVEAT: MISNOMER! cache_variables end up in CMakePresets.json
         # and must be recalled with `cmake --preset conan-release`
