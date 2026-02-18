@@ -316,7 +316,8 @@ cmdline parameters to `cmake` / `ctest`.
 #### build/osrm-run-env.sh
 
 The file `build/osrm-run-env.sh` can be sourced to setup a runtime environment in which
-the built binaries can be run.
+the built binaries can be run. It sources all of the above mentioned `.env` files and
+also exports these variables:
 
 | Environment Variable | Description                                         |
 | -------------------- | --------------------------------------------------- |

@@ -52,15 +52,6 @@ foreach(t "${TARGETS}")
   endif()
 endforeach()
 
-# GET_RUNTIME_DEPENDENCIES() is too dumb to use the PATH when searching
-# for DLLs. We have to spoon-feed it.
-# string(REPLACE ":" ";" WIN_PATH "${CONAN_RUN_PATH}")
-file(TO_NATIVE_PATH "$ENV{CONAN_RUN_PATH}" WIN_PATH)
-message(STATUS "Win path is: ${WIN_PATH}")
-
-message(STATUS "Conan run path is: ${CONAN_RUN_PATH}")  # this comes out with /
-message(STATUS "Conan env run path is: $ENV{CONAN_RUN_PATH}")  # this comes out with \
-
 install(
   TARGETS ${TARGETS}
   DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib/binding_napi_v${NAPI_VERSION}"
@@ -69,7 +60,9 @@ install(
     PRE_EXCLUDE_REGEXES "api-ms-.*"
     POST_INCLUDE_REGEXES "conan2|boost|tbb|lua|bz2|zstd"
     POST_EXCLUDE_REGEXES ".*"
-    DIRECTORIES ${CONAN_RUN_PATH}
+    # GET_RUNTIME_DEPENDENCIES() is too dumb to use the Windows PATH
+    # when searching for DLLs. We have to spoon-feed it.
+    DIRECTORIES ${WINDOWS_RUN_PATH}
 )
 
 install(

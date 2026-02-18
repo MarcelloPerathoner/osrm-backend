@@ -203,17 +203,18 @@ class OsrmConan(ConanFile):
         self._writeEnvSh(vbe.environment().vars(self, scope="build"))
         self._writeEnvSh(run_vars)
 
-        # HACK: Conan emits the search PATH for libraries in the "run" environment but
-        # we need it much earlier as a parameter for install(RUNTIME_DEPENDENCIES)
-        # otherwise cmake is too dumb to look into the PATH when searching for DLLs on
-        # Windows.
-        run_values = run_vars._values
-        if "PATH" in run_values:
-            path = self._getVarValue(run_values["PATH"])
-            tc.cache_variables["CONAN_RUN_PATH"] = ";".join(path)
+        # HACK: Conan already emits this search PATH for libraries in the "run"
+        # environment, but we need it much earlier as a parameter for
+        # install(RUNTIME_DEPENDENCIES) otherwise cmake is too dumb to look into the
+        # PATH when searching for DLLs on Windows.
+        if self.settings.os == "Windows":
+            run_values = run_vars._values
+            if "PATH" in run_values:
+                path = self._getVarValue(run_values["PATH"])
+                tc.cache_variables["WINDOWS_RUN_PATH"] = ";".join(path)
 
         # Put an environment into the well-known location `build/conan.env`
-        with open(os.path.join(self.recipe_folder, "build/conan.env"), "w") as fp:
+        with open(os.path.join(self.recipe_folder, BUILD_ROOT, "conan.env"), "w") as fp:
             generators_dir = _bash_path(self.folders.generators_folder)
             configure_preset = f"conan-{self.settings.build_type}".lower()
             build_preset = configure_preset
@@ -228,10 +229,6 @@ class OsrmConan(ConanFile):
 
             # for tools that do not understand CMakePresets.json like eg. cmake --install
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
-            if "PATH" in run_values:
-                path = self._getVarValue(run_values["PATH"])
-                path = ":".join(map(_bash_path, path))
-                fp.write(f"CONAN_RUN_PATH={path}\n")
 
         tc.cache_variables["USE_CONAN"] = True
         tc.generate()
