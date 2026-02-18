@@ -68,6 +68,7 @@ class OsrmConan(ConanFile):
         "cc":            [None, "ANY"],
         "clang_tidy":    [None, "ANY"],
         "cxx":           [None, "ANY"],
+        "generator":     [None, "ANY"],
     }
     # fmt: on
 

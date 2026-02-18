@@ -223,7 +223,12 @@ for key in sorted(envs):
 
 if args.cmake_presets_template and args.cmake_presets:
     s = string.Template(args.cmake_presets_template.read())
-    s = s.substitute(name=preset_name, config=config, binary_dir=binary_dir, jobs=jobs)
+    s = s.substitute(
+        name=preset_name,
+        config=config,
+        binary_dir=binary_dir,
+        jobs=jobs,
+    )
     js = json.loads(s)
 
     cache_vars = {"CMAKE_POLICY_DEFAULT_CMP0091": "NEW"}
