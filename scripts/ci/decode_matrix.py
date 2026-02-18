@@ -189,7 +189,7 @@ cdefs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
 # fmt: on
 
 # calculate apt-get dependencies
-m = re.search(r"(clang|gcc)(?:-(\d+))?", envs.get("CC"))
+m = re.search(r"(clang|gcc)(?:-(\d+))?", envs.get("CC", ""))
 if m:
     compiler = m.group(1)
     version = m.group(2)

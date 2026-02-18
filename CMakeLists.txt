@@ -623,22 +623,22 @@ install(DIRECTORY profiles DESTINATION share/osrm COMPONENT applications)
 # Install data geojson files to /usr/local/share/osrm/data by default
 install(DIRECTORY data DESTINATION share/osrm COMPONENT applications)
 
-set(CPACK_PACKAGE_NAME "OSRM")
-set(CPACK_PACKAGE_VENDOR "OSRM developers")
-set(CPACK_DEBIAN_PACKAGE_DEPENDS libbz2-1.0 libxml2 libzip5 liblua5.2 libtbb12)
-
 if(BUILD_PACKAGE)
+  set(CPACK_PACKAGE_NAME "OSRM")
+  set(CPACK_PACKAGE_VENDOR "OSRM developers")
+  set(CPACK_DEBIAN_PACKAGE_DEPENDS libbz2-1.0 libxml2 libzip5 liblua5.2 libtbb12)
+
   include(CPackConfig)
   include(CPack)
+
+  cpack_add_component_group(Runtime     DISPLAY_NAME "Runtime")
+  cpack_add_component_group(Development DISPLAY_NAME "Development")
+
+  cpack_add_component(applications GROUP Runtime     DISPLAY_NAME "OSRM Application")
+  cpack_add_component(libraries    GROUP Development DISPLAY_NAME "Libraries")
+  cpack_add_component(headers      GROUP Development DISPLAY_NAME "C++ Headers" DEPENDS libraries)
+  cpack_add_component(flatbuffers  GROUP Development DISPLAY_NAME "3rd Party Flatbuffers Headers" DEPENDS libraries DISABLED)
 endif()
-
-cpack_add_component_group(Runtime     DISPLAY_NAME "Runtime")
-cpack_add_component_group(Development DISPLAY_NAME "Development")
-
-cpack_add_component(applications GROUP Runtime     DISPLAY_NAME "OSRM Application")
-cpack_add_component(libraries    GROUP Development DISPLAY_NAME "Libraries")
-cpack_add_component(headers      GROUP Development DISPLAY_NAME "C++ Headers" DEPENDS libraries)
-cpack_add_component(flatbuffers  GROUP Development DISPLAY_NAME "3rd Party Flatbuffers Headers" DEPENDS libraries DISABLED)
 
 function(JOIN VALUES GLUE OUTPUT)
   string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
