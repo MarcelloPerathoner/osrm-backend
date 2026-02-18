@@ -145,7 +145,7 @@ For apt-get builds:
 
 ```bash
 cmake -B build -DCMAKE_C_COMPILER=clang-21 -DCMAKE_CXX_COMPILER=clang++-21
-make -C build -j
+cmake --build build -j
 ```
 
 ### Debug build
@@ -164,7 +164,7 @@ For apt-get builds:
 
 ```bash
 cmake -B build -DCMAKE_BUILD_TYPE=Debug
-make -C build -j
+cmake --build build -j
 ```
 The binaries will be in `build`.
 
@@ -183,7 +183,7 @@ For apt-get builds:
 
 ```bash
 cmake -B build -DBUILD_NODE_PACKAGE=ON
-make -C build -j
+cmake --build build -j
 scripts/ci/build_node_package.sh
 ```
 The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
@@ -200,7 +200,7 @@ To learn how OSRM is built on the github CI you may consult the file
 To run the unit tests:
 
 ```bash
-make -C build/Release -j tests benchmarks
+cmake --build build -j --target tests benchmarks
 ctest --test-dir build/Release/unit_tests/ -j
 ```
 

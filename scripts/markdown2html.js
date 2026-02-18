@@ -16,6 +16,7 @@ import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
 import { gfmHeadingId } from 'marked-gfm-heading-id';
 import customHeadingId from 'marked-custom-heading-id';
+import markedFootnote from 'marked-footnote';
 import markedAlert from 'marked-alert';
 import markedLinkifyIt from 'marked-linkify-it';
 import hljs from 'highlight.js';
@@ -53,6 +54,7 @@ marked.use(
     }
   })
 );
+marked.use(markedFootnote());
 marked.use(gfmHeadingId());
 marked.use(markedAlert());
 marked.use(customHeadingId()); // after gfmHeadingId() ! so it takes precedence

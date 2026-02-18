@@ -56,13 +56,36 @@ install(
   DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib/binding_napi_v${NAPI_VERSION}"
   COMPONENT node_osrm
   RUNTIME_DEPENDENCIES
-    PRE_EXCLUDE_REGEXES "api-ms-.*"
+    PRE_EXCLUDE_REGEXES
+        "api-ms-win-.*"
+        "ext-ms-.*"
+        "kernel32\.dll"
+        "libc\.so\..* libgcc_s\.so\..* libm\.so\..* libstdc\+\+\.so\..*"
     POST_INCLUDE_REGEXES "conan2|boost|tbb|lua|bz2|zstd"
-    POST_EXCLUDE_REGEXES ".*"
+    POST_EXCLUDE_REGEXES
+        ".*/system32/.*\.dll"
+        "^/lib.*"
+        "^/usr/lib.*"
     # GET_RUNTIME_DEPENDENCIES() is too dumb to use the Windows PATH
     # when searching for DLLs. We have to spoon-feed it.
-    DIRECTORIES ${WINDOWS_RUN_PATH}
+    DIRECTORIES ${CONAN_RUNTIME_LIB_DIRS}
+    # ${WINDOWS_RUN_PATH}
 )
+
+#install(RUNTIME_DEPENDENCY_SET my_app_deps
+#    PRE_EXCLUDE_REGEXES
+#        [[api-ms-win-.*]]
+#        [[ext-ms-.*]]
+#        [[kernel32\.dll]]
+#        [[libc\.so\..*]] [[libgcc_s\.so\..*]] [[libm\.so\..*]] [[libstdc\+\+\.so\..*]]
+#    POST_EXCLUDE_REGEXES
+#        [[.*/system32/.*\.dll]]
+#        [[^/lib.*]]
+#        [[^/usr/lib.*]]
+#    DIRECTORIES ${CONAN_RUNTIME_LIB_DIRS}
+#)
+
+
 
 install(
   FILES "index.js"
