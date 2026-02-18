@@ -156,9 +156,15 @@ class OsrmConan(ConanFile):
             cmake_presets = os.path.join(self.recipe_folder, "CMakePresets.json")
             with open(cmake_presets, "r") as fp:
                 js = json.loads(fp.read())
-                tc.cache_variables.update(js["configurePresets"][0]["cacheVariables"])
+                preset = js["configurePresets"][0]
+                tc.cache_variables.update(preset.get("cacheVariables", {}))
+                if "generator" in preset:
+                    tc.generator = preset["generator"]
         except IOError:
             pass
+
+        if self.options.generator:
+            tc.generator = str(self.options.generator)
 
         # CAVEAT: MISNOMER! cache_variables end up in CMakePresets.json
         # and must be recalled with `cmake --preset conan-release`
@@ -183,8 +189,8 @@ class OsrmConan(ConanFile):
         # fmt: on
 
         # OSRM uses C++20
-        # replace the block that would set the cpp standard with our own custom block
-        # tc.blocks["cppstd"] = OsrmGenericBlock
+        # remove the block that would set the cpp standard
+        # tc.blocks.remove("cppstd")
         tc.blocks["generic"] = OsrmGenericBlock
 
         # add variable names compatible with the non-conan build
@@ -203,16 +209,6 @@ class OsrmConan(ConanFile):
         run_vars = vre.environment().vars(self, scope="run")
         self._writeEnvSh(vbe.environment().vars(self, scope="build"))
         self._writeEnvSh(run_vars)
-
-        # HACK: Conan already emits this search PATH for libraries in the "run"
-        # environment, but we need it much earlier as a parameter for
-        # install(RUNTIME_DEPENDENCIES) otherwise cmake is too dumb to look into the
-        # PATH when searching for DLLs on Windows.
-        if self.settings.os == "Windows":
-            run_values = run_vars._values
-            if "PATH" in run_values:
-                path = self._getVarValue(run_values["PATH"])
-                tc.cache_variables["WINDOWS_RUN_PATH"] = ";".join(path)
 
         # Put an environment into the well-known location `build/conan.env`
         with open(os.path.join(self.recipe_folder, BUILD_ROOT, "conan.env"), "w") as fp:
