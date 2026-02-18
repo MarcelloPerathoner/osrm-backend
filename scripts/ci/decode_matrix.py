@@ -120,6 +120,9 @@ get(envs, "RUN_BENCHMARKS",     "OFF")
 
 # fmt: on
 
+if envs.get("ENABLE_CCACHE") == "ON":
+    apt_get_deps.append("ccache")
+
 # In Cmake single-config generators like "Unix Makefiles" need different parameters as
 # multi-config generators like "Visual Studio" and "Xcode". Currently the only
 # multi-config generator we use is "Visual Studio".
@@ -157,34 +160,16 @@ if m:
     compiler = m.group(1)
     version = m.group(2)
 
-envs["COMPILER_ID"] = compiler
-envs["COMPILER_VERSION"] = version
-
 ver = "-" + version if version else ""
 if compiler == "clang":
     envs["CC"] = f"clang{ver}"
     envs["CXX"] = f"clang++{ver}"
-    apt_get_deps.append(f"clang{ver}")
     if cdefs["ENABLE_TIDY"] == "ON":
         envs["CLANG_TIDY"] = f"clang-tidy{ver}"
-        apt_get_deps.append(f"clang-tidy{ver}")
-    if cdefs["ENABLE_COVERAGE"] == "ON":
-        apt_get_deps.append(f"llvm{ver}")
 
 if compiler == "gcc":
     envs["CC"] = f"gcc{ver}"
-    apt_get_deps.append(f"gcc{ver}")
     envs["CXX"] = f"g++{ver}"
-    apt_get_deps.append(f"g++{ver}")
-
-if envs.get("ENABLE_CCACHE") == "ON":
-    apt_get_deps.append("ccache")
-
-# Note: `APT_GET_DEPS="clang llvm"` (with double quotes) in the file will not work if
-# the file is appended >> $GITHUB_ENV. github will not remove the quotes like the bash
-# source command does. This is a workaround: use semis here and then replace them with
-# spaces later.
-envs["APT_GET_DEPS"] = ":".join(apt_get_deps)
 
 # fmt: off
 # let the user override our choice using explicit CC, CXX etc.
@@ -202,6 +187,31 @@ cdefs["CMAKE_C_FLAGS"]        = envs.get("CFLAGS")
 cdefs["CMAKE_CXX_FLAGS"]      = envs.get("CXXFLAGS")
 
 # fmt: on
+
+# calculate apt-get dependencies
+m = re.search(r"(clang|gcc)(?:-(\d+))?", envs.get("CC"))
+if m:
+    compiler = m.group(1)
+    version = m.group(2)
+    ver = "-" + version if version else ""
+    if compiler == "clang":
+        apt_get_deps.append(f"clang{ver}")
+        if cdefs.get("ENABLE_TIDY") == "ON":
+            apt_get_deps.append(f"clang-tidy{ver}")
+        if cdefs.get("ENABLE_COVERAGE") == "ON":
+            apt_get_deps.append(f"llvm{ver}")
+    if compiler == "gcc":
+        apt_get_deps.append(f"gcc{ver}")
+        apt_get_deps.append(f"g++{ver}")
+
+    envs["COMPILER_ID"] = compiler
+    envs["COMPILER_VERSION"] = version
+
+# Note: The line `APT_GET_DEPS="clang llvm"` (with double quotes) in the `.env` file
+# will not work if we `cat file.env >> $GITHUB_ENV`. github will not remove the quotes
+# like the bash source command does. This is a workaround: use colons here and then
+# replace them with spaces later.
+envs["APT_GET_DEPS"] = ":".join(apt_get_deps)
 
 # write KEY=VALUE pairs
 envs.update(cdefs)
