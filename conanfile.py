@@ -76,8 +76,8 @@ class OsrmConan(ConanFile):
         values = []
         for varvalue in varvalues._values:
             if varvalue is not _EnvVarPlaceHolder:
-                values.append(_bash_path(varvalue))
-        return ":".join(values)
+                values.append(varvalue)
+        return values
 
     def _writeEnvSh(self, env_vars):
         """
@@ -210,7 +210,7 @@ class OsrmConan(ConanFile):
         run_values = run_vars._values
         if "PATH" in run_values:
             path = self._getVarValue(run_values["PATH"])
-            tc.cache_variables["CONAN_RUN_PATH"] = path
+            tc.cache_variables["CONAN_RUN_PATH"] = ";".join(path)
 
         # Put an environment into the well-known location `build/conan.env`
         with open(os.path.join(self.recipe_folder, "build/conan.env"), "w") as fp:
@@ -230,6 +230,7 @@ class OsrmConan(ConanFile):
             fp.write(f"OSRM_CONFIG={self.settings.build_type}\n")
             if "PATH" in run_values:
                 path = self._getVarValue(run_values["PATH"])
+                path = ":".join(map(_bash_path, path))
                 fp.write(f"CONAN_RUN_PATH={path}\n")
 
         tc.cache_variables["USE_CONAN"] = True

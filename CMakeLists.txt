@@ -150,7 +150,6 @@ endfunction(add_dependency_defines)
 # - `build/osrm-run-env.sh` usage: `source build/osrm-run-env.sh`
 # - `build/osrm-run.env`    usage: `cat build/osrm-run.env >> $GIHUB_ENV`.
 
-set(CONAN_ENV       "${PROJECT_SOURCE_DIR}/build/conan.env") # used in osrm-run-env.sh.in
 set(OSRM_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/osrm-run.env")
 set(OSRM_RUN_ENV_SH "${PROJECT_SOURCE_DIR}/build/osrm-run-env.sh")
 file(REMOVE "${OSRM_RUN_ENV}")

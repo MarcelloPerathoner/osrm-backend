@@ -1,7 +1,11 @@
 # source this file, do not call it
 
-if [[ -f @CONAN_ENV@ ]]; then
-    source @CONAN_ENV@
+if [[ -f "build/matrix.env" ]]; then
+    source "build/matrix.env"
+fi
+
+if [[ -f "build/conan.env" ]]; then
+    source "build/conan.env"
 fi
 
 if [[ -f "build/conan-run-env.sh" ]]; then
@@ -9,4 +13,6 @@ if [[ -f "build/conan-run-env.sh" ]]; then
     export LD_LIBRARY_PATH DYLD_LIBRARY_PATH PATH
 fi
 
-source @OSRM_RUN_ENV@
+if [[ -f "build/osrm-run.env" ]]; then
+    source "build/osrm-run.env"
+fi
