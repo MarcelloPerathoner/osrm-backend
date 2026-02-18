@@ -163,9 +163,8 @@ envs["COMPILER_VERSION"] = version
 ver = "-" + version if version else ""
 if compiler == "clang":
     envs["CC"] = f"clang{ver}"
-    apt_get_deps.append(f"clang{ver}")
     envs["CXX"] = f"clang++{ver}"
-    apt_get_deps.append(f"clang++{ver}")
+    apt_get_deps.append(f"clang{ver}")
     if cdefs["ENABLE_TIDY"] == "ON":
         envs["CLANG_TIDY"] = f"clang-tidy{ver}"
         apt_get_deps.append(f"clang-tidy{ver}")
