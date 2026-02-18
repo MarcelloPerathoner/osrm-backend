@@ -67,12 +67,16 @@ args = parser.parse_args()
 matrix = json.load(args.matrix)
 job_name = matrix.get("name")
 
-envs = {}  # environment variables only for $GITHUB_ENV
-cdefs = {}  # definitions for CmakePresets.json and $GITHUB_ENV
+envs = {}
+"Environment variables that go only into `$GITHUB_ENV`"
+cdefs = {}
+"Definitions that go into `CmakePresets.json` and `$GITHUB_ENV`"
+apt_get_deps = []
+"Dependencies to be installed with apt-get"
 
 
 def in_job_name(needle, value, default=None):
-    """Return value if the needle was found in the job name else default."""
+    """Return value if `needle` was found in the job name else default."""
     haystack = job_name.split("-")
     return value if needle in haystack else default
 
@@ -105,6 +109,7 @@ get(cdefs, "ENABLE_CCACHE")
 get(cdefs, "ENABLE_LTO")
 get(cdefs, "ENABLE_SCCACHE")
 
+get(envs, "CMAKE_GENERATOR")
 get(envs, "NODE_VERSION",       24)
 get(envs, "BUILD_UNIT_TESTS",   "ON")
 get(envs, "BUILD_BENCHMARKS",   "OFF")
@@ -158,15 +163,29 @@ envs["COMPILER_VERSION"] = version
 ver = "-" + version if version else ""
 if compiler == "clang":
     envs["CC"] = f"clang{ver}"
+    apt_get_deps.append(f"clang{ver}")
     envs["CXX"] = f"clang++{ver}"
+    apt_get_deps.append(f"clang++{ver}")
     if cdefs["ENABLE_TIDY"] == "ON":
         envs["CLANG_TIDY"] = f"clang-tidy{ver}"
+        apt_get_deps.append(f"clang-tidy{ver}")
     if cdefs["ENABLE_COVERAGE"] == "ON":
-        envs["LLVM"] = f"llvm{ver}"
+        apt_get_deps.append(f"llvm{ver}")
 
 if compiler == "gcc":
     envs["CC"] = f"gcc{ver}"
+    apt_get_deps.append(f"gcc{ver}")
     envs["CXX"] = f"g++{ver}"
+    apt_get_deps.append(f"g++{ver}")
+
+if envs["ENABLE_CCACHE"] == "ON":
+    apt_get_deps.append("ccache")
+
+# Note: `APT_GET_DEPS="clang llvm"` (with double quotes) in the file will not work if
+# the file is appended >> $GITHUB_ENV. github will not remove the quotes like the bash
+# source command does. This is a workaround: use semis here and then replace them with
+# spaces later.
+envs["APT_GET_DEPS"] = ":".join(apt_get_deps)
 
 # fmt: off
 # let the user override our choice using explicit CC, CXX etc.

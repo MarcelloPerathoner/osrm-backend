@@ -121,6 +121,12 @@ Example: `cmake -B build --DCMAKE_BUILD_TYPE=Debug -DBUILD_NODE_PACKAGE=ON`.
 | `-DENABLE_TSAN`          | `OFF`     | Use thread sanitizer for Debug build (experimental) |
 | `-DENABLE_UBSAN`         | `OFF`     | Use undefined behaviour sanitizer for Debug build   |
 
+Other arguments:
+
+| Argument   | Description      |
+| ---------- | ---------------- |
+| `-G Ninja` | Build with Ninja |
+
 Proceed with [testing](#tests).
 
 ## Build variations

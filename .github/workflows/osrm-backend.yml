@@ -58,6 +58,7 @@ jobs:
             runs-on: ubuntu-24.04
             BUILD_BENCHMARKS: ON
             RUN_BENCHMARKS: ON
+            CMAKE_GENERATOR: Ninja
 
           - name: clang-20-debug-node-tidy
             continue-on-error: true
@@ -197,7 +198,7 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             sudo apt-get update -y
-            sudo apt-get install -y ${CC} ${CXX} ${CLANG_TIDY} ${LLVM} make cmake ccache zlib1g-dev
+            sudo apt-get install -y ${APT_GET_DEPS//:/ } make cmake zlib1g-dev
             echo "MAKE=make" >> $GITHUB_ENV
             echo "TIME=/usr/bin/time" >> $GITHUB_ENV
           elif [[ "${RUNNER_OS}" == "macOS" ]]; then
