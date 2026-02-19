@@ -18,6 +18,8 @@ add_executable(packedvector-bench EXCLUDE_FROM_ALL packed_vector.cpp)
 add_executable(route-bench        EXCLUDE_FROM_ALL route.cpp)
 add_executable(rtree-bench        EXCLUDE_FROM_ALL static_rtree.cpp)
 
+set (BENCHMARKS alias-bench bench json-render-bench match-bench packedvector-bench route-bench rtree-bench)
+
 target_link_libraries(alias-bench        osrm_utils                            ${MAYBE_SHAPEFILE})
 target_link_libraries(bench	             osrm_utils ENGINE ${ENGINE_LIBRARIES} ${MAYBE_SHAPEFILE})
 target_link_libraries(json-render-bench	 osrm_utils ENGINE ${ENGINE_LIBRARIES} ${MAYBE_SHAPEFILE})
@@ -28,18 +30,14 @@ target_link_libraries(rtree-bench        osrm_utils                            $
 
 target_include_directories(rtree-bench PUBLIC ${PROJECT_SOURCE_DIR}/unit_tests)
 
-set (TESTS alias-bench bench json-render-bench match-bench packedvector-bench route-bench rtree-bench)
-
-add_custom_target(benchmarks DEPENDS ${TESTS})
+add_custom_target(benchmarks DEPENDS ${BENCHMARKS})
 
 ### run the benchmarks ###
 
-enable_testing()
-
 # fixture for test matrix
 
-add_test(NAME bench-fixture COMMAND make -C "${TEST_DATA_DIR}" monaco berlin)
-set_tests_properties(bench-fixture PROPERTIES FIXTURES_SETUP bench-fixtures-setup)
+add_test(NAME fixture-berlin COMMAND make -C "${TEST_DATA_DIR}" monaco berlin)
+set_tests_properties(fixture-berlin PROPERTIES FIXTURES_SETUP bench-fixtures-setup)
 
 # test matrix
 

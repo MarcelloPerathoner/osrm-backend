@@ -6,7 +6,7 @@ Conan is supported.
 
 ```mermaid
 graph LR;
-    clone[Clone the repository]
+    clone[Prepare]
     conan[Build with Conan]
     manually["Build manually<br/>(Linux only)"]
     test[Run tests]
@@ -23,7 +23,7 @@ graph LR;
     click install "#install"
 ```
 
-## Clone the Repository {#clone}
+## Prepare {#clone}
 
 Clone the github repository and install node files:
 
@@ -99,13 +99,14 @@ The OSRM binaries are now in `build/Release` and the node binaries are in
 `build/nodejs/lib/binding_napi_v8`.
 
 
-## Tests {#tests}
+## Test {#tests}
 
 ### Unit tests {#unit-tests}
 
 To run the unit tests:
 
 ```bash
+cmake --build build/Release -j --target tests
 source build/osrm-run-env.sh
 ctest --test-dir build/Release -C Release -L tests -j
 ```

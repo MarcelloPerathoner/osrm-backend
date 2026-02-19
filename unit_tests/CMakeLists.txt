@@ -67,16 +67,6 @@ file(GLOB UtilTestsSources
     util_tests.cpp
     util/*.cpp)
 
-foreach(t contractor customizer engine extractor partitioner server storage updater util)
-  list(APPEND TESTS "${t}-tests")
-endforeach()
-
-foreach(t contract customize extract partition)
-  list(APPEND TESTS "library-${t}-tests")
-endforeach()
-
-list(APPEND TESTS "library-tests")
-
 # add_definitions (-DBOOST_TEST_DYN_LINK)
 
 add_executable(contractor-tests	       EXCLUDE_FROM_ALL ${ContractorTestsSources})
@@ -94,6 +84,16 @@ add_executable(library-customize-tests EXCLUDE_FROM_ALL ${LibraryCustomizeTestsS
 add_executable(library-extract-tests   EXCLUDE_FROM_ALL	${LibraryExtractTestsSources})
 add_executable(library-partition-tests EXCLUDE_FROM_ALL ${LibraryPartitionTestsSources})
 add_executable(library-tests	       EXCLUDE_FROM_ALL	${LibraryTestsSources})
+
+foreach(t contractor customizer engine extractor partitioner server storage updater util)
+  list(APPEND TESTS "${t}-tests")
+endforeach()
+
+foreach(t contract customize extract partition)
+  list(APPEND TESTS "library-${t}-tests")
+endforeach()
+
+list(APPEND TESTS "library-tests")
 
 add_dependencies(library-tests osrm-extract osrm-contract osrm-partition)
 
@@ -135,19 +135,14 @@ target_link_libraries(storage-tests                         osrm_utils ${BOOST_U
 target_link_libraries(updater-tests                         osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 target_link_libraries(util-tests                            osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
 
+add_custom_target(tests DEPENDS ${TESTS})
+
 ### run the tests ###
 
-add_test(NAME test-build
-  COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "${OSRM_CONFIG}" --target tests -j
-)
-add_test(NAME test-fixture COMMAND make -C "${OSRM_TEST_DATA_DIR}" monaco)
-
-set_tests_properties(test-build PROPERTIES   FIXTURES_SETUP test-fixtures-setup)
-set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
+add_test(NAME fixture-monaco COMMAND make -C "${OSRM_TEST_DATA_DIR}" monaco)
+set_tests_properties(fixture-monaco PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 
 foreach(t ${TESTS})
   add_test(NAME "${t}" COMMAND "${t}")
   set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup LABELS tests)
 endforeach()
-
-add_custom_target(tests DEPENDS ${TESTS})
