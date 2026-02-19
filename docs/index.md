@@ -9,8 +9,8 @@
 
 - [OSRM HTTP server](http.md)
 - [OSRM Profiles](profiles.md)
-- [OSRM NodeJS API](nodejs.md)
-- [Building OSRM from Source](building.md)
+- [OSRM NodeJS API](generated/nodejs.md)
+- [Building OSRM from Source](src/building/index.md)
 - [Building OSRM for Windows](windows-deps.md)
 - [osrm-routed environment variables](routed.md)
 

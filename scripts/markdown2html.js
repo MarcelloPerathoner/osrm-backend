@@ -11,6 +11,7 @@
  */
 
 import fs from 'node:fs';
+import path from 'node:path';
 
 import { Marked } from 'marked';
 import { markedHighlight } from 'marked-highlight';
@@ -38,6 +39,18 @@ const argv = yargs(hideBin(process.argv))
     type: 'string',
     required: true,
     description: 'The input file (markdown)'
+  })
+  .option('output', {
+    alias: 'o',
+    type: 'string',
+    required: true,
+    description: 'The output file (html)'
+  })
+  .option('base', {
+    alias: 'b',
+    type: 'string',
+    required: true,
+    description: 'The base directory'
   })
   .parse();
 
@@ -122,6 +135,7 @@ title = title || 'OSRM Documentation';
 const template = Handlebars.compile(fs.readFileSync(argv.template, 'utf8'));
 const article = marked.parse(fs.readFileSync(argv.input, 'utf8'));
 
-const html = template({ title, article, needs_mermaid });
+const rel_path = path.relative(path.dirname(argv.output), argv.base) || '.';
+const html = template({ title, article, rel_path, needs_mermaid });
 
-console.log(html);
+fs.writeFileSync(argv.output, html, 'utf8');

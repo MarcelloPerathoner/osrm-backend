@@ -27,7 +27,7 @@ runs:
         $MAKE -C "$TEST_DIR/data" monaco berlin
         echo "::endgroup::"
 
-        # ctest --preset conan-release -L benchmark --no-tests=error -V -O ${LOG_DIR}/unit_test.log
+        # ctest --preset conan-release -L benchmarks --no-tests=error -V -O ${LOG_DIR}/unit_test.log
 
         "${CI_DIR}/run_e2e_benchmarks.sh"
         killall -9 osrm-routed || true

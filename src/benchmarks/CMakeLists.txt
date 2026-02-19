@@ -47,7 +47,7 @@ foreach(ALGORITHM ch mld)
   foreach(BENCHMARK match-bench route-bench)
     set (NAME "${BENCHMARK}-${ALGORITHM}")
     add_test(NAME "${NAME}" COMMAND ${BENCHMARK} "${MONACO}/${ALGORITHM}/monaco.osrm" ${ALGORITHM})
-    set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
+    set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
   endforeach()
 endforeach()
 
@@ -60,10 +60,10 @@ add_test(NAME rtree-bench COMMAND rtree-bench
                 "${MONACO}/ch/monaco.osrm.fileIndex"
                 "${MONACO}/ch/monaco.osrm.nbg_nodes")
 
-set_tests_properties(alias-bench        PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
-set_tests_properties(json-render-bench  PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
-set_tests_properties(packedvector-bench PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
-set_tests_properties(rtree-bench        PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
+set_tests_properties(alias-bench        PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
+set_tests_properties(json-render-bench  PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
+set_tests_properties(packedvector-bench PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
+set_tests_properties(rtree-bench        PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
 
 foreach(ALGORITHM ch mld)
     foreach(BENCHMARK nearest table trip route match)
@@ -77,7 +77,7 @@ foreach(ALGORITHM ch mld)
                 "${BENCHMARK}"
                 5
                 "${GPS_TRACES}")
-        set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
+        set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
         if(BUILD_NODE_PACKAGE)
             set (NAME "node-${BENCHMARK}-${ALGORITHM}")
             add_test(
@@ -90,7 +90,7 @@ foreach(ALGORITHM ch mld)
                     "${BENCHMARK}"
                     5
                     "${GPS_TRACES}")
-            set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmark)
+            set_tests_properties("${NAME}" PROPERTIES FIXTURES_REQUIRED bench-fixtures-setup LABELS benchmarks)
         endif()
     endforeach()
 endforeach()

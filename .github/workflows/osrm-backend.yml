@@ -16,6 +16,9 @@ defaults:
     shell: bash
 
 env:
+  # print commands
+  SHELLOPTS: xtrace
+
   # paths
   BUILD_DIR:   ${{ github.workspace }}/build
   TEST_DIR:    ${{ github.workspace }}/test
@@ -198,7 +201,6 @@ jobs:
 
       - name: Setup environment
         run: |
-          set -o xtrace
           uname
           uname -a
 
@@ -452,7 +454,7 @@ jobs:
           ctest --help
           echo "::endgroup::"
 
-          ctest --preset ${CMAKE_TEST_PRESET_NAME} -L test --no-tests=error -V -O ${LOG_DIR}/unit_test.log
+          ctest --preset ${CMAKE_TEST_PRESET_NAME} -L tests --no-tests=error -V -O ${LOG_DIR}/unit_test.log
 
       - name: Run Cucumber tests
         if: env.RUN_CUCUMBER_TESTS == 'ON'

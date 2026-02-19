@@ -137,12 +137,17 @@ target_link_libraries(util-tests                            osrm_utils ${BOOST_U
 
 ### run the tests ###
 
+add_test(NAME test-build
+  COMMAND "${CMAKE_COMMAND}" --build "${CMAKE_BINARY_DIR}" --config "${OSRM_CONFIG}" --target tests -j
+)
 add_test(NAME test-fixture COMMAND make -C "${OSRM_TEST_DATA_DIR}" monaco)
+
+set_tests_properties(test-build PROPERTIES   FIXTURES_SETUP test-fixtures-setup)
 set_tests_properties(test-fixture PROPERTIES FIXTURES_SETUP test-fixtures-setup)
 
 foreach(t ${TESTS})
   add_test(NAME "${t}" COMMAND "${t}")
-  set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup LABELS test)
+  set_tests_properties("${t}" PROPERTIES FIXTURES_REQUIRED test-fixtures-setup LABELS tests)
 endforeach()
 
 add_custom_target(tests DEPENDS ${TESTS})

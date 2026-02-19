@@ -744,6 +744,7 @@ set_target_properties(check-headers PROPERTIES ARCHIVE_OUTPUT_DIRECTORY ${check_
 
 # useful for windows build on ci
 push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
+push_env("OSRM_CONFIG" "${CMAKE_BUILD_TYPE}")
 push_env("PROJECT_SOURCE_DIR" "${PROJECT_SOURCE_DIR}")
 push_env("USE_CCACHE" "${USE_CCACHE}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")

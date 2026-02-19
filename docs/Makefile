@@ -17,13 +17,14 @@ BUILD=$(PROJECT)/build/docs
 NODE=$(PROJECT)/node_modules
 SCRIPTS=$(PROJECT)/scripts
 
-MDS=$(wildcard $(DOCS)/*.md) $(DOCS)/generated/nodejs.md
-HTMLS=$(patsubst %,$(BUILD)/%.html,$(notdir $(basename $(MDS))))
+MDS=$(shell find $(DOCS) -name "*.md") $(DOCS)/generated/nodejs.md
+HTMLS=$(patsubst %,$(BUILD)/%.html,$(basename $(MDS)))
+DIRS=$(patsubst %,$(BUILD)/%,$(dir $(MDS)))
 
-all: dir docs aux
+all: dirs docs aux
 
-dir:
-	mkdir -p $(BUILD)
+dirs:
+	mkdir -p $(DIRS)
 
 docs: $(MDS) $(HTMLS)
 
@@ -40,7 +41,7 @@ $(DOCS)/generated/nodejs.md : $(BUILD)/nodejs.jsdoc
 
 # Build the HTML files
 $(BUILD)/%.html : %.md $(DOCS)/templates/article.html $(SCRIPTS)/markdown2html.js
-	node $(SCRIPTS)/markdown2html.js -t $(DOCS)/templates/article.html -i $< > $@
+	node $(SCRIPTS)/markdown2html.js -t $(DOCS)/templates/article.html -b $(BUILD) -i $< -o $@
 
 # Copy images and css into the build dir
 aux:

@@ -1,5 +1,8 @@
 # source this file, do not call it
 
+# auto-export everything
+set -a
+
 if [[ -f "build/matrix.env" ]]; then
     source "build/matrix.env"
 fi
@@ -16,3 +19,5 @@ fi
 if [[ -f "build/osrm-run.env" ]]; then
     source "build/osrm-run.env"
 fi
+
+set +a
