@@ -27,3 +27,13 @@ jobs:
           node ./scripts/validate_changelog.js
           npm run docs && ./scripts/error_on_dirty.sh
           npm audit --omit=dev
+
+      - name: Build docs
+        run: |
+          npm run docs
+
+      - name: Upload Docs
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs
+          path: build/docs/

@@ -284,13 +284,21 @@ jobs:
       - name: Install dev dependencies
         if: env.ENABLE_CONAN != 'ON'
         run: |
-          if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            # Install dev dependencies the traditional way
-            sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev
-            if [[ "${ENABLE_COVERAGE}" == "ON" ]]; then
-                sudo apt-get install -y lcov
-            fi
-          fi
+          # Install dev dependencies the traditional way
+          case "${RUNNER_OS}" in
+            Linux)
+              sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev
+              if [[ "${ENABLE_COVERAGE}" == "ON" ]]; then
+                  sudo apt-get install -y lcov
+              fi
+            ;;
+            Darwin)
+            ;;
+            Windows)
+              # not tested
+              pacman -S bzip2 libxml2 libzip lua onetbb
+            ;;
+          esac
 
           # for install-boost below
           BOOST_PLATFORM=${{ matrix.runs-on }}
@@ -496,6 +504,13 @@ jobs:
           omitNameDuringUpdate: true
           replacesArtifacts: true
           token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload Node package
+        if: env.BUILD_NODE_PACKAGE == 'ON'
+        uses: actions/upload-artifact@v4
+        with:
+          name: node-package-${{ matrix.name }}
+          path: build/stage/**/*.tar.gz
 
       - name: Upload log files
         uses: actions/upload-artifact@v4

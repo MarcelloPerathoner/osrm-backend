@@ -1,5 +1,8 @@
 # How-To Build OSRM from Source
 
+This How-To assumes you are familiar with git, CMake, and a C++ compiler.  On Windows a
+Linux-compatible toolset like MSYS2 is needed.
+
 OSRM depends on external libraries. On Linux you can choose to install those libraries
 either with a package manager (Conan) or manually (apt-get). On macOS and Windows only
 Conan is supported.
@@ -37,7 +40,6 @@ npm ci --ignore-scripts
 
 This build method works on Linux, macOS and Windows (Tested on Ubuntu-24.04,
 Ubuntu-22.04, macOS-24, macOS-15, macOS-14, Windows-Server-2025, and Windows-Server-2022.)
-On Windows a Linux-compatible toolset like mingw is needed.
 
 First install Conan. You have to do this only once after a git clone.
 
