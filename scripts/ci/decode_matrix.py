@@ -150,11 +150,11 @@ envs["JOBS"] = jobs
 compiler = None
 version = None
 
-# default compiler is clang
-if "windows" not in matrix["runs-on"]:
+# set clang as default for macOS
+if "macos" in matrix["runs-on"]:
     compiler = "clang"
 
-# job name explicitly mentions compiler
+# set CC and CXX if job name explicitly mentions compiler
 m = re.search(r"(clang|gcc)-(\d+)", job_name)
 if m:
     compiler = m.group(1)

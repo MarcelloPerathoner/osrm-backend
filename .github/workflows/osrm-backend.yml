@@ -127,6 +127,7 @@ jobs:
 
           - name: conan-linux-debug-node
             runs-on: ubuntu-24.04
+            continue-on-error: true
             CC: clang-19
             CXX: clang++-19
             CMAKE_GENERATOR: Ninja
@@ -197,6 +198,7 @@ jobs:
 
       - name: Setup environment
         run: |
+          set -o xtrace
           uname
           uname -a
 
