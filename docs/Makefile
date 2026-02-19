@@ -28,6 +28,9 @@ dirs:
 
 docs: $(MDS) $(HTMLS)
 
+open: all
+	xdg-open $(BUILD)/index.html
+
 vpath %.md $(DOCS):$(DOCS)/generated
 
 # Extract JSDoc comments from cpp file
