@@ -182,10 +182,12 @@ push_env("OSRM_BUILD_DIR" "${OSRM_BUILD_DIR}")
 push_env("OSRM_CONFIG" "${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-add_custom_target(clangd-conf ALL
+if(NOT MSVC)
+  add_custom_target(clangd-conf ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        "${OSRM_BUILD_DIR}/compile_commands.json"
-        "${PROJECT_SOURCE_DIR}/build/compile_commands.json")
+      "${OSRM_BUILD_DIR}/compile_commands.json"
+      "${PROJECT_SOURCE_DIR}/build/compile_commands.json")
+endif()
 
 include(CheckCXXCompilerFlag)
 include(FindPackageHandleStandardArgs)
