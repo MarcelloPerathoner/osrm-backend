@@ -315,14 +315,14 @@ jobs:
           echo "BOOST_PLATFORM=$BOOST_PLATFORM"
           echo "BOOST_PLATFORM=$BOOST_PLATFORM" >> $GITHUB_ENV
 
-      - name: Install boost
-        if: env.ENABLE_CONAN != 'ONXXX'
-        uses: MarkusJx/install-boost@v2
-        id: install-boost
-        with:
-          # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
-          boost_version: ${{ env.BOOST_VERSION }}
-          platform_version: ${{ env.BOOST_PLATFORM }}
+      # - name: Install boost
+      #   if: env.ENABLE_CONAN != 'ON'
+      #   uses: MarkusJx/install-boost@v2
+      #   id: install-boost
+      #   with:
+      #     # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
+      #     boost_version: ${{ env.BOOST_VERSION }}
+      #     platform_version: ${{ env.BOOST_PLATFORM }}
 
       - name: Prepare for building
         run: |
