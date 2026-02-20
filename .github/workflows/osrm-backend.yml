@@ -219,6 +219,8 @@ jobs:
             ;;
             macOS)
               # install a current version of bash on macos
+              brew update
+              brew upgrade
               brew install bash make ccache gnu-time
               bash --version
               echo "MAKE=gmake" >> $GITHUB_ENV
@@ -303,7 +305,8 @@ jobs:
             ;;
             Windows)
               # not tested
-              /c/msys64/usr/bin/pacman -S bzip2 libxml2 libzip lua onetbb boost
+              sudo yum update
+              /c/msys64/usr/bin/pacman -S libxml2 mingw-w64-libzip lua mingw-w64-x86_64-tbb mingw-w64-x86_64-boost
               # vcpkg integrate install
               # vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
