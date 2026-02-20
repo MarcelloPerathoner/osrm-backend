@@ -305,7 +305,12 @@ jobs:
             ;;
             Windows)
               # not tested
-              /c/msys64/usr/bin/pacman -S libxml2 mingw-w64-libzip lua mingw-w64-x86_64-tbb mingw-w64-x86_64-boost
+              choco search libxml2
+              choco search libzip
+              choco search lua
+              choco search tbb
+              choco search boost
+              choco install libxml2 libzip lua tbb boost
               # vcpkg integrate install
               # vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
