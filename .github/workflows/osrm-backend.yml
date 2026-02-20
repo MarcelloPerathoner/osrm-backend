@@ -30,7 +30,6 @@ env:
   CONAN_CACHE: ${{ github.workspace }}/.conan2/p
   CONAN_DOWNLOAD_CACHE: ${{ github.workspace }}/.conan2/downloads
 
-  BOOST_VERSION:     1.88.0
   CCACHE_DIR:        ${{ github.workspace }}/.ccache
   CCACHE_TEMPDIR:    /tmp/.ccache-temp
   CCACHE_COMPRESS:   1
@@ -210,6 +209,7 @@ jobs:
           echo ${RUNNER_OS}
 
           mkdir -p build $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
+
           case "${RUNNER_OS}" in
             Linux)
               sudo apt-get update -y
@@ -300,38 +300,18 @@ jobs:
               sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
             ;;
             macOS)
-              # not tested
               brew install libzip lua tbb boost
             ;;
             Windows)
               # not tested
-              choco install lua tbb boost-msvc-14.3
+              choco install lua52 tbb boost-msvc-14.3
               # vcpkg integrate install
               # vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
           esac
 
-          # for install-boost below
-          BOOST_PLATFORM=${{ matrix.runs-on }}
-          BOOST_PLATFORM=${BOOST_PLATFORM#ubuntu-}
-          BOOST_PLATFORM=${BOOST_PLATFORM#macos-}
-          BOOST_PLATFORM=${BOOST_PLATFORM#windows-}
-          echo "BOOST_PLATFORM=$BOOST_PLATFORM"
-          echo "BOOST_PLATFORM=$BOOST_PLATFORM" >> $GITHUB_ENV
-
-      # - name: Install boost
-      #   if: env.ENABLE_CONAN != 'ON'
-      #   uses: MarkusJx/install-boost@v2
-      #   id: install-boost
-      #   with:
-      #     # https://github.com/MarkusJx/prebuilt-boost/blob/main/versions-manifest.json
-      #     boost_version: ${{ env.BOOST_VERSION }}
-      #     platform_version: ${{ env.BOOST_PLATFORM }}
-
       - name: Prepare for building
         run: |
-          echo "Boost_DIR=${{ steps.install-boost.outputs.BOOST_ROOT }}" >> $GITHUB_ENV
-
           if [[ "${ENABLE_CCACHE}" == "ON" ]]; then
             ccache --version
             ccache --max-size=256M
