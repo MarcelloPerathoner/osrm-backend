@@ -304,13 +304,11 @@ jobs:
             ;;
             Windows)
               # not tested
-              nuget install libzip
-              nuget install libxml2-vc140-static-32_64
-              nuget install lua
-              nuget install boost
-              nuget install inteltbb.devel.win
+              nuget install libzip libxml2-vc140-static-32_64 lua boost inteltbb.devel.win -x -OutputDirectory nuget
               # choco install lua52 tbb boost-msvc-14.3 # only half the packages, servers always down
               # vcpkg install boost bzip2 libxml2 libzip lua tbb # same as Conan only much slower
+              ls -al nuget || true
+              ls -al nuget/boost || true
             ;;
           esac
 
