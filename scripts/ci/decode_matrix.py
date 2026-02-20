@@ -141,6 +141,7 @@ envs["CMAKE_TEST_PRESET_NAME"] = preset_name
 binary_dir = os.path.join("${sourceDir}", "build")
 if "windows" not in matrix["runs-on"]:
     binary_dir = os.path.join(binary_dir, envs["OSRM_CONFIG"])
+binary_dir = binary_dir.replace("\\", "/")
 
 jobs = multiprocessing.cpu_count()
 envs["JOBS"] = jobs
