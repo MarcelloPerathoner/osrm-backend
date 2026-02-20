@@ -135,6 +135,9 @@ jobs:
             CXX: clang++-19
             CMAKE_GENERATOR: Ninja
 
+          - name: macos-26-arm64-release-node
+            runs-on: macos-26 # arm64
+
           - name: conan-macos-26-arm64-release-node
             runs-on: macos-26 # arm64
 
@@ -293,6 +296,7 @@ jobs:
               fi
             ;;
             Darwin)
+              brew install bzip2 libxml2 libzip lua tbb
             ;;
             Windows)
               # not tested

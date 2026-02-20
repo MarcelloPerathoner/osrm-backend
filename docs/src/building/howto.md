@@ -1,22 +1,21 @@
 # How-To Build OSRM from Source
 
-This How-To assumes you are familiar with git, CMake, and a C++ compiler.  On Windows a
-Linux-compatible toolset like MSYS2 is needed.
-
-OSRM depends on external libraries. On Linux you can choose to install those libraries
-either with a package manager (Conan) or manually (apt-get). On macOS and Windows only
-Conan is supported.
+This How-To explans how to build OSRM from source. It assumes familiarity with `git`,
+`cmake`, and a C++ compiler.  On Windows it assumes a Linux-compatible toolset like
+MSYS2 is installed.
 
 ```mermaid
 graph LR;
     clone[Prepare]
+    choose{Choose}
     conan[Build with Conan]
     manually["Build manually<br/>(Linux only)"]
     test[Run tests]
     install[Install]
 
-    clone-->conan-->test;
-    clone-->manually-->test;
+    clone-->choose
+    choose-->conan-->test;
+    choose-->manually-->test;
     test-->install
 
     click clone "#clone"
@@ -36,10 +35,24 @@ cd osrm-backend
 npm ci --ignore-scripts
 ```
 
-## Build with Conan {#conan}
+## Choose Package Manager {#choose}
 
-This build method works on Linux, macOS and Windows (Tested on Ubuntu-24.04,
-Ubuntu-22.04, macOS-24, macOS-15, macOS-14, Windows-Server-2025, and Windows-Server-2022.)
+On Linux you must choose whether to install dependencies with a package manager (Conan)
+or manually (apt-get).  On macOS and Windows only Conan is supported.
+
+The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-24, macOS-15,
+macOS-14, Windows-Server-2025, and Windows-Server-2022.  Conan downloads the sources of
+the dependencies and compiles them on your machine.  More things can go wrong, it takes
+longer, but you always get the newest versions.
+
+The build method with manual install uses the package manager installed by your system.
+On Debian this is apt-get.  Less things can go wrong, it is faster, but you only get the
+latest version provided by you system maintainers.
+
+
+
+
+## Build with Conan {#conan}
 
 First install Conan. You have to do this only once after a git clone.
 
