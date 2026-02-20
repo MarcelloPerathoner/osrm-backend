@@ -9,7 +9,7 @@ graph LR;
     clone[Prepare]
     choose{Choose}
     conan[Build with Conan]
-    apt["Build with apt-get<br/>(Linux only)"]
+    apt["Build with apt-get<br/>(not Windows)"]
     test[Run tests]
     install[Install]
 
@@ -38,21 +38,21 @@ npm ci --ignore-scripts
 
 ## Choose a Package Manager {#choose}
 
-On Linux you must choose a package manager to install dependencies: Conan or
-`apt-get`.
+On Linux and mscOS you must choose a package manager to install dependencies: Conan or
+`apt-get` / `brew`.
 
-On macOS and Windows only the Conan build is supported.[^1]
+On Windows only the Conan build is supported.[^1]
 
 The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-24, macOS-15,
 macOS-14, Windows-Server-2025, and Windows-Server-2022.  Conan downloads the sources of
 the dependencies and compiles them on your machine.  More things can go wrong, it takes
 longer, but you always get the newest versions.
 
-The build method with `apt-get` is tested on Ubuntu-24.04 and Ubuntu-22.04. It uses the
-package manager that comes with the Linux distribution.  While using a system package
-manager has its advantages, there are also some drawbacks to consider. These include
-lack of control over the installation process, and the high likelihood of using outdated
-versions, which may be several years old.
+The build method with `apt-get` / `brew` is tested on Ubuntu-24.04, Ubuntu-22.04, and
+macOS-15.  It uses the package manager that comes with the OS.  While using a system
+package manager has its advantages, there are also some drawbacks to consider.  These
+include lack of control over the installation process, and the use of outdated versions,
+which may be several years old.
 
 [^1]: But that doesn't mean the other build won't work, just that we didn't have the
       time and hardware to figure it out for you.  If you know how to, please submit a

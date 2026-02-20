@@ -100,7 +100,7 @@ jobs:
             NODE_VERSION: 22
 
           - name: clang-16-release
-            runs-on: ubuntu-24.04
+            runs-on: ubuntu-22.04
             NODE_VERSION: 20
 
           # - name: gcc-15-release
@@ -303,8 +303,9 @@ jobs:
             ;;
             Windows)
               # not tested
-              vcpkg integrate install
-              vcpkg install boost bzip2 libxml2 libzip lua tbb
+              /c/msys64/usr/bin/pacman -S bzip2 libxml2 libzip lua onetbb boost
+              # vcpkg integrate install
+              # vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
           esac
 
