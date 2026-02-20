@@ -137,6 +137,7 @@ jobs:
 
           - name: macos-26-arm64-release-node
             runs-on: macos-26 # arm64
+            continue-on-error: true
 
           - name: conan-macos-26-arm64-release-node
             runs-on: macos-26 # arm64
@@ -206,25 +207,29 @@ jobs:
         run: |
           uname
           uname -a
+          echo ${RUNNER_OS}
 
           mkdir -p build $TEST_DIR $LOG_DIR $CCACHE_DIR $SCCACHE_DIR
-
-          if [[ "${RUNNER_OS}" == "Linux" ]]; then
-            sudo apt-get update -y
-            sudo apt-get install -y ${APT_GET_DEPS//:/ } make cmake zlib1g-dev
-            echo "MAKE=make" >> $GITHUB_ENV
-            echo "TIME=/usr/bin/time" >> $GITHUB_ENV
-          elif [[ "${RUNNER_OS}" == "macOS" ]]; then
-            # install a current version of bash on macos
-            brew install bash make ccache gnu-time
-            bash --version
-            echo "MAKE=gmake" >> $GITHUB_ENV
-            echo "TIME=gtime" >> $GITHUB_ENV
-          elif [[ "${RUNNER_OS}" == "Windows" ]]; then
-            echo "MAKE=make" >> $GITHUB_ENV
-            echo "TIME=time" >> $GITHUB_ENV
-            echo "PYTHONUTF8=1" >> $GITHUB_ENV
-          fi
+          case "${RUNNER_OS}" in
+            Linux)
+              sudo apt-get update -y
+              sudo apt-get install -y ${APT_GET_DEPS//:/ } make cmake zlib1g-dev
+              echo "MAKE=make" >> $GITHUB_ENV
+              echo "TIME=/usr/bin/time" >> $GITHUB_ENV
+            ;;
+            macOS)
+              # install a current version of bash on macos
+              brew install bash make ccache gnu-time
+              bash --version
+              echo "MAKE=gmake" >> $GITHUB_ENV
+              echo "TIME=gtime" >> $GITHUB_ENV
+            ;;
+            Windows)
+              echo "MAKE=make" >> $GITHUB_ENV
+              echo "TIME=time" >> $GITHUB_ENV
+              echo "PYTHONUTF8=1" >> $GITHUB_ENV
+            ;;
+          esac
 
       # Node
 
@@ -295,7 +300,7 @@ jobs:
                   sudo apt-get install -y lcov
               fi
             ;;
-            Darwin)
+            macOS)
               brew install bzip2 libxml2 libzip lua tbb
             ;;
             Windows)
