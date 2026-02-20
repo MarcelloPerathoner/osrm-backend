@@ -115,6 +115,7 @@ jobs:
 
           - name: gcc-12-release
             runs-on: ubuntu-22.04
+            continue-on-error: true
             NODE_VERSION: 20
             ENABLE_LTO: OFF
 

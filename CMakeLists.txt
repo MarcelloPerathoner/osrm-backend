@@ -182,7 +182,7 @@ push_env("OSRM_BUILD_DIR" "${OSRM_BUILD_DIR}")
 push_env("OSRM_CONFIG" "${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-add_custom_target(clangd-conf
+add_custom_target(clangd-conf ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
         "${OSRM_BUILD_DIR}/compile_commands.json"
         "${PROJECT_SOURCE_DIR}/build/compile_commands.json")
@@ -455,6 +455,7 @@ include_directories(SYSTEM ${FMT_INCLUDE_DIR})
 
 set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
 
+set(Boost_VERBOSE ON)
 find_package(Boost 1.70 REQUIRED COMPONENTS ${BOOST_COMPONENTS})
 find_package(BZip2 REQUIRED)
 find_package(EXPAT REQUIRED)
