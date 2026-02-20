@@ -38,7 +38,7 @@ npm ci --ignore-scripts
 
 ## Choose a Package Manager {#choose}
 
-On Linux and mscOS you must choose a package manager to install dependencies: Conan or
+On Linux and macOS you must choose a package manager to install dependencies: Conan or
 `apt-get` / `brew`.
 
 On Windows only the Conan build is supported.[^1]
