@@ -295,7 +295,7 @@ jobs:
           # Install dev dependencies the traditional way
           case "${RUNNER_OS}" in
             Linux)
-              sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-dev
+              sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
             ;;
             macOS)
               # not tested

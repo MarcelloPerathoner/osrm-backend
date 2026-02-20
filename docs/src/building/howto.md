@@ -9,19 +9,19 @@ graph LR;
     clone[Prepare]
     choose{Choose}
     conan[Build with Conan]
-    manually["Build manually<br/>(Linux only)"]
+    apt["Build with apt-get<br/>(Linux only)"]
     test[Run tests]
     install[Install]
 
     clone-->choose
     choose-->conan-->test;
-    choose-->manually-->test;
+    choose-->apt-->test;
     test-->install
 
     click clone "#clone"
     click choose "#choose"
     click conan "#conan"
-    click manually "#build-manually"
+    click apt "#apt"
     click test "#tests"
     click install "#install"
 ```
@@ -38,20 +38,23 @@ npm ci --ignore-scripts
 
 ## Choose a Package Manager {#choose}
 
-On Linux you must choose whether to install dependencies with a package manager (Conan)
-or manually (apt-get).  The manual build is not supported on macOS and Windows, but that
-doesn't mean it won't work, just that we didn't have the time and hardware to figure it
-out for you.  If you know how to, please submit a patch.
+On Linux you must choose a package manager to install dependencies: Conan or
+`apt-get`.
+
+On macOS and Windows only the Conan build is supported.[^1]
 
 The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-24, macOS-15,
 macOS-14, Windows-Server-2025, and Windows-Server-2022.  Conan downloads the sources of
 the dependencies and compiles them on your machine.  More things can go wrong, it takes
 longer, but you always get the newest versions.
 
-The build method with manual install is tested on Ubuntu-24.04 and Ubuntu-22.04. It uses
-the package manager that comes with the distribution, that is: apt-get.  Less things can
-go wrong, it is faster, but you only get the latest version provided by the Ubuntu
-maintainers.
+The build method with `apt-get` is tested on Ubuntu-24.04 and Ubuntu-22.04. It uses the
+package manager that comes with the Linux distribution.  Less things can go wrong, it is
+faster, but you only get the latest version provided by your Linux distribution.
+
+[^1]: But that doesn't mean the other build won't work, just that we didn't have the
+      time and hardware to figure it out for you.  If you know how to, please submit a
+      patch.
 
 ## Build with Conan {#conan}
 
@@ -83,7 +86,7 @@ The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
 
 Proceed with [testing](#tests).
 
-## Build manually
+## Build with `apt-get` {#apt}
 
 This alternative build method is supported on Linux only. (It probably works on macOS
 too, if using `brew` instead of `apt-get`. Patches to the docs are welcome.)
