@@ -39,19 +39,19 @@ npm ci --ignore-scripts
 ## Choose a Package Manager {#choose}
 
 On Linux you must choose whether to install dependencies with a package manager (Conan)
-or manually (apt-get).  On macOS and Windows only Conan is supported.
+or manually (apt-get).  The manual build is not supported on macOS and Windows, but that
+doesn't mean it won't work, just that we didn't have the time and hardware to figure it
+out for you.  If you know how to, please submit a patch.
 
 The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-24, macOS-15,
 macOS-14, Windows-Server-2025, and Windows-Server-2022.  Conan downloads the sources of
 the dependencies and compiles them on your machine.  More things can go wrong, it takes
 longer, but you always get the newest versions.
 
-The build method with manual install uses the package manager installed by your system.
-On Debian this is apt-get.  Less things can go wrong, it is faster, but you only get the
-latest version provided by you system maintainers.
-
-While we support the manual method only on Linux it will work on every OS if you install
-the right packages. If you get it to work, please submit a patch to this doc.
+The build method with manual install is tested on Ubuntu-24.04 and Ubuntu-22.04. It uses
+the package manager that comes with the distribution, that is: apt-get.  Less things can
+go wrong, it is faster, but you only get the latest version provided by the Ubuntu
+maintainers.
 
 ## Build with Conan {#conan}
 

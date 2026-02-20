@@ -295,17 +295,15 @@ jobs:
           # Install dev dependencies the traditional way
           case "${RUNNER_OS}" in
             Linux)
-              sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev
-              if [[ "${ENABLE_COVERAGE}" == "ON" ]]; then
-                  sudo apt-get install -y lcov
-              fi
+              sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-dev
             ;;
             macOS)
-              brew install libzip lua tbb
+              # not tested
+              brew install libzip lua tbb boost
             ;;
             Windows)
               # not tested
-              pacman -S bzip2 libxml2 libzip lua onetbb
+              pacman -S bzip2 libxml2 libzip lua onetbb boost
             ;;
           esac
 
@@ -318,7 +316,7 @@ jobs:
           echo "BOOST_PLATFORM=$BOOST_PLATFORM" >> $GITHUB_ENV
 
       - name: Install boost
-        if: env.ENABLE_CONAN != 'ON'
+        if: env.ENABLE_CONAN != 'ONXXX'
         uses: MarkusJx/install-boost@v2
         id: install-boost
         with:

@@ -200,6 +200,7 @@ if m:
             apt_get_deps.append(f"clang-tidy{ver}")
         if cdefs.get("ENABLE_COVERAGE") == "ON":
             apt_get_deps.append(f"llvm{ver}")
+            apt_get_deps.append("lcov")
     if compiler == "gcc":
         apt_get_deps.append(f"gcc{ver}")
         apt_get_deps.append(f"g++{ver}")
