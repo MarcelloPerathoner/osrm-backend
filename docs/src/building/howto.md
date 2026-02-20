@@ -19,6 +19,7 @@ graph LR;
     test-->install
 
     click clone "#clone"
+    click choose "#choose"
     click conan "#conan"
     click manually "#build-manually"
     click test "#tests"
@@ -35,7 +36,7 @@ cd osrm-backend
 npm ci --ignore-scripts
 ```
 
-## Choose Package Manager {#choose}
+## Choose a Package Manager {#choose}
 
 On Linux you must choose whether to install dependencies with a package manager (Conan)
 or manually (apt-get).  On macOS and Windows only Conan is supported.
@@ -49,8 +50,8 @@ The build method with manual install uses the package manager installed by your 
 On Debian this is apt-get.  Less things can go wrong, it is faster, but you only get the
 latest version provided by you system maintainers.
 
-
-
+While we support the manual method only on Linux it will work on every OS if you install
+the right packages. If you get it to work, please submit a patch to this doc.
 
 ## Build with Conan {#conan}
 
