@@ -49,8 +49,10 @@ the dependencies and compiles them on your machine.  More things can go wrong, i
 longer, but you always get the newest versions.
 
 The build method with `apt-get` is tested on Ubuntu-24.04 and Ubuntu-22.04. It uses the
-package manager that comes with the Linux distribution.  Less things can go wrong, it is
-faster, but you only get the latest version provided by your Linux distribution.
+package manager that comes with the Linux distribution.  While using a system package
+manager has its advantages, there are also some drawbacks to consider. These include
+lack of control over the installation process, and the high likelihood of using outdated
+versions, which may be several years old.
 
 [^1]: But that doesn't mean the other build won't work, just that we didn't have the
       time and hardware to figure it out for you.  If you know how to, please submit a

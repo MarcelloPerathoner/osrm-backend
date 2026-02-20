@@ -303,7 +303,8 @@ jobs:
             ;;
             Windows)
               # not tested
-              pacman -S bzip2 libxml2 libzip lua onetbb boost
+              vcpkg integrate install
+              vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
           esac
 
