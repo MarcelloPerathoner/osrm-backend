@@ -305,12 +305,7 @@ jobs:
             ;;
             Windows)
               # not tested
-              choco search libxml2
-              choco search libzip
-              choco search lua
-              choco search tbb
-              choco search boost
-              choco install libxml2 libzip lua tbb boost
+              choco install lua tbb boost-msvc-14.3
               # vcpkg integrate install
               # vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
