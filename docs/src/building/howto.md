@@ -38,25 +38,26 @@ npm ci --ignore-scripts
 
 ## Choose a Package Manager {#choose}
 
-On Linux and macOS you must choose a package manager to install dependencies: Conan or
-`apt-get` / `brew`.
+Now you must choose a package manager to install dependencies:
 
-On Windows only the Conan build is supported.[^1]
+- a C++ package manager like Conan or,
+- a system package manager like `apt-get` or `brew`.
 
-The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-24, macOS-15,
+On Windows only the Conan package manager is supported.[^1]
+
+The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-26, macOS-15,
 macOS-14, Windows-Server-2025, and Windows-Server-2022.  Conan downloads the sources of
 the dependencies and compiles them on your machine.  More things can go wrong, it takes
 longer, but you always get the newest versions.
 
-The build method with `apt-get` / `brew` is tested on Ubuntu-24.04, Ubuntu-22.04, and
+The build method with `apt-get` or `brew` is tested on Ubuntu-24.04, Ubuntu-22.04, and
 macOS-15.  It uses the package manager that comes with the OS.  While using a system
 package manager has its advantages, there are also some drawbacks to consider.  These
 include lack of control over the installation process, and the use of outdated versions,
 which may be several years old.
 
-[^1]: But that doesn't mean the other build won't work, just that we didn't have the
-      time and hardware to figure it out for you.  If you know how to, please submit a
-      patch.
+[^1]: That doesn't mean there is no other way, just that we didn't have the time and
+      hardware to figure it out for you.  If you know how to, please submit a patch.
 
 ## Build with Conan {#conan}
 
@@ -88,18 +89,24 @@ The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
 
 Proceed with [testing](#tests).
 
-## Build with `apt-get` {#apt}
 
-This alternative build method is supported on Linux only. (It probably works on macOS
-too, if using `brew` instead of `apt-get`. Patches to the docs are welcome.)
+## Get Dependencies with the System Package Manager {#apt}
 
-Install dependencies:
+This alternative build method is not supported on Windows.
+
+Install dependencies (Linux):
 
 ```bash
 sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
 ```
 
-Build:
+or (macOS):
+
+```bash
+brew install bzip2 libzip lua tbb boost
+```
+
+Then build with:
 
 ```bash
 cmake -B build/Release
