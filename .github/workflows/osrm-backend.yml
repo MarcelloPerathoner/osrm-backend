@@ -113,12 +113,6 @@ jobs:
             runs-on: ubuntu-24.04
             NODE_VERSION: 22
 
-          - name: gcc-12-release
-            runs-on: ubuntu-22.04
-            continue-on-error: true
-            NODE_VERSION: 20
-            ENABLE_LTO: OFF
-
           - name: conan-linux-release-node
             runs-on: ubuntu-24.04
             CC: clang-19
@@ -157,6 +151,11 @@ jobs:
           - name: conan-macos-14-arm64-release-node
             runs-on: macos-14 # arm64
             NODE_VERSION: 22
+
+          - name: windows-2025-vs2026-x64-release-node
+            runs-on: windows-2025-vs2026 # x64
+            continue-on-error: true
+            ENABLE_SCCACHE: ON
 
           - name: conan-windows-2025-vs2026-x64-release-node
             runs-on: windows-2025-vs2026 # x64

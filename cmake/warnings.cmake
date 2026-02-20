@@ -122,10 +122,8 @@ no_warning(free-nonheap-object)
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   add_warning(strict-overflow=1)
   no_warning(stringop-overflow)
+  # no_warning(uninitialized)
   no_warning(array-bounds)
-  if(CMAKE_CXX_COMPILER_VERSION MATCHES "^12")
-    no_warning(uninitialized)
-  endif()
 endif()
 
 # MSVC-specific warning configuration
