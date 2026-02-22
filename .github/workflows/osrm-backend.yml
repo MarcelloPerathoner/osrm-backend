@@ -208,7 +208,7 @@ jobs:
           case "${RUNNER_OS}" in
             Linux)
               sudo apt-get update -y
-              sudo apt-get install -y ${APT_GET_DEPS//:/ } make cmake zlib1g-dev
+              sudo apt-get install -y ${APT_GET_DEPS//:/ } make zlib1g-dev
               echo "MAKE=make" >> $GITHUB_ENV
               echo "TIME=/usr/bin/time" >> $GITHUB_ENV
             ;;
