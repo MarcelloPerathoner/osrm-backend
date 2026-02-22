@@ -1,6 +1,6 @@
 # See: https://pip.pypa.io/en/latest/reference/requirements-file-format/#requirements-file-format
 
-conan
+conan ~= 2.24
 numpy
 requests
 

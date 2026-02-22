@@ -27,9 +27,11 @@ jobs:
           node ./scripts/validate_changelog.js
           npm audit --omit=dev
 
+      - name: Install Python
+        uses: ./.github/actions/install-python
+
       - name: Build docs
         run: |
-          scripts/install_conan
           npm run docs
 
       - name: Upload Docs
