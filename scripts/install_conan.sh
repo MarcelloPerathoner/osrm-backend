@@ -6,5 +6,5 @@
 
 pip install -r requirements*.txt
 python -m venv .venv
-source activate_conan
+source scripts/activate_conan
 conan profile detect --force

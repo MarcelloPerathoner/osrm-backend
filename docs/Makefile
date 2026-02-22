@@ -21,12 +21,11 @@ SCRIPTS   = $(PROJECT)/scripts
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 
-# Put it first so that "make" without argument is like "make help".
-help:
-	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
-
 all: dirs $(BUILDDIR)/generated/nodejs.jsdoc
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 dirs:
 	mkdir -p $(BUILDDIR)/generated
