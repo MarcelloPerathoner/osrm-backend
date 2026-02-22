@@ -151,11 +151,6 @@ jobs:
             runs-on: macos-14 # arm64
             NODE_VERSION: 22
 
-          - name: windows-2025-vs2026-x64-release-node
-            runs-on: windows-2025-vs2026 # x64
-            continue-on-error: true
-            ENABLE_SCCACHE: ON
-
           - name: conan-windows-2025-vs2026-x64-release-node
             runs-on: windows-2025-vs2026 # x64
             continue-on-error: true
@@ -303,17 +298,16 @@ jobs:
               brew install libzip lua tbb boost
             ;;
             Windows)
-              # not tested
-              nuget install libzip                      -x -OutputDirectory nuget
-              nuget install libxml2-vc140-static-32_64  -x -OutputDirectory nuget
-              nuget install lua                         -x -OutputDirectory nuget
-              nuget install boost                       -x -OutputDirectory nuget
-              nuget install inteltbb.devel.win          -x -OutputDirectory nuget
-              # choco install lua52 tbb boost-msvc-14.3 # only half the packages, servers always down
-              # vcpkg install boost bzip2 libxml2 libzip lua tbb # same as Conan only much slower
-              ls -al nuget || true
-              ls -al nuget/boost || true
-              echo "Boost_DIR=nuget/boost" >> $GITHUB_ENV
+              # nuget does not provide BoostConfig.cmake etc.
+              # nuget install libzip                      -x -OutputDirectory nuget
+              # nuget install libxml2-vc140-static-32_64  -x -OutputDirectory nuget
+              # nuget install lua                         -x -OutputDirectory nuget
+              # nuget install boost                       -x -OutputDirectory nuget
+              # nuget install inteltbb.devel.win          -x -OutputDirectory nuget
+              # choco has only half the packages, servers always time out
+              # choco install lua52 tbb boost-msvc-14.3
+              # vcpkg is the same as Conan only much slower
+              # vcpkg install boost bzip2 libxml2 libzip lua tbb
             ;;
           esac
 

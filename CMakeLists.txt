@@ -497,10 +497,11 @@ set(BOOST_PROGRAM_OPTIONS_LIBRARIES Boost::program_options)
 # add a target to generate API documentation with Doxygen
 find_package(Doxygen)
 if(DOXYGEN_FOUND)
-  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile @ONLY)
-  add_custom_target(doc
-    ${DOXYGEN_EXECUTABLE} ${CMAKE_CURRENT_BINARY_DIR}/Doxyfile
-    WORKING_DIRECTORY ${CMAKE_CURRENT_BINARY_DIR}
+  set(OSRM_DOCS_BUILD_DIR ${PROJECT_SOURCE_DIR}/build/docs/)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/Doxyfile.in ${OSRM_DOCS_BUILD_DIR}/Doxyfile @ONLY)
+  add_custom_target(docs
+    ${DOXYGEN_EXECUTABLE} ${OSRM_DOCS_BUILD_DIR}/Doxyfile
+    WORKING_DIRECTORY ${OSRM_DOCS_BUILD_DIR}
     COMMENT "Generating API documentation with Doxygen" VERBATIM
   )
 endif()

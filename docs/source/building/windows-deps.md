@@ -1,4 +1,6 @@
-# Building OSRM for Windows
+# Building OSRM for Windows (alternative)
+
+{octicon}`alert;2em;sd-text-danger` This article may be outdated.
 
 There is experimental support for building OSRM on Windows.
 
@@ -24,8 +26,3 @@ msbuild OSRM.sln ^
 /clp:Verbosity=normal ^
 /nologo
 ```
-
-
-
-
-

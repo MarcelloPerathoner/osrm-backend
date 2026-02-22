@@ -1,47 +1,3 @@
-#include "osrm/engine_config.hpp"
-#include "osrm/osrm.hpp"
-
-#include "osrm/match_parameters.hpp"
-#include "osrm/nearest_parameters.hpp"
-#include "osrm/route_parameters.hpp"
-#include "osrm/table_parameters.hpp"
-#include "osrm/tile_parameters.hpp"
-#include "osrm/trip_parameters.hpp"
-
-#include <napi.h>
-#include <type_traits>
-#include <utility>
-
-#include "nodejs/node_osrm.hpp"
-#include "nodejs/node_osrm_support.hpp"
-
-#include "util/json_renderer.hpp"
-
-namespace node_osrm
-{
-Napi::Object Engine::Init(Napi::Env env, Napi::Object exports)
-{
-    Napi::Function func = DefineClass(env,
-                                      "OSRM",
-                                      {
-                                          InstanceMethod("route", &Engine::route),
-                                          InstanceMethod("nearest", &Engine::nearest),
-                                          InstanceMethod("table", &Engine::table),
-                                          InstanceMethod("tile", &Engine::tile),
-                                          InstanceMethod("match", &Engine::match),
-                                          InstanceMethod("trip", &Engine::trip),
-                                      });
-
-    Napi::FunctionReference *constructor = new Napi::FunctionReference();
-    *constructor = Napi::Persistent(func);
-    env.SetInstanceData(constructor);
-
-    exports.Set("OSRM", func);
-    return exports;
-}
-
-// clang-format off
-/**
 .. js:class:: OSRM(options)
 
    Creates an OSRM instance.  An OSRM instance requires a `.osrm.*` dataset (`.osrm.*`
@@ -137,193 +93,8 @@ Napi::Object Engine::Init(Napi::Env env, Napi::Object exports)
       .. js:attribute:: default_radius
 
          Number: Default radius for queries (default: unlimited).
-*/
-// clang-format on
 
-Engine::Engine(const Napi::CallbackInfo &info) : Napi::ObjectWrap<Engine>(info)
-{
 
-    try
-    {
-        auto config = argumentsToEngineConfig(info);
-        if (!config)
-            return;
-
-        this_ = std::make_shared<osrm::OSRM>(*config);
-    }
-    catch (const std::exception &ex)
-    {
-        ThrowTypeError(info.Env(), ex.what());
-    }
-}
-
-template <typename ParameterParser, typename ServiceMemFn>
-inline void async(const Napi::CallbackInfo &info,
-                  ParameterParser argsToParams,
-                  ServiceMemFn service,
-                  bool requires_multiple_coordinates)
-{
-    auto params = argsToParams(info, requires_multiple_coordinates);
-    if (!params)
-        return;
-    auto pluginParams = argumentsToPluginParameters(info, params->format);
-
-    BOOST_ASSERT(params->IsValid());
-
-    if (!info[info.Length() - 1].IsFunction())
-        return ThrowTypeError(info.Env(), "last argument must be a callback function");
-
-    auto *const self = Napi::ObjectWrap<Engine>::Unwrap(info.This().As<Napi::Object>());
-    using ParamPtr = decltype(params);
-
-    struct Worker final : Napi::AsyncWorker
-    {
-        Worker(std::shared_ptr<osrm::OSRM> osrm_,
-               ParamPtr params_,
-               ServiceMemFn service,
-               Napi::Function callback,
-               PluginParameters pluginParams_)
-            : Napi::AsyncWorker(callback), osrm{std::move(osrm_)}, service{std::move(service)},
-              params{std::move(params_)}, pluginParams{std::move(pluginParams_)}
-        {
-        }
-
-        void Execute() override
-        try
-        {
-            switch (
-                params->format.value_or(osrm::engine::api::BaseParameters::OutputFormatType::JSON))
-            {
-            case osrm::engine::api::BaseParameters::OutputFormatType::JSON:
-            {
-                osrm::engine::api::ResultT r;
-                r = osrm::util::json::Object();
-                const auto status = ((*osrm).*(service))(*params, r);
-                auto &json_result = std::get<osrm::json::Object>(r);
-                ParseResult(status, json_result);
-                if (pluginParams.renderToBuffer)
-                {
-                    std::string json_string;
-                    osrm::util::json::render(json_string, json_result);
-                    result = std::move(json_string);
-                }
-                else
-                {
-                    result = std::move(json_result);
-                }
-            }
-            break;
-            case osrm::engine::api::BaseParameters::OutputFormatType::FLATBUFFERS:
-            {
-                osrm::engine::api::ResultT r = flatbuffers::FlatBufferBuilder();
-                const auto status = ((*osrm).*(service))(*params, r);
-                const auto &fbs_result = std::get<flatbuffers::FlatBufferBuilder>(r);
-                ParseResult(status, fbs_result);
-                BOOST_ASSERT(pluginParams.renderToBuffer);
-                std::string result_str(
-                    reinterpret_cast<const char *>(fbs_result.GetBufferPointer()),
-                    fbs_result.GetSize());
-                result = std::move(result_str);
-            }
-            break;
-            }
-        }
-        catch (const std::exception &e)
-        {
-            SetError(e.what());
-        }
-
-        void OnOK() override
-        {
-            Napi::HandleScope scope{Env()};
-
-            Callback().Call({Env().Null(), render(Env(), result)});
-        }
-
-        // Keeps the OSRM object alive even after shutdown until we're done with callback
-        std::shared_ptr<osrm::OSRM> osrm;
-        ServiceMemFn service;
-        const ParamPtr params;
-        const PluginParameters pluginParams;
-
-        ObjectOrString result;
-    };
-
-    Napi::Function callback = info[info.Length() - 1].As<Napi::Function>();
-    auto worker =
-        new Worker(self->this_, std::move(params), service, callback, std::move(pluginParams));
-    worker->Queue();
-}
-
-template <typename ParameterParser, typename ServiceMemFn>
-inline void asyncForTiles(const Napi::CallbackInfo &info,
-                          ParameterParser argsToParams,
-                          ServiceMemFn service,
-                          bool requires_multiple_coordinates)
-{
-    auto params = argsToParams(info, requires_multiple_coordinates);
-    if (!params)
-        return;
-
-    auto pluginParams = argumentsToPluginParameters(info);
-
-    BOOST_ASSERT(params->IsValid());
-
-    if (!info[info.Length() - 1].IsFunction())
-        return ThrowTypeError(info.Env(), "last argument must be a callback function");
-
-    auto *const self = Napi::ObjectWrap<Engine>::Unwrap(info.This().As<Napi::Object>());
-    using ParamPtr = decltype(params);
-
-    struct Worker final : Napi::AsyncWorker
-    {
-        Worker(std::shared_ptr<osrm::OSRM> osrm_,
-               ParamPtr params_,
-               ServiceMemFn service,
-               Napi::Function callback,
-               PluginParameters pluginParams_)
-            : Napi::AsyncWorker(callback), osrm{std::move(osrm_)}, service{std::move(service)},
-              params{std::move(params_)}, pluginParams{std::move(pluginParams_)}
-        {
-        }
-
-        void Execute() override
-        try
-        {
-            result = std::string();
-            const auto status = ((*osrm).*(service))(*params, result);
-            auto str_result = std::get<std::string>(result);
-            ParseResult(status, str_result);
-        }
-        catch (const std::exception &e)
-        {
-            SetError(e.what());
-        }
-
-        void OnOK() override
-        {
-            Napi::HandleScope scope{Env()};
-
-            Callback().Call({Env().Null(), render(Env(), std::get<std::string>(result))});
-        }
-
-        // Keeps the OSRM object alive even after shutdown until we're done with callback
-        std::shared_ptr<osrm::OSRM> osrm;
-        ServiceMemFn service;
-        const ParamPtr params;
-        const PluginParameters pluginParams;
-
-        osrm::engine::api::ResultT result;
-    };
-
-    Napi::Function callback = info[info.Length() - 1].As<Napi::Function>();
-    auto worker =
-        new Worker(self->this_, std::move(params), service, callback, std::move(pluginParams));
-    worker->Queue();
-}
-
-// clang-format off
-/**
    .. js:method:: route(options[, plugin_config], callback)
 
       Returns the fastest route between two or more coordinates while visiting the waypoints in order.
@@ -432,20 +203,8 @@ inline void asyncForTiles(const Napi::CallbackInfo &info,
             Boolean: Removes waypoints from the response. Waypoints are still calculated, but
             not serialized. Could be useful in case you are interested in some other part of
             response and do not want to transfer waste data.
-*/
-// clang-format on
 
-Napi::Value Engine::route(const Napi::CallbackInfo &info)
-{
-    osrm::Status (osrm::OSRM::*route_fn)(const osrm::RouteParameters &params,
-                                         osrm::engine::api::ResultT &result) const =
-        &osrm::OSRM::Route;
-    async(info, &argumentsToRouteParameter, route_fn, true);
-    return info.Env().Undefined();
-}
 
-// clang-format off
-/**
    .. js:method:: nearest(options[, plugin_config], callback)
 
       Snaps a coordinate to the street network and returns the nearest *n* matches.
@@ -515,20 +274,8 @@ Napi::Value Engine::route(const Napi::CallbackInfo &info)
             String: Which edges can be snapped to, either `default`, or `any`.
             `default` only snaps to edges marked by the profile as `is_startpoint`,
             `any` will allow snapping to any edge in the routing graph.
-*/
-// clang-format on
 
-Napi::Value Engine::nearest(const Napi::CallbackInfo &info)
-{
-    osrm::Status (osrm::OSRM::*nearest_fn)(const osrm::NearestParameters &params,
-                                           osrm::engine::api::ResultT &result) const =
-        &osrm::OSRM::Nearest;
-    async(info, &argumentsToNearestParameter, nearest_fn, false);
-    return info.Env().Undefined();
-}
 
-// clang-format off
-/**
    .. js:method:: table(options[, plugin_config], callback)
 
       Computes duration table for the given locations. Allows for both symmetric and
@@ -636,19 +383,8 @@ Napi::Value Engine::nearest(const Napi::CallbackInfo &info)
             `['duration']` (return the duration matrix, default),
             `[distance']` (return the distance matrix), or
             `['duration', distance']` (return both the duration matrix and the distance matrix).
-*/
-// clang-format on
-Napi::Value Engine::table(const Napi::CallbackInfo &info)
-{
-    osrm::Status (osrm::OSRM::*table_fn)(const osrm::TableParameters &params,
-                                         osrm::engine::api::ResultT &result) const =
-        &osrm::OSRM::Table;
-    async(info, &argumentsToTableParameter, table_fn, true);
-    return info.Env().Undefined();
-}
 
-// clang-format off
-/**
+
    .. js:method:: tile(coordinates[, plugin_config], callback)
 
       This generates `Mapbox Vector Tiles <https://mapbox.com/vector-tiles>`_ that can be
@@ -673,20 +409,10 @@ Napi::Value Engine::table(const Napi::CallbackInfo &info)
            if (err) throw err;
            fs.writeFileSync('./tile.vector.pbf', response); // write the buffer to a file
          });
-*/
-// clang-format on
 
-Napi::Value Engine::tile(const Napi::CallbackInfo &info)
-{
-    osrm::Status (osrm::OSRM::*tile_fn)(const osrm::TileParameters &params,
-                                        osrm::engine::api::ResultT &result) const =
-        &osrm::OSRM::Tile;
-    asyncForTiles(info, &argumentsToTileParameters, tile_fn, {/*unused*/});
-    return info.Env().Undefined();
-}
 
-// clang-format off
-/**
+
+
    .. js:method:: match(coordinates[, plugin_config], callback)
 
       Map matching matches given GPS points to the road network in the most plausible way.
@@ -793,20 +519,8 @@ Napi::Value Engine::tile(const Napi::CallbackInfo &info)
 
             String: Which edges can be snapped to, either `default`, or `any`. `default` only snaps to edges
             marked by the profile as `is_startpoint`, `any` will allow snapping to any edge in the routing graph.
-*/
-// clang-format on
 
-Napi::Value Engine::match(const Napi::CallbackInfo &info)
-{
-    osrm::Status (osrm::OSRM::*match_fn)(const osrm::MatchParameters &params,
-                                         osrm::engine::api::ResultT &result) const =
-        &osrm::OSRM::Match;
-    async(info, &argumentsToMatchParameter, match_fn, true);
-    return info.Env().Undefined();
-}
 
-// clang-format off
-/**
    .. js:method:: trip(coordinates[, plugin_config], callback)
 
       The trip plugin solves the Traveling Salesman Problem using a greedy heuristic
@@ -929,20 +643,8 @@ Napi::Value Engine::match(const Napi::CallbackInfo &info)
             String: Which edges can be snapped to, either `default`, or `any`.
             `default` only snaps to edges marked by the profile as `is_startpoint`,
             `any` will allow snapping to any edge in the routing graph.
-*/
-// clang-format on
 
-Napi::Value Engine::trip(const Napi::CallbackInfo &info)
-{
-    osrm::Status (osrm::OSRM::*trip_fn)(const osrm::TripParameters &params,
-                                        osrm::engine::api::ResultT &result) const =
-        &osrm::OSRM::Trip;
-    async(info, &argumentsToTripParameter, trip_fn, true);
-    return info.Env().Undefined();
-}
 
-// clang-format off
-/**
 .. js:class:: plugin_config
 
    All plugins support a second additional parameter to configure some NodeJS specific
@@ -1012,14 +714,5 @@ Represents a waypoint on a route.
 
 `osrm-backend <http.html#waypoint-object>`_
 
-*/
-// clang-format on
 
-} // namespace node_osrm
 
-Napi::Object InitAll(Napi::Env env, Napi::Object exports)
-{
-    return node_osrm::Engine::Init(env, exports);
-}
-
-NODE_API_MODULE(addon, InitAll)

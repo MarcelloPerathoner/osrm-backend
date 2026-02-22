@@ -28,6 +28,10 @@ indent_size = 2
 [{.github/**/*.yml,.travis.yml,appveyor.yml}]
 indent_size = 2
 
+# ReStructuredText
+[*.rst]
+indent_size = 3
+
 # Windows shell scripts
 [*.bat]
 end_of_line = crlf

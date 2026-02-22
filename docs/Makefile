@@ -10,45 +10,67 @@
 #
 #   browser build/docs/index.html
 
-PROJECT=..
+PROJECT = ..
 
-DOCS=$(PROJECT)/docs
-BUILD=$(PROJECT)/build/docs
-NODE=$(PROJECT)/node_modules
-SCRIPTS=$(PROJECT)/scripts
+SOURCEDIR = source
+BUILDDIR  = $(PROJECT)/build/docs
+SCRIPTS   = $(PROJECT)/scripts
 
-MDS=$(shell find $(DOCS) -name "*.md") $(DOCS)/generated/nodejs.md
-HTMLS=$(patsubst %,$(BUILD)/%.html,$(basename $(MDS)))
-DIRS=$(patsubst %,$(BUILD)/%,$(dir $(MDS)))
+# You can set these variables from the command line, and also
+# from the environment for the first two.
+SPHINXOPTS    ?=
+SPHINXBUILD   ?= sphinx-build
 
-all: dirs docs aux
+# Put it first so that "make" without argument is like "make help".
+help:
+	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+all: dirs $(BUILDDIR)/generated/nodejs.jsdoc
+	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
 
 dirs:
-	mkdir -p $(DIRS)
+	mkdir -p $(BUILDDIR)/generated
 
-docs: $(MDS) $(HTMLS)
-
-open: all
-	xdg-open $(BUILD)/index.html
-
-vpath %.md $(DOCS):$(DOCS)/generated
+.PHONY: help Makefile
 
 # Extract JSDoc comments from cpp file
-$(BUILD)/nodejs.jsdoc: $(PROJECT)/src/nodejs/node_osrm.cpp $(SCRIPTS)/extract_cpp_jsdoc.js
+$(BUILDDIR)/generated/nodejs.jsdoc: $(PROJECT)/src/nodejs/node_osrm.cpp $(SCRIPTS)/extract_cpp_jsdoc.js
 	node $(SCRIPTS)/extract_cpp_jsdoc.js $< > $@
 
-# turn extracted JSDoc into markdown
-$(DOCS)/generated/nodejs.md : $(BUILD)/nodejs.jsdoc
-	echo "# OSRM NodeJS API" > $@
-	npx -- documentation build $< --markdown-toc=false -f md >> $@
+# all: dirs docs aux
+#
+# open: all
+# 	xdg-open $(BUILD)/index.html
+#
+# MDS=$(shell find $(DOCS) -name "*.md") $(DOCS)/generated/nodejs.md
+# HTMLS=$(patsubst %,$(BUILD)/%.html,$(basename $(MDS)))
+# DIRS=$(patsubst %,$(BUILD)/%,$(dir $(MDS)))
+#
+# dirs:
+# 	mkdir -p $(DIRS)
+#
+# docs: $(MDS) $(HTMLS)
+#
+# vpath %.md $(DOCS):$(DOCS)/generated
 
-# Build the HTML files
-$(BUILD)/%.html : %.md $(DOCS)/templates/article.html $(SCRIPTS)/markdown2html.js
-	node $(SCRIPTS)/markdown2html.js -t $(DOCS)/templates/article.html -b $(BUILD) -i $< -o $@
+# # turn extracted JSDoc into markdown
+# $(DOCS)/generated/nodejs.md : $(BUILD)/nodejs.jsdoc
+# 	echo "# OSRM NodeJS API" > $@
+# 	npx -- documentation build $< --markdown-toc=false -f md >> $@
+#
+# # Build the HTML files
+# $(BUILD)/%.html : %.md $(DOCS)/templates/article.html $(SCRIPTS)/markdown2html.js
+# 	node $(SCRIPTS)/markdown2html.js -t $(DOCS)/templates/article.html -b $(BUILD) -i $< -o $@
+#
+# # Copy images and css into the build dir
+# aux:
+# 	cp -r $(DOCS)/css    $(BUILD)/
+# 	cp -r $(DOCS)/images $(BUILD)/
+# 	cp $(NODE)/github-markdown-css/github-markdown.css $(BUILD)/css/
+# 	cp $(NODE)/highlight.js/styles/github.css          $(BUILD)/css/highlight-js.css
 
-# Copy images and css into the build dir
-aux:
-	cp -r $(DOCS)/css    $(BUILD)/
-	cp -r $(DOCS)/images $(BUILD)/
-	cp $(NODE)/github-markdown-css/github-markdown.css $(BUILD)/css/
-	cp $(NODE)/highlight.js/styles/github.css          $(BUILD)/css/highlight-js.css
+
+# Catch-all target: route all unknown targets to Sphinx using the new
+# "make mode" option.  $(O) is meant as a shortcut for $(SPHINXOPTS).
+# %: Makefile
+# 	@$(SPHINXBUILD) -M $@ "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
