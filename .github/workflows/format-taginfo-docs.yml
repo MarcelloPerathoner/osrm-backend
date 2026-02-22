@@ -29,6 +29,7 @@ jobs:
 
       - name: Build docs
         run: |
+          scripts/install_conan
           npm run docs
 
       - name: Upload Docs

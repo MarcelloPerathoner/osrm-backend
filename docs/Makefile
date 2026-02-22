@@ -8,7 +8,7 @@
 #
 # Read the docs:
 #
-#   browser build/docs/index.html
+#   make open
 
 PROJECT = ..
 
@@ -21,8 +21,11 @@ SCRIPTS   = $(PROJECT)/scripts
 SPHINXOPTS    ?=
 SPHINXBUILD   ?= sphinx-build
 
-all: dirs $(BUILDDIR)/generated/nodejs.jsdoc
+all: dirs
 	@$(SPHINXBUILD) -M html "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
+
+open: all
+	xdg-open $(BUILDDIR)/html/index.html
 
 help:
 	@$(SPHINXBUILD) -M help "$(SOURCEDIR)" "$(BUILDDIR)" $(SPHINXOPTS) $(O)
@@ -33,9 +36,9 @@ dirs:
 .PHONY: help Makefile
 
 # Extract JSDoc comments from cpp file
-$(BUILDDIR)/generated/nodejs.jsdoc: $(PROJECT)/src/nodejs/node_osrm.cpp $(SCRIPTS)/extract_cpp_jsdoc.js
-	node $(SCRIPTS)/extract_cpp_jsdoc.js $< > $@
-
+# $(BUILDDIR)/generated/nodejs.jsdoc: $(PROJECT)/src/nodejs/node_osrm.cpp $(SCRIPTS)/extract_cpp_jsdoc.js
+# 	node $(SCRIPTS)/extract_cpp_jsdoc.js $< > $@
+#
 # all: dirs docs aux
 #
 # open: all

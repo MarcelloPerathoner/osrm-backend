@@ -65,7 +65,7 @@ package manager has its advantages, there are also some drawbacks to consider.  
 include lack of control over the installation process, and the use of outdated versions,
 which may be several years old.
 
-:octicon:`alert;2em;sd-text-warn` When you switch building methods you must close and
+:octicon:`alert;2em;sd-text-warning` When you switch building methods you must close and
 reopen the shell.
 
 .. rubric:: Footnotes
