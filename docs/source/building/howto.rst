@@ -88,7 +88,7 @@ Then activate Conan. You have to activate Conan only once for every shell you op
 
 .. code:: bash
 
-    source scripts/activate_conan
+    source scripts/activate_venv
 
 Then build it:
 

@@ -2,9 +2,9 @@
 
 # call this from the project root directory
 # use once after a git clone
-# usage: scripts/install-conan.sh
+# usage: scripts/install_conan.sh
 
 pip install -r requirements*.txt
 python -m venv .venv
-source scripts/activate_conan
+source scripts/activate_venv
 conan profile detect --force

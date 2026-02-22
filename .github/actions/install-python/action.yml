@@ -16,21 +16,12 @@ runs:
         key: pip-${{ runner.os }}-${{ runner.arch }}-${{ hashFiles('requirements*.txt') }}
         restore-keys: pip-${{ runner.os }}-${{ runner.arch }}-
 
-    # install on cache miss
     - name: Install Python dependencies
-      if: steps.pip-cache-restore.outputs.cache-hit != 'true'
       id: install-conan
       shell: bash
       run: |
         scripts/install_conan.sh
-
-    # always activate even on cache hit
-    - name: Activate Python Venv
-      id: activate-venv
-      shell: bash
-      run: |
-        source scripts/activate_conan
-        if [[ ${{ runner.os }} == 'Windows' ]]; then
+        if [[ "${{ runner.os }}" == "Windows" ]]; then
           echo "$VIRTUAL_ENV/Scripts" >> $GITHUB_PATH
         else
           echo "$VIRTUAL_ENV/bin" >> $GITHUB_PATH

@@ -1,6 +1,6 @@
 # source this from the project root directory
 # needed only once for every new shell
-# usage: source scripts/activate-conan
+# usage: source scripts/activate_venv
 
 export CONAN_HOME=`pwd`/.conan2
 
