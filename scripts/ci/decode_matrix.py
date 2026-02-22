@@ -137,6 +137,8 @@ envs["CMAKE_CONFIGURE_PRESET_NAME"] = preset_name
 envs["CMAKE_BUILD_PRESET_NAME"] = preset_name
 envs["CMAKE_TEST_PRESET_NAME"] = preset_name
 
+envs["CONAN_OS_PROFILE"] = f"github-${matrix["runs-on"]}".lower()
+
 # our "well-known" build root
 binary_dir = os.path.join("${sourceDir}", "build")
 if "windows" not in matrix["runs-on"]:
