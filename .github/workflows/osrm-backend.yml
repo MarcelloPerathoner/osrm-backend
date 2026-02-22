@@ -17,7 +17,7 @@ defaults:
 
 env:
   # print commands
-  SHELLOPTS: xtrace
+  # SHELLOPTS: xtrace
 
   # paths
   BUILD_DIR:   ${{ github.workspace }}/build
