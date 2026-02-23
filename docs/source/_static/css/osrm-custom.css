@@ -32,3 +32,17 @@ pre code.hljs {
 .wy-table-responsive table th {
     white-space: normal !important;
 }
+
+.rst-content code.default {
+    font-weight: bold;
+}
+
+/* remove ugly padding in dropdowns containing highlighted code */
+.rst-content div.sd-summary-content:has(> div[class^="highlight"]) {
+    padding: 0 !important;
+}
+
+.rst-content div.sd-summary-content div[class^="highlight"] {
+    margin: 0 !important;
+    border: 0 !important;
+}

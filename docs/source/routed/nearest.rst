@@ -1,9 +1,11 @@
-/nearest
-========
+.. _nearest:
 
-Snaps a given coordinate to the street network and returns the `n` nearest matches.
+nearest
+=======
 
 .. http:get:: /nearest/v1/(profile)/(coordinate)
+
+   Snaps a given coordinate to the street network and returns the `n` nearest matches.
 
    **Example Request**
 
@@ -61,9 +63,9 @@ Snaps a given coordinate to the street network and returns the `n` nearest match
             "code" : "Ok"
          }
 
-   In addition to the :ref:`routed_general_options` the following options are supported for this service:
+   This service accepst following parameters in addition to the :ref:`common parameters <common_options>`.
+   Note that this service accepts only one coordinate.
 
-   :param coordinate: `{longitude},{latitude}`
    :query integer number: How many nearest segments should be returned. Integer > 0, default: 1.
    :query boolean skip_waypoints:  As `waypoints` contain the only data returned by this
       service, setting this option to `true` makes no sense, but is still possible. In

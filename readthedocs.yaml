@@ -12,7 +12,4 @@ build:
       - bash scripts/install_venv.sh
     build:
       html:
-        - make -C docs
-    post_build:
-      - mkdir -p $READTHEDOCS_OUTPUT/html/
-      - cp -a build/docs/html/* $READTHEDOCS_OUTPUT/html/
+        - BUILDDIR=$READTHEDOCS_OUTPUT make -C docs

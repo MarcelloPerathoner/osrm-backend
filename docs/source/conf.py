@@ -8,6 +8,19 @@
 
 import os
 
+import docutils
+from docutils import nodes
+from docutils.nodes import Element
+from docutils.parsers.rst.directives import images
+from docutils.parsers.rst.roles import register_generic_role, register_local_role
+
+from sphinx import addnodes
+from sphinx.locale import admonitionlabels
+from sphinx.roles import ReferenceRole, SphinxRole, EmphasizedLiteral
+from sphinx.util import logging
+from sphinx.util.docutils import SphinxDirective
+from sphinx.writers.html5 import HTML5Translator
+
 from pygments.lexer import RegexLexer, bygroups
 from pygments.token import Whitespace, Text, Keyword, Literal
 
@@ -60,9 +73,72 @@ html_theme = "sphinx_rtd_theme"
 html_favicon = "images/favicon.ico"
 html_static_path = ["_static"]
 html_css_files = ["css/osrm-custom.css"]
+# html_show_copyright = False
+html_show_sourcelink = False
+html_show_sphinx = False
+# html_logo = "logo.svg"
 
 # make `backticked text` mean: code
 default_role = "code"
+
+
+class DefaultRole(SphinxRole):
+    pass
+
+
+class CustomReferenceRole(ReferenceRole):
+    """Roles to reference targets on the www"""
+
+    nodeclass: type[Element] = nodes.reference
+
+    def get_title(self):
+        """Return the title"""
+        if not self.has_explicit_title:
+            return self.target
+        return self.title
+
+    def get_reference_option(self):
+        """Return a dict with refuri and classes"""
+        raise NotImplementedError
+
+    def mk_node(self):
+        return self.nodeclass(
+            "",
+            self.get_title(),
+            internal=False,
+            **self.get_reference_options(),
+        )
+
+    def run(self):
+        return [self.mk_node()], []
+
+
+class GithubIssueRole(CustomReferenceRole):
+    def get_reference_options(self):
+        return {
+            "refuri": f"https://github.com/Project-OSRM/osrm-backend/issues/{self.target}",
+            "classes": ["github", "github-issue"],
+        }
+
+    def get_title(self):
+        """Return the title"""
+        if not self.has_explicit_title:
+            return f"issue #{self.target}"
+        return self.title
+
+
+class GithubPullRequestRole(CustomReferenceRole):
+    def get_reference_options(self):
+        return {
+            "refuri": f"https://github.com/Project-OSRM/osrm-backend/pull/{self.target}",
+            "classes": ["github", "github-pull-request"],
+        }
+
+    def get_title(self):
+        """Return the title"""
+        if not self.has_explicit_title:
+            return f"PR #{self.target}"
+        return self.title
 
 
 class EndpointLexer(RegexLexer):
@@ -93,11 +169,6 @@ class EndpointLexer(RegexLexer):
     }
 
 
-def setup(sphinx):
-    sphinx.add_lexer("endpoint", EndpointLexer)
-    # sphinx.add_domain(SomeDomain)
-
-
 # pre-flight: extract comments from node_osrm.cpp
 
 with open("../../src/nodejs/node_osrm.cpp", "r") as cpp:
@@ -116,3 +187,14 @@ with open("../../src/nodejs/node_osrm.cpp", "r") as cpp:
     os.makedirs(gen_dir, exist_ok=True)
     with open(os.path.join(gen_dir, "node_osrm.rst"), "w") as rst:
         rst.writelines(lines)
+
+
+def setup(sphinx):
+    sphinx.add_lexer("endpoint", EndpointLexer)
+    # sphinx.add_domain(SomeDomain)
+    sphinx.add_role("issue", GithubIssueRole())
+    sphinx.add_role("pull", GithubPullRequestRole())
+    sphinx.add_role("pr", GithubPullRequestRole())
+    # app.add_role("default", DefaultRole())
+    # register_generic_role("default", nodes.strong)
+    register_local_role("default", EmphasizedLiteral())  # type: ignore[arg-type]

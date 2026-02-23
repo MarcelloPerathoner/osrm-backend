@@ -1,5 +1,7 @@
-/route
-======
+.. _route:
+
+route
+=====
 
 .. http:get:: /route/v1/(profile)/(coordinates)
 
@@ -73,14 +75,8 @@
             ]
          }
 
-   In addition to the :ref:`routed_general_options` the following options are supported for this service:
+   This service accepst following parameters in addition to the :ref:`common parameters <common_options>`.
 
-   :param string profile: Mode of transportation, is determined statically by the Lua
-      profile that is used to prepare the data using `osrm-extract`. Typically `car`,
-      `bike` or `foot` if using one of the supplied profiles.
-   :param coordinates: String of format
-      `{longitude},{latitude};{longitude},{latitude}[;{longitude},{latitude} ...]` or
-      `polyline({polyline})` or `polyline6({polyline6})`.
    :query boolean|number alternatives: `true`, `false` (default), or Number.  Search
       for alternative routes. Passing a number `alternatives=n` searches for up to `n`
       alternative routes.  ** Please note that even if alternative routes are
@@ -101,7 +97,7 @@
    :query array<number> waypoints: `{index};{index};{index}...` Treats input coordinates indicated by
       given indices as waypoints in returned Match object. Default is to treat all
       input coordinates as waypoints.
-   :>json string code: `Ok` if the request was successful, `NoRoute` if no route was
-      found. See also the general status codes.
+
+   :>json string code: `NoRoute` if no route was found.
    :>json array waypoints: array of `Waypoint` objects representing all waypoints in order.
    :>json array routes: array of `Route` objects, ordered by descending recommendation rank.

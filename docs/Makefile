@@ -12,8 +12,8 @@
 
 PROJECT = ..
 
+BUILDDIR  ?= $(PROJECT)/build/docs
 SOURCEDIR = source
-BUILDDIR  = $(PROJECT)/build/docs
 SCRIPTS   = $(PROJECT)/scripts
 
 # You can set these variables from the command line, and also
