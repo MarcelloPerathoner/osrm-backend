@@ -34,13 +34,13 @@ MSYS2 is installed.
 Prepare
 -------
 
-Clone the Github repository and install Node files:
+Clone the Github repository and install Node and Python packages:
 
 .. code:: bash
 
     git clone https://github.com/Project-OSRM/osrm-backend.git
     cd osrm-backend
-    npm ci --ignore-scripts
+    scripts/post_checkout.sh
 
 .. _choose:
 
@@ -68,43 +68,38 @@ which may be several years old.
 :octicon:`alert;2em;sd-text-warning` When you switch building methods you must close and
 reopen the shell.
 
-.. rubric:: Footnotes
-
-.. [#] That doesn't mean there is no other way, just that we didn't have the time and
-       hardware to figure it out for you.  If you know how to, please submit a patch.
-
 .. _conan:
 
 Build with Conan
 ----------------
 
-First install Conan. You have to do this only once after a git clone.
-
-.. code:: bash
-
-    scripts/install_conan.sh
-
-Then activate Conan. You have to activate Conan only once for every shell you open.
+First activate the Python virtual environment. You have to activate it once every time
+you open a new shell.
 
 .. code:: bash
 
     source scripts/activate_venv
 
-Then build it:
+Choose if you want to build OSRM with or without the Node package.
 
-.. code:: bash
+.. tab-set::
 
-    conan build -pr home --build=missing
+    .. tab-item:: OSRM only
 
-The OSRM binaries are now in `build/Release`.
+        .. code:: bash
 
-To build the node package (optional):
+            conan build -pr home --build=missing
 
-.. code:: bash
+        The OSRM binaries are now in `build/Release`.
 
-    conan build -pr home --build=missing -o node_package=True
+    .. tab-item:: OSRM and Node package
 
-The node binaries are now in `build/nodejs/lib/binding_napi_v8`.
+        .. code:: bash
+
+            conan build -pr home --build=missing -o node_package=True
+
+        The OSRM binaries are now in `build/Release` and the Node binaries are now in
+        `build/nodejs/lib/binding_napi_v8`.
 
 Proceed with `testing <tests>`.
 
@@ -135,24 +130,27 @@ Install dependencies:
 
 Then build with:
 
-.. code:: bash
+.. tab-set::
 
-    cmake -B build/Release
-    cmake --build build/Release -j
+    .. tab-item:: OSRM only
 
-The OSRM binaries are now in `build/Release`.
+        .. code:: bash
 
-Optional: To build the node package, type this instead of the above 2 lines:
+            cmake -B build/Release
+            cmake --build build/Release -j
 
-.. code:: bash
+        The OSRM binaries are now in `build/Release`.
 
-    cmake -B build/Release -DBUILD_NODE_PACKAGE=ON
-    cmake --build build/Release -j
-    scripts/ci/build_node_package.sh
+    .. tab-item:: OSRM and Node package
 
+        .. code:: bash
 
-The OSRM binaries are now in `build/Release` and the node binaries are in
-`build/nodejs/lib/binding_napi_v8`.
+            cmake -B build/Release -DBUILD_NODE_PACKAGE=ON
+            cmake --build build/Release -j
+            scripts/ci/build_node_package.sh
+
+        The OSRM binaries are now in `build/Release` and the Node binaries are in
+        `build/nodejs/lib/binding_napi_v8`.
 
 
 .. _tests:
@@ -200,3 +198,9 @@ Or, you have to `sudo` to install into system directories:
 .. code:: bash
 
     sudo cmake --install build/Release --config Release
+
+
+.. rubric:: Footnotes
+
+.. [#] That doesn't mean there is no other way, just that we didn't have the time and
+       hardware to figure it out for you.  If you know how to, please submit a patch.

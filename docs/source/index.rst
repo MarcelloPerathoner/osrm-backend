@@ -5,10 +5,6 @@
 OSRM Documentation
 ==================
 
-.. tip::
-
-   See also: `the OSRM wiki <https://github.com/Project-OSRM/osrm-backend/wiki/>`_.
-
 .. toctree::
    :maxdepth: 1
 
@@ -17,6 +13,9 @@ OSRM Documentation
    building/index.rst
    node_osrm.rst
 
+Developing
+----------
+
 .. toctree::
    :maxdepth: 1
 
@@ -24,3 +23,7 @@ OSRM Documentation
    releasing.md
    testing.md
    cucumber.md
+
+.. seealso::
+
+   `the OSRM wiki <https://github.com/Project-OSRM/osrm-backend/wiki/>`_

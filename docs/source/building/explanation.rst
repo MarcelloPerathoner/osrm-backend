@@ -86,9 +86,9 @@ a shell, or piped into `$GITHUB_ENV`. `CMakePresets.json` files are consumed by 
 (and also by `conan`). The scripts `build/osrm-run-env.sh` is a convenient way to source
 the whole environment in one step.
 
-There is a gotcha: if the `file.env` file contains a `KEY="Value with spaces"` pair
-(note the quotes), `cat file.env >> $GITHUB_ENV` *will not* remove those quotes. But
-`source file.env` *will* remove those quotes.
+:octicon:`alert;2em;sd-text-warning` There is a gotcha: if the `file.env` file contains
+a `KEY="Value with spaces"` pair (note the quotes), `cat file.env >> $GITHUB_ENV` *will
+not* remove those quotes. But `source file.env` *will* remove those quotes.
 
 build/matrix.env
 ................

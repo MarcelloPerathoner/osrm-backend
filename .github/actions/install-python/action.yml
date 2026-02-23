@@ -20,7 +20,7 @@ runs:
       id: install-conan
       shell: bash
       run: |
-        scripts/install_conan.sh
+        scripts/install_venv.sh
         if [[ "${{ runner.os }}" == "Windows" ]]; then
           echo "$VIRTUAL_ENV/Scripts" >> $GITHUB_PATH
         else

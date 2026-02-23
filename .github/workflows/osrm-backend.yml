@@ -213,9 +213,7 @@ jobs:
               echo "TIME=/usr/bin/time" >> $GITHUB_ENV
             ;;
             macOS)
-              # install a current version of bash on macos
-              brew update
-              brew upgrade
+              # install a current version of bash
               brew install bash make ccache gnu-time
               bash --version
               echo "MAKE=gmake" >> $GITHUB_ENV

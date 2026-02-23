@@ -1,5 +1,5 @@
-route
-=====
+/route
+------
 
 .. http:get:: /route/v1/(profile)/(coordinates)
 

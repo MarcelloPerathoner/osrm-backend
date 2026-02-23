@@ -24,22 +24,22 @@ GET /{service}/{version}/{profile}/{coordinates}[.{format}]?option=value&option=
 | `coordinates` | String of format `{longitude},{latitude};{longitude},{latitude}[;{longitude},{latitude} ...]` or `polyline({polyline}) or polyline6({polyline6})`.                                                  |
 | `format`      | `json` or `flatbuffers`. This parameter is optional and defaults to `json`.                                                                                                                         |
 
-Passing any `option=value` is optional. `polyline` follows Google's polyline format with precision 5 by default and can be generated using [this package](https://www.npmjs.com/package/polyline).
+Passing any `option=value` is optional. `polyline` follows Google's polyline format with precision 5 by default and can be generated using [this package](https://www.npmjs.com/package/@mapbox/polyline).
 
 To pass parameters to each location some options support an array-like encoding:
 
 **Request options**
 
-| Option          | Values                                   | Description                                                                                                                                                                                                           |
-| --------------- | ---------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| bearings        | `{bearing};{bearing}[;{bearing} ...]`    | Limits the search to segments with given bearing in degrees towards true north in a clockwise direction.                                                                                                              |
-| radiuses        | `{radius};{radius}[;{radius} ...]`       | Limits the search to given radius in meters.                                                                                                                                                                          |
-| generate\_hints | `true` (default), `false`                | Adds a Hint to the response which can be used in subsequent requests, see `hints` parameter.                                                                                                                          |
-| hints           | `{hint};{hint}[;{hint} ...]`             | Hint from previous request to derive position in street network.                                                                                                                                                      |
-| approaches      | `{approach};{approach}[;{approach} ...]` | Restrict the direction on the road network at a waypoint, relative to the input coordinate.                                                                                                                           |
-| exclude         | `{class}[,{class}]`                      | Additive list of classes to avoid, the order does not matter.                                                                                                                                                         |
-| snapping        | `default` (default), `any`               | Default snapping avoids is_startpoint (see profile) edges, `any` will snap to any edge in the graph                                                                                                                   |
-| skip_waypoints  | `true`, `false` (default)                | <p>Removes waypoints from the response. Waypoints are still calculated, but not serialized. Could be useful in case you are interested in some other part of the response and do not want to transfer waste data.</p> |
+| Option          | Values                                   | Description                                                                                                                                                                                                    |
+| --------------- | ---------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| bearings        | `{bearing};{bearing}[;{bearing} ...]`    | Limits the search to segments with given bearing in degrees towards true north in a clockwise direction.                                                                                                       |
+| radiuses        | `{radius};{radius}[;{radius} ...]`       | Limits the search to given radius in meters.                                                                                                                                                                   |
+| generate\_hints | `true` (default), `false`                | Adds a Hint to the response which can be used in subsequent requests, see `hints` parameter.                                                                                                                   |
+| hints           | `{hint};{hint}[;{hint} ...]`             | Hint from previous request to derive position in street network.                                                                                                                                               |
+| approaches      | `{approach};{approach}[;{approach} ...]` | Restrict the direction on the road network at a waypoint, relative to the input coordinate.                                                                                                                    |
+| exclude         | `{class}[,{class}]`                      | Additive list of classes to avoid, the order does not matter.                                                                                                                                                  |
+| snapping        | `default` (default), `any`               | Default snapping avoids is_startpoint (see profile) edges, `any` will snap to any edge in the graph                                                                                                            |
+| skip_waypoints  | `true`, `false` (default)                | Removes waypoints from the response. Waypoints are still calculated, but not serialized. Could be useful in case you are interested in some other part of the response and do not want to transfer waste data. |
 
 Where the elements follow the following format:
 

@@ -1,10 +1,12 @@
 Building OSRM from Source
 =========================
 
+.. See: https://diataxis.fr/
+
 .. toctree::
     :maxdepth: 2
 
-    howto.rst
+    tutorial.rst
     reference.rst
     explanation.rst
     windows-deps.md

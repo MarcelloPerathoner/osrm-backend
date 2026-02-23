@@ -55,87 +55,68 @@ Napi::Object Engine::Init(Napi::Env env, Napi::Object exports)
       lib/binding_napi_v8/osrm-extract data.osm.pbf -p profiles/car.lua
       lib/binding_napi_v8/osrm-contract data.osrm
 
-   Consult the `osrm-backend <http.html>`_ documentation for further details.
+   See :doc:`/routed/index` for further details.
 
-   Once you have a complete `network.osrm.*` dataset, you can calculate routes in
-   javascript with this object.
+   Once you have generated a complete `network.osrm.*` dataset, you can instantiate an
+   Object of this class, like this:
 
    .. code:: js
 
       const osrm = new OSRM('network.osrm');
 
-   :param Object|String options: Options for creating an OSRM object or path to the
-      `.osrm` file.
+   :param Object|String options: Either a String representing a path to the `.osrm` files
+      or an Object containing one or more of the following properties:
 
-   .. js:class:: options
-
-      Options parameter to the constructor.
-
-      .. js:attribute:: algorithm
-
+      algorithm
          String: The algorithm to use for routing. Can be 'CH', or 'MLD'. Default is 'CH'.
          Make sure you prepared the dataset with the correct toolchain.
 
-      .. js:attribute:: shared_memory
-
+      shared_memory
          Boolean: Connects to the persistent shared memory datastore.  This requires you to
          run `osrm-datastore` prior to creating an `OSRM` object.
 
-      .. js:attribute:: dataset_name
-
+      dataset_name
          String: Connects to the persistent shared memory datastore defined
          by `--dataset_name` option when running `osrm-datastore`.
          This requires you to run `osrm-datastore --dataset_name` prior to creating an `OSRM` object.
 
-      .. js:attribute:: memory_file
-
+      memory_file
          String: **DEPRECATED** Old behaviour: Path to a file on disk to store the memory using mmap.
          Current behaviour: setting this value is the same as setting `mmap_memory: true`.
 
-      .. js:attribute:: mmap_memory
-
+      mmap_memory
          Boolean: Map on-disk files to virtual memory addresses (mmap), rather than loading into RAM.
 
-      .. js:attribute:: path
-
+      path
          String: The path to the `.osrm` files. This is mutually exclusive with
          setting `shared_memory` to true.
 
-      .. js:attribute:: disable_feature_dataset
-
+      disable_feature_dataset
          Array:  Disables a feature dataset from being loaded into memory if not needed.
          Options: `ROUTE_STEPS`, `ROUTE_GEOMETRY`.
 
-      .. js:attribute:: max_locations_trip
-
+      max_locations_trip
          Number: Max. locations supported in trip query (default: unlimited).
 
-      .. js:attribute:: max_locations_viaroute
-
+      max_locations_viaroute
          Number: Max. locations supported in viaroute query (default: unlimited).
 
-      .. js:attribute:: max_locations_distance_tabl
-
+      max_locations_distance_table
          Number: Max. locations supported in distance table query (default: unlimited).
 
-      .. js:attribute:: max_locations_map_matchin
-
+      max_locations_map_matching
          Number: Max. locations supported in map-matching query (default: unlimited).
 
-      .. js:attribute:: max_radius_map_matchin
-
+      max_radius_map_matching
          Number: Max. radius size supported in map matching query (default: 5).
 
-      .. js:attribute:: max_results_nearest
-
+      max_results_nearest
          Number: Max. results supported in nearest query (default: unlimited).
 
-      .. js:attribute:: max_alternatives
-
+      max_alternatives
          Number: Max. number of alternatives supported in alternative routes query (default: 3).
 
-      .. js:attribute:: default_radius
-
+      default_radius
          Number: Default radius for queries (default: unlimited).
 */
 // clang-format on
@@ -328,110 +309,95 @@ inline void asyncForTiles(const Napi::CallbackInfo &info,
 
       Returns the fastest route between two or more coordinates while visiting the waypoints in order.
 
-      :param Object options:       Object containing parameters for the route query.
+      :param Object options: Object containing one or more of the following properties:
+
+         coordinates
+            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]`
+            values, in decimal degrees.
+
+         bearings
+            Array: Limits the search to segments with given bearing in degrees towards true
+            north in clockwise direction.  Can be `null` or an Array of `[{value},{range}]`
+            with `integer 0 .. 360,integer 0 .. 180`.
+
+         radiuses
+            Array: Limits the coordinate snapping to streets in the given radius in meters.
+            Can be `null` (unlimited, default) or `double >= 0`.
+
+         hints
+            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
+
+         exclude
+            Array: List of classes to avoid, order does not matter.
+
+         generate_hints=true
+            Boolean: Whether or not to return a hint which can be used in subsequent requests.
+
+         alternatives=false
+            Boolean: Search for alternative routes.
+
+         alternatives=0
+            Number: Search for up to this many alternative routes. *Please note that even if
+            alternative routes are requested, a result cannot be guaranteed.*
+
+         steps=false
+            Boolean: Return route steps for each route leg.
+
+         annotations=false
+            Array|Boolean: An Array contaning strings of `duration`, `nodes`, `distance`,
+            `weight`, `datasources`, `speed` or a boolean for enabling/disabling all.
+
+         geometries=polyline
+            String: Returned route geometry format (influences overview and per step). Can also be `geojson`.
+
+         overview=simplified
+            String: Add overview geometry either `full`, `simplified` according to highest
+            zoom level it could be display on, or not at all (`false`).
+
+         continue_straight
+            Boolean: Forces the route to keep going straight at waypoints and don't do a uturn
+            even if it would be faster. Default value depends on the profile.
+
+         approaches
+            Array: Restrict the direction on the road network at a waypoint, relative to the
+            input coordinate.  Can be `null` (unrestricted, default), `curb` or `opposite`.
+
+         waypoints
+            Array: Indices to coordinates to treat as waypoints. If not supplied, all
+            coordinates are waypoints.  Must include first and last coordinate index.
+
+         format
+            String: Which output format to use, either `json`, or
+            `flatbuffers <https://github.com/Project-OSRM/osrm-backend/tree/master/include/engine/api/flatbuffers>`_.
+
+         snapping
+            String: Which edges can be snapped to, either `default`, or `any`.  `default` only
+            snaps to edges marked by the profile as `is_startpoint`, `any` will allow snapping
+            to any edge in the routing graph.
+
+         skip_waypoints=false
+            Boolean: Removes waypoints from the response. Waypoints are still calculated, but
+            not serialized. Could be useful in case you are interested in some other part of
+            response and do not want to transfer waste data.
+
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
-      :returns: object containing an array of `Waypoint`_ objects representing all
-                waypoints in order AND an array of `Route`_ objects ordered by
-                descending recommendation rank.
+
+      :returns: an Object containing an Array of `Waypoint`_ objects representing all
+         waypoints in order AND an Array of `Route`_ objects ordered by descending
+         recommendation rank.
+
+      Example:
 
       .. code:: js
 
          const osrm = new OSRM("berlin-latest.osrm");
          osrm.route({coordinates: [[52.519930,13.438640], [52.513191,13.415852]]}, function(err, result) {
            if(err) throw err;
-           console.log(result.waypoints); // array of Waypoint objects representing all waypoints in order
-           console.log(result.routes); // array of Route objects ordered by descending recommendation rank
+           console.log(result.waypoints); // Array of Waypoint objects representing all waypoints in order
+           console.log(result.routes);    // Array of Route objects ordered by descending recommendation rank
          });
 
-      .. js:class:: route_options
-
-         .. js:attribute:: coordinates
-
-            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]`
-            values, in decimal degrees.
-
-         .. js:attribute:: bearings
-
-            Array: Limits the search to segments with given bearing in degrees towards true
-            north in clockwise direction.  Can be `null` or an array of `[{value},{range}]`
-            with `integer 0 .. 360,integer 0 .. 180`.
-
-         .. js:attribute:: radiuses
-
-            Array: Limits the coordinate snapping to streets in the given radius in meters.
-            Can be `null` (unlimited, default) or `double >= 0`.
-
-         .. js:attribute:: hints
-
-            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
-
-         .. js:attribute:: exclude
-
-            Array: List of classes to avoid, order does not matter.
-
-         .. js:attribute:: generate_hints=true
-
-            Boolean: Whether or not to return a hint which can be used in subsequent requests.
-
-         .. js:attribute:: alternatives=false
-
-            Boolean: Search for alternative routes.
-
-         .. js:attribute:: alternatives=0
-
-            Number: Search for up to this many alternative routes. *Please note that even if
-            alternative routes are requested, a result cannot be guaranteed.*
-
-         .. js:attribute:: steps=false
-
-            Boolean: Return route steps for each route leg.
-
-         .. js:attribute:: annotations=false
-
-            Array|Boolean: An array contaning strings of `duration`, `nodes`, `distance`,
-            `weight`, `datasources`, `speed` or a boolean for enabling/disabling all.
-
-         .. js:attribute:: geometries=polyline
-
-            String: Returned route geometry format (influences overview and per step). Can also be `geojson`.
-
-         .. js:attribute:: overview=simplified
-
-            String: Add overview geometry either `full`, `simplified` according to highest
-            zoom level it could be display on, or not at all (`false`).
-
-         .. js:attribute:: continue_straight
-
-            Boolean: Forces the route to keep going straight at waypoints and don't do a uturn
-            even if it would be faster. Default value depends on the profile.
-
-         .. js:attribute:: approaches
-
-            Array: Restrict the direction on the road network at a waypoint, relative to the
-            input coordinate.  Can be `null` (unrestricted, default), `curb` or `opposite`.
-
-         .. js:attribute:: waypoints
-
-            Array: Indices to coordinates to treat as waypoints. If not supplied, all
-            coordinates are waypoints.  Must include first and last coordinate index.
-
-         .. js:attribute:: format
-
-            String: Which output format to use, either `json`, or
-            `flatbuffers <https://github.com/Project-OSRM/osrm-backend/tree/master/include/engine/api/flatbuffers>`_.
-
-         .. js:attribute:: snapping
-
-            String: Which edges can be snapped to, either `default`, or `any`.  `default` only
-            snaps to edges marked by the profile as `is_startpoint`, `any` will allow snapping
-            to any edge in the routing graph.
-
-         .. js:attribute:: skip_waypoints=false
-
-            Boolean: Removes waypoints from the response. Waypoints are still calculated, but
-            not serialized. Could be useful in case you are interested in some other part of
-            response and do not want to transfer waste data.
 */
 // clang-format on
 
@@ -453,14 +419,54 @@ Napi::Value Engine::route(const Napi::CallbackInfo &info)
       Note: `coordinates` in the general options only supports a single
       `{longitude},{latitude}` entry.
 
-      :param Object options: Object containing parameters for the nearest query.
+      :param Object options: Object containing one or more of the following properties:
+
+         coordinates
+            Array: The coordinates this request will use,
+            coordinates as `[{lon},{lat}]` values, in decimal degrees.
+
+         bearings
+            Array: Limits the search to segments with given bearing in degrees
+            towards true north in clockwise direction.  Can be `null` or an Array
+            of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
+
+         radiuses
+            Array: Limits the coordinate snapping to streets in the given radius in meters.
+            Can be `null` (unlimited, default) or `double >= 0`.
+
+         hints
+            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
+
+         generate_hints=true
+             Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
+
+         number=1
+            Number: Number of nearest segments that should be returned.
+            Must be an integer greater than or equal to `1`.
+
+         approaches
+            Array: Restrict the direction on the road network at a waypoint, relative to the input coordinate.
+            Can be `null` (unrestricted, default), `curb` or `opposite`.
+
+         format
+            String: Which output format to use, either `json`, or
+            `flatbuffers <https://github.com/Project-OSRM/osrm-backend/tree/master/include/engine/api/flatbuffers>`_.
+
+         snapping
+            String: Which edges can be snapped to, either `default`, or `any`.
+            `default` only snaps to edges marked by the profile as `is_startpoint`,
+            `any` will allow snapping to any edge in the routing graph.
+
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
-      :returns: object containing `waypoints`.
+      :returns: an Object containing the following properties:
 
          waypoints
-            array of `Waypoint`_ objects sorted by distance to the input coordinate.
-            Each object has an additional `distance` property, which is the distance in meters to the supplied input coordinate.
+            Array of `Waypoint`_ objects sorted by distance to the input coordinate.
+            Each object has an additional `distance` property, which is the distance
+            in meters to the supplied input coordinate.
+
+      Example:
 
       .. code:: js
 
@@ -471,50 +477,9 @@ Napi::Value Engine::route(const Napi::CallbackInfo &info)
            bearings: [[0,20]]
          };
          osrm.nearest(options, function(err, response) {
-           console.log(response.waypoints); // array of Waypoint objects
+           console.log(response.waypoints); // Array of Waypoint objects
          });
 
-      .. js:class:: nearest_options
-
-         .. js:attribute:: coordinates
-
-            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
-
-         .. js:attribute:: bearings
-
-            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
-            Can be `null` or an array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
-
-         .. js:attribute:: radiuses
-
-            Array: Limits the coordinate snapping to streets in the given radius in meters. Can be `null` (unlimited, default) or `double >= 0`.
-
-         .. js:attribute:: hints
-
-            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
-
-         .. js:attribute:: generate_hints=true
-
-             Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
-
-         .. js:attribute:: number=1
-
-            Number: Number of nearest segments that should be returned. Must be an integer greater than or equal to `1`.
-
-         .. js:attribute:: approaches
-
-            Array: Restrict the direction on the road network at a waypoint, relative to the input coordinate. Can be `null` (unrestricted, default), `curb` or `opposite`.
-
-         .. js:attribute:: format
-
-            String: Which output format to use, either `json`, or
-            `flatbuffers <https://github.com/Project-OSRM/osrm-backend/tree/master/include/engine/api/flatbuffers>`_.
-
-         .. js:attribute:: snapping
-
-            String: Which edges can be snapped to, either `default`, or `any`.
-            `default` only snaps to edges marked by the profile as `is_startpoint`,
-            `any` will allow snapping to any edge in the routing graph.
 */
 // clang-format on
 
@@ -534,23 +499,86 @@ Napi::Value Engine::nearest(const Napi::CallbackInfo &info)
       Computes duration table for the given locations. Allows for both symmetric and
       asymmetric tables.  Optionally returns distance table.
 
-      :param Object options:       Object literal containing parameters for the table query.
+      :param Object options: Object containing one or more of the following properties:
+
+         coordinates
+            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
+
+         bearings
+            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
+            Can be `null` or an Array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
+
+         radiuses
+            Array: Limits the coordinate snapping to streets in the given radius in meters.
+            Can be `null` (unlimited, default) or `double >= 0`.
+
+         hints
+            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
+
+         generate_hints=true
+            Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
+
+         sources
+            Array: An Array of `index` elements (`0 <= integer < #coordinates`) to use
+            location with given index as source. Default is to use all.
+
+         destinations
+            Array: An Array of `index` elements (`0 <= integer < #coordinates`) to use
+            location with given index as destination. Default is to use all.
+
+         approaches
+            Array: Restrict the direction on the road network at a waypoint, relative to the input coordinate.
+            Can be `null` (unrestricted, default), `curb` or `opposite`.
+
+         fallback_speed
+            Number: Replace `null` responses in result with as-the-crow-flies estimates based on `fallback_speed`.
+            Value is in metres/second.
+
+         fallback_coordinate
+            String: Either `input` (default) or `snapped`.  If using a `fallback_speed`,
+            use either the user-supplied coordinate (`input`), or the snapped coordinate (`snapped`)
+            for calculating the as-the-crow-flies distance between two points.
+
+         scale_factor
+            Number: Multiply the table duration values in the table by this number
+            for more controlled input into a route optimization solver.
+
+         snapping
+            String: Which edges can be snapped to, either `default`, or `any`.
+            `default` only snaps to edges marked by the profile as `is_startpoint`,
+            `any` will allow snapping to any edge in the routing graph.
+
+         annotations
+            Array: Return the requested table or tables in response. Can be either of
+            `['duration']` (return the duration matrix, default),
+            `['distance']` (return the distance matrix), or
+            `['duration', 'distance']` (return both the duration matrix and the distance matrix).
+
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
-      :returns: object containing `durations`, `distances`, `sources`, and `destinations`.
+      :returns: an Object containing the following properties:
 
          durations
-            array of arrays that stores the matrix in row-major order. `durations[i][j]` gives the travel time from the i-th waypoint to the j-th waypoint.
+            Array of Arrays that stores the matrix in row-major order.
+            `durations[i][j]` gives the travel time from the i-th waypoint to the j-th waypoint.
             Values given in seconds.
+
          distances
-            array of arrays that stores the matrix in row-major order. `distances[i][j]` gives the travel time from the i-th waypoint to the j-th waypoint.
+            Array of Arrays that stores the matrix in row-major order.
+            `distances[i][j]` gives the distance from the i-th waypoint to the j-th waypoint.
             Values given in meters.
+
          sources
-            array of `Waypoint`_ objects describing all sources in order.
+            Array of `Waypoint`_ objects describing all sources in order.
+
          destinations
-            array of `Waypoint`_ objects describing all destinations in order.
+            Array of `Waypoint`_ objects describing all destinations in order.
+
          fallback_speed_cells (optional)
-            if `fallback_speed` is used, will be an array of arrays of `row,column` values, indicating which cells contain estimated values.
+            if `fallback_speed` was given, this will be an Array of Arrays of `row, column` values,
+            indicating which cells contain estimated values.
+
+      Example:
 
       .. code:: js
 
@@ -563,79 +591,12 @@ Napi::Value Engine::nearest(const Napi::CallbackInfo &info)
            ]
          };
          osrm.table(options, function(err, response) {
-           console.log(response.durations); // array of arrays, matrix in row-major order
-           console.log(response.distances); // array of arrays, matrix in row-major order
-           console.log(response.sources); // array of Waypoint objects
-           console.log(response.destinations); // array of Waypoint objects
+           console.log(response.durations);    // Array of arrays, matrix in row-major order
+           console.log(response.distances);    // Array of arrays, matrix in row-major order
+           console.log(response.sources);      // Array of Waypoint objects
+           console.log(response.destinations); // Array of Waypoint objects
          });
 
-      .. js:class:: table_options
-
-         .. js:attribute:: coordinates
-
-            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
-
-         .. js:attribute:: bearings
-
-            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
-            Can be `null` or an array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
-
-         .. js:attribute:: radiuses
-
-            Array: Limits the coordinate snapping to streets in the given radius in meters.
-            Can be `null` (unlimited, default) or `double >= 0`.
-
-         .. js:attribute:: hints
-
-            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
-
-         .. js:attribute:: generate_hints=true
-
-            Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
-
-         .. js:attribute:: sources
-
-            Array: An array of `index` elements (`0 <= integer < #coordinates`) to use
-            location with given index as source. Default is to use all.
-
-         .. js:attribute:: destinations
-
-            Array: An array of `index` elements (`0 <= integer < #coordinates`) to use
-            location with given index as destination. Default is to use all.
-
-         .. js:attribute:: approaches
-
-            Array: Restrict the direction on the road network at a waypoint, relative to the input coordinate.
-            Can be `null` (unrestricted, default), `curb` or `opposite`.
-
-         .. js:attribute:: fallback_speed
-
-            Number: Replace `null` responses in result with as-the-crow-flies estimates based on `fallback_speed`.
-            Value is in metres/second.
-
-         .. js:attribute:: fallback_coordinate
-
-            String: Either `input` (default) or `snapped`.  If using a `fallback_speed`,
-            use either the user-supplied coordinate (`input`), or the snapped coordinate (`snapped`)
-            for calculating the as-the-crow-flies distance between two points.
-
-         .. js:attribute:: scale_factor
-
-            Number: Multiply the table duration values in the table by this number
-            for more controlled input into a route optimization solver.
-
-         .. js:attribute:: snapping
-
-            String: Which edges can be snapped to, either `default`, or `any`.
-            `default` only snaps to edges marked by the profile as `is_startpoint`,
-            `any` will allow snapping to any edge in the routing graph.
-
-         .. js:attribute:: annotations
-
-            Array: Return the requested table or tables in response. Can be
-            `['duration']` (return the duration matrix, default),
-            `[distance']` (return the distance matrix), or
-            `['duration', distance']` (return both the duration matrix and the distance matrix).
 */
 // clang-format on
 Napi::Value Engine::table(const Napi::CallbackInfo &info)
@@ -659,12 +620,14 @@ Napi::Value Engine::table(const Napi::CallbackInfo &info)
       have applied.
 
       :param Array coordinates:
-             an array consisting of `x`, `y`, and `z` values representing tile coordinates like
+             an Array consisting of `x`, `y`, and `z` values representing tile coordinates like
              `wiki.openstreetmap.org/wiki/Slippy_map_tilenames <https://wiki.openstreetmap.org/wiki/Slippy_map_tilenames>`_
              and are supported by vector tile viewers like `Mapbox GL JS <https://www.mapbox.com/mapbox-gl-js/api/>`_.
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
       :returns: buffer containing a Protocol-Buffer-encoded vector tile.
+
+      Example:
 
       .. code:: js
 
@@ -695,10 +658,59 @@ Napi::Value Engine::tile(const Napi::CallbackInfo &info)
       matching could not be found. The algorithm might not be able to match all points.
       Outliers are removed if they can not be matched successfully.
 
-      :param Object options:       Object literal containing parameters for the match query.
+      :param Object options: Object containing one or more of the following:
+
+         coordinates
+            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
+
+         bearings
+            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
+            Can be `null` or an Array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
+
+         hints
+            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
+
+         generate_hints=true
+            Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
+
+         steps=false
+            Boolean: Return route steps for each route.
+
+         annotations=false
+            Array|Boolean: An Array with strings of `duration`, `nodes`, `distance`, `weight`, `datasources`,
+            `speed` or boolean for enabling/disabling all.
+
+         geometries=polyline
+            String: Returned route geometry format (influences overview and per step). Can also be `geojson`.
+
+         overview=simplified
+            String: Add overview geometry either `full`, `simplified` according to highest zoom level
+            it could be display on, or not at all (`false`).
+
+         timestamps
+            Array<Number>: Timestamp of the input location (integers, UNIX-like timestamp).
+
+         radiuses
+            Array: Standard deviation of GPS precision used for map matching. If applicable use GPS accuracy.
+            Can be `null` for default value `5` meters or `double >= 0`.
+
+         gaps=split
+            String: Allows the input track splitting based on huge timestamp gaps between points. Either `split` or `ignore`.
+
+         tidy=false
+            Boolean: Allows the input track modification to obtain better matching quality for noisy tracks.
+
+         waypoints
+            Array: Indices to coordinates to treat as waypoints.  If not supplied, all coordinates are waypoints.
+            Must include first and last coordinate index.
+
+         snapping
+            String: Which edges can be snapped to, either `default`, or `any`. `default` only snaps to edges
+            marked by the profile as `is_startpoint`, `any` will allow snapping to any edge in the routing graph.
+
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
-      :returns: object containing `tracepoints` and `matchings`.
+      :returns: an Object containing the following properties:
 
          tracepoints
             Array of `Waypoint`_ objects representing all points of the trace in order.
@@ -713,8 +725,10 @@ Napi::Value Engine::tile(const Napi::CallbackInfo &info)
                Split the trace at these points for incremental map matching.
 
          matchings
-            is an array of `Route`_ objects that assemble the trace. Each `Route` object has an additional `confidence` property,
+            Array of `Route`_ objects that assemble the trace. Each `Route` object has an additional `confidence` property,
             which is the confidence of the matching. float value between `0` and `1`. `1` is very confident that the matching is correct.
+
+      Example:
 
       .. code:: js
 
@@ -725,74 +739,9 @@ Napi::Value Engine::tile(const Napi::CallbackInfo &info)
          };
          osrm.match(options, function(err, response) {
              if (err) throw err;
-             console.log(response.tracepoints); // array of Waypoint objects
-             console.log(response.matchings); // array of Route objects
+             console.log(response.tracepoints); // Array of Waypoint objects
+             console.log(response.matchings);   // Array of Route objects
          });
-
-
-      .. js:class:: match_options
-
-         .. js:attribute:: coordinates
-
-            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
-
-         .. js:attribute:: bearings
-
-            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
-            Can be `null` or an array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
-
-         .. js:attribute:: hints
-
-            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
-
-         .. js:attribute:: generate_hints=true
-
-            Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
-
-         .. js:attribute:: steps=false
-
-            Boolean: Return route steps for each route.
-
-         .. js:attribute:: annotations=false
-
-            Array|Boolean: An array with strings of `duration`, `nodes`, `distance`, `weight`, `datasources`,
-            `speed` or boolean for enabling/disabling all.
-
-         .. js:attribute:: geometries=polyline
-
-            String: Returned route geometry format (influences overview and per step). Can also be `geojson`.
-
-         .. js:attribute:: overview=simplified
-
-            String: Add overview geometry either `full`, `simplified` according to highest zoom level
-            it could be display on, or not at all (`false`).
-
-         .. js:attribute:: timestamps
-
-            Array<Number>: Timestamp of the input location (integers, UNIX-like timestamp).
-
-         .. js:attribute:: radiuses
-
-            Array: Standard deviation of GPS precision used for map matching. If applicable use GPS accuracy.
-            Can be `null` for default value `5` meters or `double >= 0`.
-
-         .. js:attribute:: gaps=split
-
-            String: Allows the input track splitting based on huge timestamp gaps between points. Either `split` or `ignore`.
-
-         .. js:attribute:: tidy=false
-
-            Boolean: Allows the input track modification to obtain better matching quality for noisy tracks.
-
-         .. js:attribute:: waypoints
-
-            Array: Indices to coordinates to treat as waypoints.  If not supplied, all coordinates are waypoints.
-            Must include first and last coordinate index.
-
-         .. js:attribute:: snapping
-
-            String: Which edges can be snapped to, either `default`, or `any`. `default` only snaps to edges
-            marked by the profile as `is_startpoint`, `any` will allow snapping to any edge in the routing graph.
 */
 // clang-format on
 
@@ -831,21 +780,69 @@ Napi::Value Engine::match(const Napi::CallbackInfo &info)
       false     any    any         no
       ========= ====== =========== =========
 
-      :param Object options:       Object literal containing parameters for the trip query.
+      :param Object options: An Object containing one or more of the following properties:
+
+         coordinates
+            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
+
+         bearings
+            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
+            Can be `null` or an Array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
+
+         radiuses
+            Array: Limits the coordinate snapping to streets in the given radius in meters.
+            Can be `double >= 0` or `null` (unlimited, default).
+
+         hints
+            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
+
+         generate_hints=true
+            Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
+
+         steps=false
+            Boolean: Return route steps for each route.
+
+         annotations=false
+            Array|Boolean: An Array with strings of `duration`, `nodes`, `distance`, `weight`, `datasources`,
+            `speed` or boolean for enabling/disabling all.
+
+         geometries=polyline
+            String: Returned route geometry format (influences overview and per step). Can also be `geojson`.
+
+         overview=simplified
+            String: Add overview geometry either `full`, `simplified`
+
+         roundtrip=true
+            Boolean: Return route is a roundtrip.
+
+         source=any
+            String: Return route starts at `any` or `first` coordinate.
+
+         destination=an
+            String: Return route ends at `any` or `last` coordinate.
+
+         approaches
+            Array: Restrict the direction on the road network at a waypoint, relative to the input coordinate.
+            Can be `null` (unrestricted, default), `curb` or `opposite`.
+
+         snapping
+            String: Which edges can be snapped to, either `default`, or `any`.
+            `default` only snaps to edges marked by the profile as `is_startpoint`,
+            `any` will allow snapping to any edge in the routing graph.
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
 
-      :returns: an object containing:
+      :returns: an Object containing the following properties:
 
          waypoints
-            an array of `Waypoint`_ objects representing all waypoints in input order.
+            Array of `Waypoint`_ objects representing all waypoints in input order.
             Each Waypoint object has the following additional properties,
 
             1) `trips_index`: index to trips of the sub-trip the point was matched to, and
             2) `waypoint_index`: index of the point in the trip.
 
          trips
-            an array of `Route`_ objects that assemble the trace.
+            Array of `Route`_ objects that assemble the trace.
 
       .. code:: js
 
@@ -861,74 +858,9 @@ Napi::Value Engine::match(const Napi::CallbackInfo &info)
          }
          osrm.trip(options, function(err, response) {
            if (err) throw err;
-           console.log(response.waypoints); // array of Waypoint objects
-           console.log(response.trips); // array of Route objects
+           console.log(response.waypoints); // Array of Waypoint objects
+           console.log(response.trips);     // Array of Route objects
          });
-
-
-      .. js:class:: trip_options
-
-         .. js:attribute:: coordinates
-
-            Array: The coordinates this request will use, coordinates as `[{lon},{lat}]` values, in decimal degrees.
-
-         .. js:attribute:: bearings
-
-            Array: Limits the search to segments with given bearing in degrees towards true north in clockwise direction.
-            Can be `null` or an array of `[{value},{range}]` with `integer 0 .. 360,integer 0 .. 180`.
-
-         .. js:attribute:: radiuses
-
-            Array: Limits the coordinate snapping to streets in the given radius in meters.
-            Can be `double >= 0` or `null` (unlimited, default).
-
-         .. js:attribute:: hints
-
-            Array: Hints for the coordinate snapping. Array of base64 encoded strings.
-
-         .. js:attribute:: generate_hints=true
-
-            Boolean: Whether or not adds a Hint to the response which can be used in subsequent requests.
-
-         .. js:attribute:: steps=false
-
-            Boolean: Return route steps for each route.
-
-         .. js:attribute:: annotations=false
-
-            Array|Boolean: An array with strings of `duration`, `nodes`, `distance`, `weight`, `datasources`,
-            `speed` or boolean for enabling/disabling all.
-
-         .. js:attribute:: geometries=polyline
-
-            String: Returned route geometry format (influences overview and per step). Can also be `geojson`.
-
-         .. js:attribute:: overview=simplified
-
-            String: Add overview geometry either `full`, `simplified`
-
-         .. js:attribute:: roundtrip=true
-
-            Boolean: Return route is a roundtrip.
-
-         .. js:attribute:: source=any
-
-            String: Return route starts at `any` or `first` coordinate.
-
-         .. js:attribute:: destination=an
-
-            String: Return route ends at `any` or `last` coordinate.
-
-         .. js:attribute:: approache
-
-            Array: Restrict the direction on the road network at a waypoint, relative to the input coordinate.
-            Can be `null` (unrestricted, default), `curb` or `opposite`.
-
-         .. js:attribute:: snapping
-
-            String: Which edges can be snapped to, either `default`, or `any`.
-            `default` only snaps to edges marked by the profile as `is_startpoint`,
-            `any` will allow snapping to any edge in the routing graph.
 */
 // clang-format on
 
@@ -948,8 +880,7 @@ Napi::Value Engine::trip(const Napi::CallbackInfo &info)
    All plugins support a second additional parameter to configure some NodeJS specific
    behaviours.
 
-   .. js:attribute:: format
-
+   format
       String: The format of the result object to various API calls. Valid options are `object`
       (default if `options.format` is `json`), which returns a standard Javascript object,
       as described above, and `buffer` (default if `options.format` is `flatbuffers`),
