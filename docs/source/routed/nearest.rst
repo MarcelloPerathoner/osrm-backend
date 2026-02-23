@@ -1,20 +1,19 @@
 .. _nearest:
 
-nearest
-=======
+Nearest Service
+===============
 
 .. http:get:: /nearest/v1/(profile)/(coordinate)
 
    Snaps a given coordinate to the street network and returns the `n` nearest matches.
 
-   **Example Request**
+   .. dropdown:: Example Request
 
-   .. code:: http
+      .. code:: bash
 
-      GET /nearest/v1/driving/13.388860,52.517037?number=3&bearings=0,20 HTTP/1.1
-      Host: router.project-osrm.org
+         curl 'http://router.project-osrm.org/nearest/v1/driving/13.388860,52.517037?number=3&bearings=0,20'
 
-   .. dropdown:: **Example Response**
+   .. dropdown:: Example Response
 
       .. code:: json
 
@@ -63,13 +62,14 @@ nearest
             "code" : "Ok"
          }
 
-   This service accepst following parameters in addition to the :ref:`common parameters <common_options>`.
+   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
    Note that this service accepts only one coordinate.
 
    :query integer number: How many nearest segments should be returned. Integer > 0, default: 1.
    :query boolean skip_waypoints:  As `waypoints` contain the only data returned by this
       service, setting this option to `true` makes no sense, but is still possible. In
       that case, only the `code` field will be returned.
+
    :>json string code: `Ok` if the request was successful. See also the general status codes.
    :>json array waypoints: array of `Waypoint` objects sorted by distance to the input coordinate.
       Each object has at least the following additional properties:

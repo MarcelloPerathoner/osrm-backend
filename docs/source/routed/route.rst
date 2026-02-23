@@ -1,20 +1,19 @@
 .. _route:
 
-route
-=====
+Route Service
+=============
 
 .. http:get:: /route/v1/(profile)/(coordinates)
 
    Finds the fastest route between the coordinates in the supplied order.
 
-   **Example Request**
+   .. dropdown:: Example Request
 
-   .. code:: http
+      .. code:: bash
 
-      GET /route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false HTTP/1.1
-      Host: router.project-osrm.org
+         curl 'http://router.project-osrm.org/route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false'
 
-   .. dropdown:: **Example Response**
+   .. dropdown:: Example Response
 
       .. code:: json
 
@@ -75,7 +74,7 @@ route
             ]
          }
 
-   This service accepst following parameters in addition to the :ref:`common parameters <common_options>`.
+   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
 
    :query boolean|number alternatives: `true`, `false` (default), or Number.  Search
       for alternative routes. Passing a number `alternatives=n` searches for up to `n`

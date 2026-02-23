@@ -1,28 +1,19 @@
 .. _common:
 
-Common Parameters
-=================
+Parameters Common to All Services
+=================================
 
 .. http:get:: /(service)/(version)/(profile)/(coordinates)[.(format)]
 
    Common request structure
 
-   **Example Requests**
+   .. dropdown:: Example Requests
 
-   .. code:: http
+      .. code:: bash
 
-      GET /route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false HTTP/1.1
-      Host: router.project-osrm.org
-
-   .. code:: http
-
-      GET /route/v1/driving/13.388860,52.517037;13.397634,52.529407?exclude=motorway HTTP/1.1
-      Host: router.project-osrm.org
-
-   .. code:: http
-
-      GET /route/v1/driving/polyline(ofp_Ik_vpAilAyu@te@g`E)?overview=false HTTP/1.1
-      Host: router.project-osrm.org
+         curl 'http://router.project-osrm.org/GET /route/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219?overview=false'
+         curl 'http://router.project-osrm.org/GET /route/v1/driving/13.388860,52.517037;13.397634,52.529407?exclude=motorway'
+         curl 'http://router.project-osrm.org/GET /route/v1/driving/polyline(ofp_Ik_vpAilAyu@te@g`E)?overview=false'
 
    .. _common_options:
 

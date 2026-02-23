@@ -383,9 +383,9 @@ inline void asyncForTiles(const Napi::CallbackInfo &info,
       :param Object plugin_config: Plugin configuration. See: :js:class:`node.plugin_config`
       :param Function callback:
 
-      :returns: an Object containing an Array of `Waypoint`_ objects representing all
-         waypoints in order AND an Array of `Route`_ objects ordered by descending
-         recommendation rank.
+      :returns: an Object containing an Array of :ref:`waypoint-object`
+         representing all waypoints in order AND an Array of :ref:`route-object`
+         ordered by descending recommendation rank.
 
       Example:
 
@@ -462,7 +462,7 @@ Napi::Value Engine::route(const Napi::CallbackInfo &info)
       :returns: an Object containing the following properties:
 
          waypoints
-            Array of `Waypoint`_ objects sorted by distance to the input coordinate.
+            Array of :ref:`waypoint-object` sorted by distance to the input coordinate.
             Each object has an additional `distance` property, which is the distance
             in meters to the supplied input coordinate.
 
@@ -569,10 +569,10 @@ Napi::Value Engine::nearest(const Napi::CallbackInfo &info)
             Values given in meters.
 
          sources
-            Array of `Waypoint`_ objects describing all sources in order.
+            Array of :ref:`waypoint-object` describing all sources in order.
 
          destinations
-            Array of `Waypoint`_ objects describing all destinations in order.
+            Array of :ref:`waypoint-object` describing all destinations in order.
 
          fallback_speed_cells (optional)
             if `fallback_speed` was given, this will be an Array of Arrays of `row, column` values,
@@ -713,11 +713,11 @@ Napi::Value Engine::tile(const Napi::CallbackInfo &info)
       :returns: an Object containing the following properties:
 
          tracepoints
-            Array of `Waypoint`_ objects representing all points of the trace in order.
+            Array of :ref:`waypoint-object` representing all points of the trace in order.
             If the trace point was omitted by map matching because it is an outlier, the entry will be null.
-            Each `Waypoint` object has the following additional properties,
+            Each :ref:`waypoint-object` has the following additional properties,
 
-            1. `matchings_index`: Index to the `Route`_ object in matchings
+            1. `matchings_index`: Index to the :ref:`route-object` in matchings
                the sub-trace was matched to,
             2. `waypoint_index`: Index of the waypoint inside the matched route.
             3. `alternatives_count`: Number of probable alternative matchings for this trace point.
@@ -725,7 +725,7 @@ Napi::Value Engine::tile(const Napi::CallbackInfo &info)
                Split the trace at these points for incremental map matching.
 
          matchings
-            Array of `Route`_ objects that assemble the trace. Each `Route` object has an additional `confidence` property,
+            Array of :ref:`route-object` that assemble the trace. Each :ref:`route-object` has an additional `confidence` property,
             which is the confidence of the matching. float value between `0` and `1`. `1` is very confident that the matching is correct.
 
       Example:
@@ -835,14 +835,14 @@ Napi::Value Engine::match(const Napi::CallbackInfo &info)
       :returns: an Object containing the following properties:
 
          waypoints
-            Array of `Waypoint`_ objects representing all waypoints in input order.
+            Array of :ref:`waypoint-object` representing all waypoints in input order.
             Each Waypoint object has the following additional properties,
 
             1) `trips_index`: index to trips of the sub-trip the point was matched to, and
             2) `waypoint_index`: index of the point in the trip.
 
          trips
-            Array of `Route`_ objects that assemble the trace.
+            Array of :ref:`route-object` that assemble the trace.
 
       .. code:: js
 
@@ -905,44 +905,6 @@ Napi::Value Engine::trip(const Napi::CallbackInfo &info)
      if (err) throw err;
      console.log(response.toString("utf-8"));
    });
-
-Responses
----------
-
-Route
-~~~~~
-
-Represents a route through (potentially multiple) waypoints.
-
-`osrm-backend <http.html#route-object>`_
-
-RouteLeg
-~~~~~~~~
-
-Represents a route between two waypoints.
-
-`osrm-backend <http.html#routeleg-object>`_
-
-RouteStep
-~~~~~~~~~
-
-A step consists of a maneuver such as a turn or merge, followed by a distance of travel along a
-single way to the subsequent step.
-
-`osrm-backend <http.html#routestep-object>`_
-
-StepManeuver
-~~~~~~~~~~~~
-
-`osrm-backend <http.html#stepmaneuver-object>`_
-
-Waypoint
-~~~~~~~~
-
-Represents a waypoint on a route.
-
-`osrm-backend <http.html#waypoint-object>`_
-
 */
 // clang-format on
 

@@ -9,9 +9,13 @@ no more than 5 seconds between requests.
 .. toctree::
    :maxdepth: 2
 
-   http.md
-   common.rst
    route.rst
    nearest.rst
    match.rst
    table.rst
+   trip.rst
+   tile.rst
+   common.rst
+   results_json.md
+   results_flatbuffers.md
+   environment_variables.rst

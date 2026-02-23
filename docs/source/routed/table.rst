@@ -1,7 +1,7 @@
 .. _table:
 
-table
-=====
+Table Service
+=============
 
 .. http:get:: /table/v1/(profile)/(coordinates)
 
@@ -10,11 +10,6 @@ table
    distances are not the shortest distance between two coordinates, but rather the
    distances of the fastest routes. Durations are in seconds and distances are in
    meters.
-
-   .. code:: http
-
-      GET /table/v1/(profile)/(coordinates) HTTP/1.1
-      Host: router.project-osrm.org
 
    .. dropdown:: Example Requests
 
@@ -136,27 +131,27 @@ table
          ]
          }
 
-   This service accepst following parameters in addition to the :ref:`common parameters <common_options>`.
+   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
 
-   :param array sources: Use location with given index as source. :default:`all` or
+   :query array sources: Use location with given index as source. :default:`all` or
       `{index};{index}[;{index} ...]`
 
-   :param array destinations: Use location with given index as destination.
+   :query array destinations: Use location with given index as destination.
       :default:`all` or `{index};{index}[;{index} ...]` Index is an integer `0 <=
       integer < #locations`
 
-   :param keyword annotations: Return the requested table or tables in response.
+   :query keyword annotations: Return the requested table or tables in response.
       :default:`duration`, `distance`, or `duration,distance`
 
-   :param number fallback_speed: If no route found between a source/destination pair,
+   :query number fallback_speed: If no route found between a source/destination pair,
       calculate the as-the-crow-flies distance, then use this speed to estimate duration.
       `double > 0`
 
-   :param keyword fallback_coordinate: When using a `fallback_speed`, use the
+   :query keyword fallback_coordinate: When using a `fallback_speed`, use the
       user-supplied coordinate (`input`), or the snapped location (`snapped`) for
       calculating distances. :default:`input`, or `snapped`
 
-   :param number scale_factor: Use in conjunction with `annotations=durations`. Scales
+   :query number scale_factor: Use in conjunction with `annotations=durations`. Scales
       the table `duration` values by this number. `double > 0`
 
    Unlike other array encoded options, the length of `sources` and `destinations` can be
