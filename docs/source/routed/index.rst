@@ -8,3 +8,4 @@ Also known as: `osrm-routed`
 
     http.md
     route.rst
+    nearest.rst

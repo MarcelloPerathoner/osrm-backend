@@ -1,11 +1,18 @@
 # Read the Docs configuration file
 # See https://docs.readthedocs.io/en/stable/config-file/v2.html for details
 
-# Required
 version: 2
 
-# Set the OS, Python version, and other tools you might need
 build:
-  os: ubuntu-24.04
+  os: "ubuntu-24.04"
   tools:
     python: "3.13"
+  jobs:
+    install:
+      - bash ./scripts/install_venv.sh
+    build:
+      html:
+        - make -C docs
+    post_build:
+      - mkdir -p $READTHEDOCS_OUTPUT/html/
+      - cp -a build/docs/* $READTHEDOCS_OUTPUT/html/
