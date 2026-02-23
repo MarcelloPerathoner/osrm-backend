@@ -9,10 +9,10 @@ build:
     python: "3.13"
   jobs:
     install:
-      - bash ./scripts/install_venv.sh
+      - bash scripts/install_venv.sh
     build:
       html:
         - make -C docs
     post_build:
       - mkdir -p $READTHEDOCS_OUTPUT/html/
-      - cp -a build/docs/* $READTHEDOCS_OUTPUT/html/
+      - cp -a build/docs/html/* $READTHEDOCS_OUTPUT/html/
