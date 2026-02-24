@@ -10,10 +10,15 @@ no more than 5 seconds between requests.
 Conventions
 -----------
 
-A parameter described as taking an `array<elem>` expects you to provide a
-semicolon-separated list of `elem`. An empty list entry means the default value for
-`elem` if there is one, eg.: in the array `1;2;;4;5` the third value will be set to the
+A parameter described as taking an 'array<element>' expects you to provide a
+semicolon-separated list of elements. An empty list entry means the default value for
+element, if there is one, eg.: in the array `1;2;;4;5` the third value will be set to the
 default value.
+
+A parameter described as taking a 'keyword' expects one of a fixed set of words.
+
+The default value for a parameter, if any, is typeset in bold: eg.: :default:`false`,
+`true`.
 
 
 Parameters Common to All Services
