@@ -10,8 +10,8 @@ OSRM Documentation
 
    routed/index.rst
    profiles.md
-   building/index.rst
    node_osrm.rst
+   building/index.rst
 
 Developing
 ----------

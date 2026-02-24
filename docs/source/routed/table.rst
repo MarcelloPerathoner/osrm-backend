@@ -3,7 +3,7 @@
 Table Service
 =============
 
-.. http:get:: /table/v1/(profile)/(coordinates)
+.. http:get:: /table/v1/(profile)/(coordinates)[.(format)]
 
    Computes the duration of the fastest route between all pairs of supplied coordinates.
    Returns durations or distances or both between the coordinate pairs. Note that the
@@ -131,7 +131,9 @@ Table Service
          ]
          }
 
-   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
+   .. include:: common_parameters.rst
+
+   .. include:: common_queries.rst
 
    :query array sources: Use location with given index as source. :default:`all` or
       `{index};{index}[;{index} ...]`
@@ -140,25 +142,27 @@ Table Service
       :default:`all` or `{index};{index}[;{index} ...]` Index is an integer `0 <=
       integer < #locations`
 
-   :query keyword annotations: Return the requested table or tables in response.
-      :default:`duration`, `distance`, or `duration,distance`
+   :query keyword annotations: :default:`duration`, `distance`, or `duration,distance`.
+    Return the requested table or tables in response.
 
-   :query number fallback_speed: If no route found between a source/destination pair,
+   :query float fallback_speed: If no route found between a source/destination pair,
       calculate the as-the-crow-flies distance, then use this speed to estimate duration.
-      `double > 0`
+      `float > 0`
 
-   :query keyword fallback_coordinate: When using a `fallback_speed`, use the
-      user-supplied coordinate (`input`), or the snapped location (`snapped`) for
-      calculating distances. :default:`input`, or `snapped`
+   :query keyword fallback_coordinate: :default:`input`, or `snapped`. When using a
+      `fallback_speed`, use the user-supplied coordinate (`input`), or the snapped
+      location (`snapped`) for calculating distances.
 
-   :query number scale_factor: Use in conjunction with `annotations=durations`. Scales
-      the table `duration` values by this number. `double > 0`
+   :query float scale_factor: Use in conjunction with `annotations=durations`. Scales
+      the table `duration` values by this number. `float > 0`
 
    Unlike other array encoded options, the length of `sources` and `destinations` can be
-   **smaller than or equal** the number of input locations.
-   :code:`sources=0;5;7&destinations=5;1;4;2;3;6`
+   less or equal than the number of input locations.
+   Example: `sources=0;5;7&destinations=5;1;4;2;3;6`
 
    With `skip_waypoints` set to `true`, both `sources` and `destinations` arrays will be skipped.
+
+   .. include:: common_responses.rst
 
    :>json string code: `NoTable` if no route was found. `NotImplemented` if this request
     is not supported.
@@ -183,3 +187,5 @@ Table Service
       (optional) array of arrays containing `i,j` pairs indicating which cells contain
       estimated values based on `fallback_speed`.  Will be absent if `fallback_speed` is
       not used.
+
+   .. include:: common_statuscodes.rst

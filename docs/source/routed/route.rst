@@ -3,7 +3,7 @@
 Route Service
 =============
 
-.. http:get:: /route/v1/(profile)/(coordinates)
+.. http:get:: /route/v1/(profile)/(coordinates)[.(format)]
 
    Finds the fastest route between the coordinates in the supplied order.
 
@@ -74,29 +74,35 @@ Route Service
             ]
          }
 
-   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
+   .. include:: common_parameters.rst
 
-   :query boolean|number alternatives: `true`, `false` (default), or Number.  Search
-      for alternative routes. Passing a number `alternatives=n` searches for up to `n`
-      alternative routes.  ** Please note that even if alternative routes are
-      requested, a result cannot be guaranteed.**
-   :query boolean steps: `true`, `false` (default). Whether to return route
+   .. include:: common_queries.rst
+
+   :query boolean|number alternatives: :default:`false`, `true`, or Number.  Search for
+      alternative routes. Passing a number `alternatives=n` searches for up to `n`
+      alternative routes. Please note that the service may return less than the
+      requested number of alternatives, or none at all.
+   :query boolean steps: :default:`false`, `true`. Whether to return route
       steps for each route leg.
-   :query boolean|string annotations: `true`, `false` (default), `nodes`, `distance`, `duration`,
-      `datasources`, `weight`, `speed`. Returns additional metadata for each
+   :query keyword annotations: :default:`false`, `true`, `nodes`, `distance`,
+      `duration`, `datasources`, `weight`, `speed`. Returns additional metadata for each
       coordinate along the route geometry.
-   :query string geometries:  `polyline` (default), `polyline6`, `geojson`. Return route
+   :query keyword geometries: :default:`polyline`, `polyline6`, `geojson`. Return route
       geometry format (influences overview and per step)
-   :query string overview:  `simplified` (default), `full`, `false`.  Add overview geometry
-      either full, simplified according to highest zoom level it could be displayed
-      on, or not at all.
-   :query boolean|string continue_straight: `default` (default), `true`, `false`.  Forces the route to
-      keep going straight at waypoints constraining uturns there even if it would be
-      faster. Default value depends on the profile.
-   :query array<number> waypoints: `{index};{index};{index}...` Treats input coordinates indicated by
-      given indices as waypoints in returned Match object. Default is to treat all
-      input coordinates as waypoints.
+   :query keyword overview:  :default:`simplified`, `full`, `false`.  Add overview
+      geometry either full, or simplified according to the highest zoom level it could
+      be displayed on, or none at all.
+   :query keyword|boolean continue_straight: :default:`default`, `true`, `false`.  Forces
+      the route to keep going straight at waypoints even if a u-turn would be faster.
+      The meaning of `default` depends on the profile.
+   :query array<integer> waypoints: `{index};{index};{index}...` Treats only the input
+      coordinates at the given indices as waypoints in the returned Match object.
+      Default is to treat all input coordinates as waypoints.
 
-   :>json string code: `NoRoute` if no route was found.
+   .. include:: common_responses.rst
+
+   :>json keyword code: `NoRoute` if no route was found.
    :>json array waypoints: array of `Waypoint` objects representing all waypoints in order.
    :>json array routes: array of `Route` objects, ordered by descending recommendation rank.
+
+   .. include:: common_statuscodes.rst

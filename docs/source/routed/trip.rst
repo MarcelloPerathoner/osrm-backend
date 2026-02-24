@@ -3,7 +3,7 @@
 Trip Service
 ============
 
-.. http:get:: /trip/v1/(profile)/(coordinates)
+.. http:get:: /trip/v1/(profile)/(coordinates)[.(format)]
 
    The trip plugin solves the Traveling Salesman Problem using a greedy heuristic
    (farthest-insertion algorithm) for 10 or more waypoints and uses brute force for less
@@ -21,29 +21,32 @@ Trip Service
          # Round trip in Berlin with four stops, starting at the first stop, ending at the last:
          curl 'http://router.project-osrm.org/trip/v1/driving/13.388860,52.517037;13.397634,52.529407;13.428555,52.523219;13.418555,52.523215?source=first&destination=last'
 
-   This service accepts following parameters in addition to the :ref:`common parameters <common_options>`.
+   .. include:: common_parameters.rst
 
-   :query boolean roundtrip:
-      The sought route is a roundtrip, it returns to the first location.
-      :default:`true`, `false`
-   :query keyword source:
-      The returned route must start at the `first` or can start at `any` coordinate.
-      :default:`any`, `first`
-   :query keyword destination:
-      The returned route must end at the `last` or can end at `any` coordinate
-      :default:`any`, `last`
-   :query boolean steps:
-      Return route instructions for each trip. :default:`false`, `true`
-   :query keyword annotations:
-      Return additional metadata for each coordinate along the route geometry.
-      :default:`false`, `true`, `nodes`, `distance`, `duration`, `datasources`,
-      `weight`, `speed`
-   :query keyword geometries:
-      Returned route geometry format (influences overview and per step).
-      :default:`polyline`, `polyline6`, `geojson`
-   :query keyword overview:
-      Add overview geometry: either full, simplified according to highest zoom level it
-      could be displayed on, or none at all. :default:`simplified`, `full`, `false`
+   .. include:: common_queries.rst
+
+   :query boolean roundtrip: :default:`true`, `false`.  The sought route is a roundtrip:
+      it returns to the first location.
+
+   :query keyword source: :default:`any`, `first`.  The returned route must start at the
+      `first` or may start at `any` coordinate.
+
+   :query keyword destination: :default:`any`, `last`.  The returned route must end at
+      the `last` or may end at `any` coordinate
+
+   :query boolean steps: :default:`false`, `true`. Return route instructions for each
+      trip.
+
+   :query keyword annotations: :default:`false`, `true`, `nodes`, `distance`,
+      `duration`, `datasources`, `weight`, `speed`.  Return additional metadata for each
+      coordinate along the route geometry.
+
+   :query keyword geometries: :default:`polyline`, `polyline6`, `geojson`.  Returned
+      route geometry format (influences overview and per step).
+
+   :query keyword overview: :default:`simplified`, `full`, `false`.  Add overview
+      geometry: either full, simplified according to highest zoom level it could be
+      displayed on, or none at all.
 
 
    **Fixing Start and End Points**
@@ -73,6 +76,8 @@ Trip Service
    false     any    any         no
    ========= ====== =========== =========
 
+   .. include:: common_responses.rst
+
    :>json string code: `NoTrips` if no trips were found because input coordinates are
       not connected. `NotImplemented` if this service is not supported on this server.
 
@@ -85,3 +90,5 @@ Trip Service
 
    :>json array trips:
       Array of `Route` objects that assemble the trace.
+
+   .. include:: common_statuscodes.rst

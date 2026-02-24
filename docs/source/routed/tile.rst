@@ -3,7 +3,7 @@
 Tile Service
 ============
 
-.. http:get:: /tile/v1/{profile}/tile({x},{y},{zoom}).mvt
+.. http:get:: /tile/v1/(profile)/tile(x,y,zoom).mvt
 
    This service generates `Mapbox Vector Tiles
    <https://www.mapbox.com/developers/vector-tiles/>`_ that can be viewed with a

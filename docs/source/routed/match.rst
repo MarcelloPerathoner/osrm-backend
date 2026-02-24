@@ -3,7 +3,7 @@
 Match Service
 =============
 
-.. http:get:: /match/v1/(profile)/(coordinates)
+.. http:get:: /match/v1/(profile)/(coordinates)[.(format)]
 
    Map matching matches/snaps given GPS points to the road network in the most plausible
    way.  Please note the request might result in multiple sub-traces. Large jumps in the
@@ -11,47 +11,50 @@ Match Service
    matching could not be found.  The algorithm might not be able to match all points.
    Outliers are removed if they can not be matched successfully.
 
-   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
+   .. include:: common_parameters.rst
 
-   :query boolean steps: Return route steps for each route. :default:`false`, `true`
+   .. include:: common_queries.rst
 
-   :query keyword geometries: Returned route geometry format (influences overview and
-      per step). :default:`polyline`, `polyline6`, `geojson`
+   :query boolean steps: :default:`false`, `true`. Return route steps for each route.
 
-   :query keyword annotations: Returns additional metadata for each coordinate along the
-      route geometry. :default:`false`, `true`, `nodes`, `distance`, `duration`,
-      `datasources`, `weight`, `speed`
+   :query keyword geometries: :default:`polyline`, `polyline6`, `geojson`. Which
+      route geometry format to return (influences overview and per step).
 
-   :query keyword overview: Add overview geometry either full, simplified according to
-      highest zoom level it could be displayed on, or not at all. :default:`simplified`,
-      `full`, `false`
+   :query keyword annotations: :default:`false`, `true`, `nodes`, `distance`,
+      `duration`, `datasources`, `weight`, `speed`. Return additional metadata for each
+      coordinate along the route geometry.
 
-   :query array timestamps: Timestamps for the input locations in seconds since UNIX
-      epoch. Timestamps need to be monotonically increasing.
-      `{timestamp};{timestamp}[;{timestamp} ...]` Timestamp is an integer representing
-      the number of seconds elapsed since the UNIX epoch.
+   :query keyword overview: :default:`simplified`, `full`, `false`. Add an overview
+      geometry either: full, simplified according to highest zoom level it could be
+      displayed on, or none at all.
 
-   :query array radiuses: Standard deviation of GPS precision used for map matching. If
-      applicable use GPS accuracy. `{radius};{radius}[;{radius} ...]` Radius is a
-      positive floating point number in meters (default 5m).
+   :query array<integer> timestamps: `{timestamp};{timestamp};{timestamp}...` Timestamp
+      for each input location. Timestamps must be monotonically increasing.  Each
+      timestamp is an integer representing the number of seconds elapsed since the UNIX
+      epoch.
 
-   :query keyword gaps: Allows the input track splitting based on huge timestamp gaps
-      between points.  :default: `split`, `ignore`
+   :query array<float> radiuses: `{radius};{radius};{radius}...` Standard deviation of GPS
+      precision used for map matching. If applicable use GPS accuracy. Radius is a
+      positive floating point number in meters (default 5m).  Note: The radius for each
+      point should be the standard error of the location measured in meters from the
+      true location.  Use `Location.getAccuracy()` on Android or
+      `CLLocation.horizontalAccuracy` on iOS.  This value is used to determine which
+      points should be considered as candidates (a larger radius means more candidates)
+      and how likely each candidate is (a larger radius means far-away candidates are
+      penalized less).  The area to search is chosen such that the correct candidate
+      should be considered 99.9% of the time (for more details see :pr:`3184`).
 
-   :query keyword tidy: Allows the input track modification to obtain better matching quality for noisy tracks.
-      :default:`false`, `true`
+   :query keyword gaps: :default:`split`, `ignore`. Split the input track on large
+    timestamp gaps between points.
 
-   :query array waypoints: The input coordinates at the given indices are treated as
-      waypoints in the returned `Match` object. Default is to treat all input
-      coordinates as waypoints. `{index};{index};{index}...`
+   :query keyword tidy: :default:`false`, `true`. Allows modifications to the input
+    track to obtain better matching quality for noisy tracks.
 
-   Note: The radius for each point should be the standard error of the location measured
-   in meters from the true location.  Use `Location.getAccuracy()` on Android or
-   `CLLocation.horizontalAccuracy` on iOS.  This value is used to determine which points
-   should be considered as candidates (a larger radius means more candidates) and how
-   likely each candidate is (a larger radius means far-away candidates are penalized
-   less).  The area to search is chosen such that the correct candidate should be
-   considered 99.9% of the time (for more details see :pr:`3184`).
+   :query array<integer> waypoints: `{index};{index};{index}...` The input coordinates
+      at the given indices are treated as waypoints. Default is to treat all input
+      coordinates as waypoints.
+
+   .. include:: common_responses.rst
 
    :>json string code: `NoMatch` if no matchings were found.
    :>json array tracepoints:
@@ -72,3 +75,5 @@ Match Service
 
       - `confidence`: Confidence of the matching. `float` value between 0 and 1. 1 is
         very confident that the matching is correct.
+
+   .. include:: common_statuscodes.rst

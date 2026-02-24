@@ -3,7 +3,7 @@
 Nearest Service
 ===============
 
-.. http:get:: /nearest/v1/(profile)/(coordinate)
+.. http:get:: /nearest/v1/(profile)/(coordinate)[.(format)]
 
    Snaps a given coordinate to the street network and returns the `n` nearest matches.
 
@@ -62,16 +62,24 @@ Nearest Service
             "code" : "Ok"
          }
 
-   This service accepts the following parameters in addition to the :ref:`common parameters <common_options>`.
+
+   .. include:: common_parameters.rst
+
    Note that this service accepts only one coordinate.
+
+   .. include:: common_queries.rst
 
    :query integer number: How many nearest segments should be returned. Integer > 0, default: 1.
    :query boolean skip_waypoints:  As `waypoints` contain the only data returned by this
       service, setting this option to `true` makes no sense, but is still possible. In
       that case, only the `code` field will be returned.
 
+   .. include:: common_responses.rst
+
    :>json string code: `Ok` if the request was successful. See also the general status codes.
    :>json array waypoints: array of `Waypoint` objects sorted by distance to the input coordinate.
       Each object has at least the following additional properties:
 
       - `nodes`: Array of OpenStreetMap node ids.
+
+   .. include:: common_statuscodes.rst
