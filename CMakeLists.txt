@@ -676,61 +676,65 @@ if(BUILD_PACKAGE)
   cpack_add_component(libraries    GROUP Development DISPLAY_NAME "OSRM Libraries")
   cpack_add_component(headers      GROUP Development DISPLAY_NAME "OSRM Headers"      DEPENDS libraries)
   cpack_add_component(flatbuffers  GROUP Development DISPLAY_NAME "3rd-Party Headers" DEPENDS libraries DISABLED)
-endif()
+  cpack_add_component(pkgconfig    GROUP Development DISPLAY_NAME "pkg-config"        DEPENDS libraries DISABLED)
 
-function(JOIN VALUES GLUE OUTPUT)
-  string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
-  set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
-endfunction()
+  function(JOIN VALUES GLUE OUTPUT)
+    string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
+    set (${OUTPUT} "${_TMP_STR}" PARENT_SCOPE)
+  endfunction()
 
-JOIN("${OSRM_DEFINES}" " " TMP_OSRM_DEFINES)
-set(LibOSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${TMP_OSRM_DEFINES}")
-set(LibOSRM_LDFLAGS "${OSRM_LDFLAGS}")
+  JOIN("${OSRM_DEFINES}" " " TMP_OSRM_DEFINES)
+  set(LibOSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${TMP_OSRM_DEFINES}")
+  set(LibOSRM_LDFLAGS "${OSRM_LDFLAGS}")
 
-if(BUILD_AS_SUBPROJECT)
-  set(LibOSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}" PARENT_SCOPE)
-  set(LibOSRM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
-  set(LibOSRM_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PARENT_SCOPE)
-  set(LibOSRM_LIBRARIES "osrm_routed" PARENT_SCOPE)
-  set(LibOSRM_DEPENDENT_LIBRARIES "${ENGINE_LIBRARIES}" PARENT_SCOPE)
-  set(LibOSRM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
-                           "${CMAKE_CURRENT_SOURCE_DIR}/include/osrm"
-                           "${CMAKE_CURRENT_SOURCE_DIR}/third_party"
-                           "${DEPENDENCIES_INCLUDE_DIRS}" PARENT_SCOPE)
-  set(LibOSRM_LIBRARY_DIRS "${LibOSRM_LIBRARY_DIR}" PARENT_SCOPE)
-endif()
+  if(BUILD_AS_SUBPROJECT)
+    set(LibOSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}" PARENT_SCOPE)
+    set(LibOSRM_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/include" PARENT_SCOPE)
+    set(LibOSRM_LIBRARY_DIR "${CMAKE_CURRENT_BINARY_DIR}" PARENT_SCOPE)
+    set(LibOSRM_LIBRARIES "osrm_routed" PARENT_SCOPE)
+    set(LibOSRM_DEPENDENT_LIBRARIES "${ENGINE_LIBRARIES}" PARENT_SCOPE)
+    set(LibOSRM_INCLUDE_DIRS "${CMAKE_CURRENT_SOURCE_DIR}/include"
+                             "${CMAKE_CURRENT_SOURCE_DIR}/include/osrm"
+                             "${CMAKE_CURRENT_SOURCE_DIR}/third_party"
+                             "${DEPENDENCIES_INCLUDE_DIRS}" PARENT_SCOPE)
+    set(LibOSRM_LIBRARY_DIRS "${LibOSRM_LIBRARY_DIR}" PARENT_SCOPE)
+  endif()
 
-# pkgconfig defines
-set(PKGCONFIG_OSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}")
-set(PKGCONFIG_OSRM_LDFLAGS "${LibOSRM_LDFLAGS}")
-set(PKGCONFIG_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-set(PKGCONFIG_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+  # pkgconfig defines
+  set(PKGCONFIG_OSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}")
+  set(PKGCONFIG_OSRM_LDFLAGS "${LibOSRM_LDFLAGS}")
+  set(PKGCONFIG_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
+  set(PKGCONFIG_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
 
-list(APPEND DEPENDENCIES_INCLUDE_DIRS "${PKGCONFIG_INCLUDE_DIR}")
-list(APPEND DEPENDENCIES_INCLUDE_DIRS "${PKGCONFIG_INCLUDE_DIR}/osrm")
-JOIN("-I${DEPENDENCIES_INCLUDE_DIRS}" " -I" PKGCONFIG_OSRM_INCLUDE_FLAGS)
+  list(APPEND DEPENDENCIES_INCLUDE_DIRS "${PKGCONFIG_INCLUDE_DIR}")
+  list(APPEND DEPENDENCIES_INCLUDE_DIRS "${PKGCONFIG_INCLUDE_DIR}/osrm")
+  JOIN("-I${DEPENDENCIES_INCLUDE_DIRS}" " -I" PKGCONFIG_OSRM_INCLUDE_FLAGS)
 
+  if(NOT USE_CONAN)
+    foreach(engine_lib ${ENGINE_LIBRARIES})
+      if("${engine_lib}" MATCHES "^boost.*" OR "${engine_lib}" MATCHES "^TBB.*")
+        list(APPEND PKGCONFIG_DEPENDENT_LIBRARIES "$<TARGET_LINKER_FILE:${engine_lib}>")
+      else()
+        list(APPEND PKGCONFIG_DEPENDENT_LIBRARIES "${engine_lib}")
+      endif()
+    endforeach(engine_lib)
+  endif()
 
-if(NOT USE_CONAN)
-  foreach(engine_lib ${ENGINE_LIBRARIES})
-    if("${engine_lib}" MATCHES "^boost.*" OR "${engine_lib}" MATCHES "^TBB.*")
-      list(APPEND PKGCONFIG_DEPENDENT_LIBRARIES "$<TARGET_LINKER_FILE:${engine_lib}>")
-    else()
-      list(APPEND PKGCONFIG_DEPENDENT_LIBRARIES "${engine_lib}")
-    endif()
-  endforeach(engine_lib)
-endif()
+  JOIN("${PKGCONFIG_DEPENDENT_LIBRARIES}" " " PKGCONFIG_OSRM_DEPENDENT_LIBRARIES)
 
-JOIN("${PKGCONFIG_DEPENDENT_LIBRARIES}" " " PKGCONFIG_OSRM_DEPENDENT_LIBRARIES)
+  configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/pkgconfig.in pkgconfig.configured @ONLY)
+  file(GENERATE
+       OUTPUT
+       ${PROJECT_BINARY_DIR}/libosrm.pc
+       INPUT
+       ${PROJECT_BINARY_DIR}/pkgconfig.configured)
 
-configure_file(${CMAKE_CURRENT_SOURCE_DIR}/cmake/pkgconfig.in pkgconfig.configured @ONLY)
-file(GENERATE
-     OUTPUT
-     ${PROJECT_BINARY_DIR}/libosrm.pc
-     INPUT
-     ${PROJECT_BINARY_DIR}/pkgconfig.configured)
-
-install(FILES ${PROJECT_BINARY_DIR}/libosrm.pc DESTINATION ${PKGCONFIG_LIBRARY_DIR}/pkgconfig)
+  # FIXME: if we install with a --prefix we don't want the pkg-config file installed because
+  # 1) its contents would be all wrong anyway and
+  # 2) the reason we used a --prefix is because we don't have sudo
+  # but we don't know yet what the --prefix will be
+  install(FILES ${PROJECT_BINARY_DIR}/libosrm.pc DESTINATION ${PKGCONFIG_LIBRARY_DIR}/pkgconfig COMPONENT pkgconfig)
+endif(BUILD_PACKAGE)
 
 # uninstall target
 configure_file(

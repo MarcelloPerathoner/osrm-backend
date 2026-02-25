@@ -1,7 +1,7 @@
 # Build OSRM from Source
 
 This tutorial explans how to build OSRM from source. It assumes familiarity with the
-shell, and you must have `git`, `cmake`, and a C++ compiler.  On Windows it assumes a
+shell, and you must have `git`, `cmake`, and a C++ compiler. On Windows it assumes a
 Linux-compatible toolset like MSYS2 is installed.
 
 ## Prepare
@@ -26,13 +26,13 @@ other way, just that we didn't have the time and hardware to figure it out for y
 If you know how to, please submit a patch.
 
 The build method with Conan is tested on Ubuntu-24.04, Ubuntu-22.04, macOS-26, macOS-15,
-macOS-14, Windows-Server-2025, and Windows-Server-2022.  Conan downloads the sources of
-the dependencies and compiles them on your machine.  More things can go wrong, it takes
+macOS-14, Windows-Server-2025, and Windows-Server-2022. Conan downloads the sources of
+the dependencies and compiles them on your machine. More things can go wrong, it takes
 longer, but you always get the newest versions.
 
 The build method with `apt-get` or `brew` is tested on Ubuntu-24.04, Ubuntu-22.04, and
-macOS-15.  It uses the package manager that comes with the OS.  While using a system
-package manager has its advantages, there are also some drawbacks to consider.  These
+macOS-15. It uses the package manager that comes with the OS. While using a system
+package manager has its advantages, there are also some drawbacks to consider. These
 include lack of control over the installation process, and the use of outdated versions,
 which may be several years old.
 
@@ -67,11 +67,10 @@ The OSRM binaries are now in `build/Release` and the Node binaries are now in
 
 Proceed with testing.
 
-
 ## Build without Conan {#apt}
 
 This build method installs the dependencies with the system package manager and then
-builds with `cmake`.  This build method is not supported on Windows.
+builds with `cmake`. This build method is not supported on Windows.
 
 Install dependencies:
 
@@ -107,7 +106,6 @@ scripts/ci/build_node_package.sh
 The OSRM binaries are now in `build/Release` and the Node binaries are in
 `build/nodejs/lib/binding_napi_v8`.
 
-
 ## Test
 
 ### Unit tests
@@ -120,13 +118,20 @@ source build/osrm-run-env.sh
 ctest --test-dir build/Release -C Release -L tests -j
 ```
 
-
 ### Cucumber tests {#cucumber}
 
 To run the Cucumber tests:
 
 ```bash
 npm test -- --parallel 16
+```
+
+### Node Package tests {#nodejs-tests}
+
+Only if you built the Node package:
+
+```bash
+npm run nodejs-tests
 ```
 
 ## Install

@@ -11,7 +11,7 @@ export const two_test_coordinates = three_test_coordinates.slice(0, 2);
 export const test_tile = {'at': [17059, 11948, 15], 'size': 159125};
 
 const dir = process.env.OSRM_DATA_PATH || process.env.OSRM_TEST_DATA_DIR || 'test/data';
-console.log(`Setting custom data path to ${data_path}`);
+console.log(`Setting custom data path to ${dir}`);
 
 const data_path        = path.resolve(path.join(dir, 'ch/monaco.osrm'));
 const mld_data_path    = path.resolve(path.join(dir, 'mld/monaco.osrm'));
