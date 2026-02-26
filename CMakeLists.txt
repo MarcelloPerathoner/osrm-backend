@@ -226,7 +226,7 @@ add_library(PARTITIONER OBJECT ${PartitionerGlob})
 add_library(SERVER      OBJECT ${ServerGlob})
 add_library(STORAGE     OBJECT ${StorageGlob})
 add_library(UPDATER     OBJECT ${UpdaterGlob})
-add_library(UTIL        OBJECT ${UtilGlob})
+# add_library(UTIL        OBJECT ${UtilGlob})
 
 # set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -538,10 +538,10 @@ set(ENGINE_LIBRARIES
 
 
 # Libraries
-add_library(osrm_utils src/util/assert.cpp)   # used by osrm tools
+add_library(osrm_utils ${UtilGlob})   # used by osrm tools
 add_library(osrm::utils ALIAS osrm_utils)
 target_link_libraries(osrm_utils
-  UTIL STORAGE UPDATER MICROTAR
+  STORAGE UPDATER MICROTAR
   ${COMMON_LIBRARIES}
   ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 
