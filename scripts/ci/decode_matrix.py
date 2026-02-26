@@ -138,7 +138,7 @@ envs["CMAKE_TEST_PRESET_NAME"] = preset_name
 
 envs["CONAN_OS_PROFILE"] = f"github-{os.environ['RUNNER_OS']}".lower()
 
-if "windows" in matrix["runs-on"] or get(cdefs, "CMAKE_GENERATOR") == "Xcode":
+if "windows" in matrix["runs-on"] or cdefs.get("CMAKE_GENERATOR") == "Xcode":
     binary_dir = os.path.join("${sourceDir}", "build")
 else:
     binary_dir = os.path.join("${sourceDir}", "build", config)
