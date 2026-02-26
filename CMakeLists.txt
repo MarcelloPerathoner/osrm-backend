@@ -675,8 +675,8 @@ if(BUILD_PACKAGE)
   cpack_add_component(applications GROUP Runtime     DISPLAY_NAME "OSRM Application")
   cpack_add_component(libraries    GROUP Development DISPLAY_NAME "OSRM Libraries")
   cpack_add_component(headers      GROUP Development DISPLAY_NAME "OSRM Headers"      DEPENDS libraries)
+  cpack_add_component(pkgconfig    GROUP Development DISPLAY_NAME "pkg-config"        DEPENDS libraries)
   cpack_add_component(flatbuffers  GROUP Development DISPLAY_NAME "3rd-Party Headers" DEPENDS libraries DISABLED)
-  cpack_add_component(pkgconfig    GROUP Development DISPLAY_NAME "pkg-config"        DEPENDS libraries DISABLED)
 
   function(JOIN VALUES GLUE OUTPUT)
     string (REPLACE ";" "${GLUE}" _TMP_STR "${VALUES}")
@@ -731,8 +731,8 @@ if(BUILD_PACKAGE)
 
   # FIXME: if we install with a --prefix we don't want the pkg-config file installed because
   # 1) its contents would be all wrong anyway and
-  # 2) the reason we used a --prefix is because we don't have sudo
-  # but we don't know yet what the --prefix will be
+  # 2) the reason we used a --prefix is because we don't have sudo rights
+  # but at this point we don't know yet what the --prefix will be
   install(FILES ${PROJECT_BINARY_DIR}/libosrm.pc DESTINATION ${PKGCONFIG_LIBRARY_DIR}/pkgconfig COMPONENT pkgconfig)
 endif(BUILD_PACKAGE)
 
