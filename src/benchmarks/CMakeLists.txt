@@ -20,13 +20,13 @@ add_executable(rtree-bench        EXCLUDE_FROM_ALL static_rtree.cpp)
 
 set (BENCHMARKS alias-bench bench json-render-bench match-bench packedvector-bench route-bench rtree-bench)
 
-target_link_libraries(alias-bench        osrm_utils                            ${MAYBE_SHAPEFILE})
-target_link_libraries(bench	             osrm_utils ENGINE ${ENGINE_LIBRARIES} ${MAYBE_SHAPEFILE})
-target_link_libraries(json-render-bench	 osrm_utils ENGINE ${ENGINE_LIBRARIES} ${MAYBE_SHAPEFILE})
-target_link_libraries(match-bench        osrm_utils ENGINE ${ENGINE_LIBRARIES} ${MAYBE_SHAPEFILE})
-target_link_libraries(packedvector-bench osrm_utils                            ${MAYBE_SHAPEFILE})
-target_link_libraries(route-bench        osrm_utils ENGINE ${ENGINE_LIBRARIES} ${MAYBE_SHAPEFILE})
-target_link_libraries(rtree-bench        osrm_utils                            ${MAYBE_SHAPEFILE})
+target_link_libraries(alias-bench        osrm_utils             ${MAYBE_SHAPEFILE})
+target_link_libraries(bench	             osrm_utils osrm_routed ${MAYBE_SHAPEFILE})
+target_link_libraries(json-render-bench	 osrm_utils osrm_routed ${MAYBE_SHAPEFILE})
+target_link_libraries(match-bench        osrm_utils osrm_routed ${MAYBE_SHAPEFILE})
+target_link_libraries(packedvector-bench osrm_utils             ${MAYBE_SHAPEFILE})
+target_link_libraries(route-bench        osrm_utils osrm_routed ${MAYBE_SHAPEFILE})
+target_link_libraries(rtree-bench        osrm_utils             ${MAYBE_SHAPEFILE})
 
 target_include_directories(rtree-bench PUBLIC ${PROJECT_SOURCE_DIR}/unit_tests)
 

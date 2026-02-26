@@ -215,25 +215,7 @@ file(GLOB StorageGlob     src/storage/*.cpp)
 file(GLOB UpdaterGlob     src/updater/*.cpp)
 file(GLOB UtilGlob        src/util/*.cpp src/util/*/*.cpp)
 
-# OBJECT libraries are just collections of *o files
-# For historical reason the guidance and extract code are separate.
-# They are so entangled though (circular dependencies) that separate libraries are not feasible.
-add_library(CONTRACTOR  OBJECT ${ContractorGlob})
-add_library(CUSTOMIZER  OBJECT ${CustomizerGlob})
-add_library(ENGINE      OBJECT ${EngineGlob})
-add_library(EXTRACTOR   OBJECT ${ExtractorGlob} ${GuidanceGlob})
-add_library(PARTITIONER OBJECT ${PartitionerGlob})
-add_library(SERVER      OBJECT ${ServerGlob})
-add_library(STORAGE     OBJECT ${StorageGlob})
-add_library(UPDATER     OBJECT ${UpdaterGlob})
-# add_library(UTIL        OBJECT ${UtilGlob})
-
 # set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
-
-if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # fixes error: ‘MEM <unsigned char[24]> [(char * {ref-all})...]’ is used uninitialized [-Werror=uninitialized]
-  set_target_properties(SERVER PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
-endif()
 
 if(NOT CMAKE_CONFIGURATION_TYPES)
   # single-config build generators like Unix Makefiles need a build type specified
@@ -433,7 +415,7 @@ include_directories(SYSTEM ${RAPIDJSON_INCLUDE_DIR})
 set(MICROTAR_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/microtar/src")
 include_directories(SYSTEM ${MICROTAR_INCLUDE_DIR})
 
-add_library(MICROTAR OBJECT "${CMAKE_CURRENT_SOURCE_DIR}/third_party/microtar/src/microtar.c")
+add_library(MICROTAR STATIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/microtar/src/microtar.c")
 set_property(TARGET MICROTAR PROPERTY POSITION_INDEPENDENT_CODE ON)
 
 target_no_warning(MICROTAR unused-variable)
@@ -509,12 +491,6 @@ if(DOXYGEN_FOUND)
   add_custom_target(osrm_docs DEPENDS docs)
 endif()
 
-# add_dependency_defines(-DBOOST_SPIRIT_USE_PHOENIX_V3)
-# add_dependency_defines(-DBOOST_RESULT_OF_USE_DECLTYPE)
-
-# Workaround for https://github.com/boostorg/phoenix/issues/111
-# add_dependency_defines(-DBOOST_PHOENIX_STL_TUPLE_H_)
-
 add_definitions(${OSRM_DEFINES})
 list(REMOVE_DUPLICATES DEPENDENCIES_INCLUDE_DIRS)
 include_directories(SYSTEM ${DEPENDENCIES_INCLUDE_DIRS})
@@ -536,26 +512,33 @@ set(EXTRACTOR_LIBRARIES
 set(ENGINE_LIBRARIES
     ${MAYBE_SOCKET_LIBRARIES})
 
-
 # Libraries
-add_library(osrm_utils ${UtilGlob})   # used by osrm tools
+
+add_library(osrm_utils     ${UtilGlob} ${StorageGlob} ${UpdaterGlob})
+add_library(osrm_contract  ${ContractorGlob})
+add_library(osrm_customize ${CustomizerGlob})
+add_library(osrm_extract   ${ExtractorGlob} ${GuidanceGlob})
+add_library(osrm_partition ${PartitionerGlob})
+add_library(osrm_routed    ${EngineGlob} ${ServerGlob})
+add_library(osrm_store     ${StorageGlob})
+add_library(osrm_update    ${UpdaterGlob})
+
 add_library(osrm::utils ALIAS osrm_utils)
-target_link_libraries(osrm_utils
-  STORAGE UPDATER MICROTAR
-  ${COMMON_LIBRARIES}
-  ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 
-# These libraries built for compatibility only (they are not used in this project)
-
-add_library(osrm_contract)
-add_library(osrm_customize)
-add_library(osrm_extract)
-add_library(osrm_partition)
-add_library(osrm_routed)
-add_library(osrm_store)
-add_library(osrm_update)
+target_link_libraries(osrm_utils     ${COMMON_LIBRARIES} MICROTAR ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm_contract  osrm_utils)
+target_link_libraries(osrm_customize osrm_utils)
+target_link_libraries(osrm_extract   osrm_utils ${EXTRACTOR_LIBRARIES})
+target_link_libraries(osrm_partition osrm_utils)
+target_link_libraries(osrm_routed    osrm_utils ${ENGINE_LIBRARIES})
+target_link_libraries(osrm_store     osrm_utils)
+target_link_libraries(osrm_update    osrm_utils)
 
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
+if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
+  # fixes error: ‘MEM <unsigned char[24]> [(char * {ref-all})...]’ is used uninitialized [-Werror=uninitialized]
+  set_target_properties(osrm_routed PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
+endif()
 
 # ALIAS targets with :: provide compile-time safety: typos error at configure time, not link time
 add_library(osrm::contract  ALIAS osrm_contract)
@@ -565,14 +548,6 @@ add_library(osrm::osrm      ALIAS osrm_routed)
 add_library(osrm::partition ALIAS osrm_partition)
 add_library(osrm::store     ALIAS osrm_store)
 add_library(osrm::update    ALIAS osrm_update)
-
-target_link_libraries(osrm_contract  osrm_utils CONTRACTOR)
-target_link_libraries(osrm_customize osrm_utils CUSTOMIZER)
-target_link_libraries(osrm_extract   osrm_utils EXTRACTOR ${EXTRACTOR_LIBRARIES})
-target_link_libraries(osrm_partition osrm_utils PARTITIONER)
-target_link_libraries(osrm_routed    osrm_utils ENGINE ${ENGINE_LIBRARIES})
-target_link_libraries(osrm_store     osrm_utils STORAGE)
-target_link_libraries(osrm_update    osrm_utils UPDATER)
 
 # Binaries
 add_executable(osrm-components   src/tools/components.cpp)
@@ -584,14 +559,14 @@ add_executable(osrm-io-benchmark src/tools/io-benchmark.cpp)
 add_executable(osrm-partition    src/tools/partition.cpp)
 add_executable(osrm-routed       src/tools/routed.cpp)
 
-target_link_libraries(osrm-components   osrm_utils)
-target_link_libraries(osrm-contract     osrm_utils  CONTRACTOR)
-target_link_libraries(osrm-customize    osrm_utils  CUSTOMIZER)
-target_link_libraries(osrm-datastore    osrm_utils            )
-target_link_libraries(osrm-extract      osrm_utils  EXTRACTOR ${EXTRACTOR_LIBRARIES})
-target_link_libraries(osrm-io-benchmark osrm_utils)
-target_link_libraries(osrm-partition    osrm_utils  PARTITIONER)
-target_link_libraries(osrm-routed       osrm_utils  ENGINE SERVER ${ENGINE_LIBRARIES})
+target_link_libraries(osrm-components   osrm_utils     )
+target_link_libraries(osrm-contract     osrm_contract  )
+target_link_libraries(osrm-customize    osrm_customize )
+target_link_libraries(osrm-datastore    osrm_store     osrm_update )
+target_link_libraries(osrm-extract      osrm_extract   )
+target_link_libraries(osrm-io-benchmark osrm_utils     )
+target_link_libraries(osrm-partition    osrm_partition )
+target_link_libraries(osrm-routed       osrm_routed    )
 
 # to build a shared osrm_utils lib on Windows
 #
