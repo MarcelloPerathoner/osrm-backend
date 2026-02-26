@@ -12,7 +12,7 @@
         {
             "name": "$name",
             "displayName": "'$name' config",
-            "description": "'$name' configure using 'Unix Makefiles' generator",
+            "description": "'$name' configure preset",
             "binaryDir": "$binary_dir"
         }
     ],

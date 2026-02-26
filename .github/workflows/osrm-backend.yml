@@ -129,6 +129,11 @@ jobs:
             CXX: clang++-19
             CMAKE_GENERATOR: Ninja
 
+          - name: macos-15-arm64-release-node
+            runs-on: macos-15 # arm64
+            continue-on-error: true
+            CMAKE_GENERATOR: Xcode
+
           - name: conan-macos-26-arm64-release-node
             runs-on: macos-26 # arm64
 
@@ -142,10 +147,6 @@ jobs:
             runs-on: macos-15 # arm64
             BUILD_BENCHMARKS: ON
             RUN_BENCHMARKS: ON
-
-          - name: macos-15-arm64-release-node
-            runs-on: macos-15 # arm64
-            continue-on-error: true
 
           - name: conan-macos-14-arm64-release-node
             runs-on: macos-14 # arm64
