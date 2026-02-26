@@ -209,8 +209,9 @@ class OsrmConan(ConanFile):
         vre.generate()
         vbe.generate()
 
+        build_vars = vbe.environment().vars(self, scope="build")
         run_vars = vre.environment().vars(self, scope="run")
-        self._writeEnvSh(vbe.environment().vars(self, scope="build"))
+        self._writeEnvSh(build_vars)
         self._writeEnvSh(run_vars)
 
         # Put an environment into the well-known location `build/conan.env`

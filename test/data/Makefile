@@ -6,6 +6,10 @@
 #
 # Note: the files test/data/*.orsm.* may also come from library-extract-tests.
 
+# Do this automatically? Or is it just confusing?
+# PROJECT_SOURCE_DIR ?= ../..
+# -include $(PROJECT_SOURCE_DIR)/build/osrm-run.env
+
 DATASETS = monaco berlin
 
 all: monaco

@@ -74,7 +74,7 @@ if(CLANG_CXX_CLANG_TIDY)
 endif()
 
 set(CMAKE_INTERPROCEDURAL_OPTIMIZATION FALSE)
-if(ENABLE_LTO AND (CMAKE_BUILD_TYPE MATCHES Release OR CMAKE_BUILD_TYPE MATCHES MinRelSize OR CMAKE_BUILD_TYPE MATCHES RelWithDebInfo))
+if(ENABLE_LTO)
   include(CheckIPOSupported)
   check_ipo_supported(RESULT LTO_SUPPORTED OUTPUT error)
   if(LTO_SUPPORTED)
@@ -147,9 +147,14 @@ function(add_dependency_defines defines)
   set(OSRM_DEFINES "${OSRM_DEFINES}" PARENT_SCOPE)
 endfunction(add_dependency_defines)
 
-# Following lines and functions generate the files:
-# - `build/osrm-run-env.sh` usage: `source build/osrm-run-env.sh`
-# - `build/osrm-run.env`    usage: `cat build/osrm-run.env >> $GIHUB_ENV`.
+# Generate build and run environments
+# Note: these files currently contain the same values, in future they may contain
+# different ones
+
+set(OSRM_BUILD_ENV    "${PROJECT_SOURCE_DIR}/build/osrm-build.env")
+set(OSRM_BUILD_ENV_SH "${PROJECT_SOURCE_DIR}/build/osrm-build-env.sh")
+file(REMOVE "${OSRM_BUILD_ENV}")
+configure_file(cmake/osrm-build-env.sh.in ${OSRM_BUILD_ENV_SH} @ONLY)
 
 set(OSRM_RUN_ENV    "${PROJECT_SOURCE_DIR}/build/osrm-run.env")
 set(OSRM_RUN_ENV_SH "${PROJECT_SOURCE_DIR}/build/osrm-run-env.sh")
@@ -158,6 +163,7 @@ configure_file(cmake/osrm-run-env.sh.in ${OSRM_RUN_ENV_SH} @ONLY)
 
 function(push_env key value)
   # puts key=value into osrm-run.env
+  file(APPEND "${OSRM_BUILD_ENV}" "${key}=${value}\n")
   file(APPEND "${OSRM_RUN_ENV}" "${key}=${value}\n")
   # ENV used as workaround for setting variables on the project scope
   set(ENV{${key}} "${value}")
