@@ -126,6 +126,10 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
   no_warning(array-bounds)
 endif()
 
+if(APPLE)
+  no_warning(horten-64-to-32)
+endif()
+
 # MSVC-specific warning configuration
 if(MSVC)
   # Disable excessive informational warnings that don't indicate bugs

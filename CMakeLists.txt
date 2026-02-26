@@ -123,11 +123,7 @@ else()
   message(FATAL_ERROR "Version from package.json cannot be parsed, expected semver compatible label, but found ${packagejson.version}")
 endif()
 
-if(MSVC)
-  add_definitions("-DOSRM_PROJECT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
-else()
-  add_definitions(-DOSRM_PROJECT_DIR="${CMAKE_CURRENT_SOURCE_DIR}")
-endif()
+add_definitions("-DOSRM_PROJECT_DIR=\"${CMAKE_CURRENT_SOURCE_DIR}\"")
 
 # these two functions build up custom variables:
 #   DEPENDENCIES_INCLUDE_DIRS and OSRM_DEFINES
