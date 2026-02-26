@@ -124,8 +124,7 @@ if envs.get("ENABLE_CCACHE") == "ON":
     apt_get_deps.append("ccache")
 
 # In Cmake single-config generators like "Unix Makefiles" need different parameters as
-# multi-config generators like "Visual Studio" and "Xcode". Currently the only
-# multi-config generator we use is "Visual Studio".
+# multi-config generators like "Visual Studio" and "Xcode".
 
 config = envs["OSRM_CONFIG"]
 preset_name = config.lower()
@@ -139,10 +138,10 @@ envs["CMAKE_TEST_PRESET_NAME"] = preset_name
 
 envs["CONAN_OS_PROFILE"] = f"github-{os.environ['RUNNER_OS']}".lower()
 
-# our "well-known" build root
-binary_dir = os.path.join("${sourceDir}", "build")
-if "windows" not in matrix["runs-on"]:
-    binary_dir = os.path.join(binary_dir, envs["OSRM_CONFIG"])
+if "windows" in matrix["runs-on"] or get(cdefs, "CMAKE_GENERATOR") == "Xcode":
+    binary_dir = os.path.join("${sourceDir}", "build")
+else:
+    binary_dir = os.path.join("${sourceDir}", "build", config)
 binary_dir = binary_dir.replace("\\", "/")
 
 jobs = multiprocessing.cpu_count()
