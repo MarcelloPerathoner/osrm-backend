@@ -228,10 +228,10 @@ add_library(STORAGE     OBJECT ${StorageGlob})
 add_library(UPDATER     OBJECT ${UpdaterGlob})
 add_library(UTIL        OBJECT ${UtilGlob})
 
-set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
+# set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
 
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
-  # We will otherwise get false-positive errors in the linker stage (boost/qi) that can't be disabled with pragmas
+  # fixes error: ‘MEM <unsigned char[24]> [(char * {ref-all})...]’ is used uninitialized [-Werror=uninitialized]
   set_target_properties(SERVER PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
@@ -538,7 +538,7 @@ set(ENGINE_LIBRARIES
 
 
 # Libraries
-add_library(osrm_utils)   # used by osrm tools
+add_library(osrm_utils src/util/assert.cpp)   # used by osrm tools
 add_library(osrm::utils ALIAS osrm_utils)
 target_link_libraries(osrm_utils
   UTIL STORAGE UPDATER MICROTAR
