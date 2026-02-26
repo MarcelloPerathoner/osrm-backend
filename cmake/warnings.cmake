@@ -127,7 +127,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
 endif()
 
 if(APPLE)
-  no_warning(horten-64-to-32)
+  no_warning(shorten-64-to-32)
 endif()
 
 # MSVC-specific warning configuration
