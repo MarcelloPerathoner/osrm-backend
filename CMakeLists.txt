@@ -173,12 +173,12 @@ endfunction()
 # this functions appends /Release and /Debug for multi-config generators
 # usage: mk_build_dir(OSRM_BUILD_DIR "${CMAKE_CURRENT_BINARY_DIR}")
 function(mk_build_dir key value)
-  if(CMAKE_CONFIGURATION_TYPES)
-    # multi-config generators (eg. Visual Studio) append /Release or /Debug
-    cmake_path(APPEND dir "${value}" "$ENV{OSRM_CONFIG}")
-  else()
+  if(CMAKE_BINARY_DIR MATCHES "${CMAKE_BUILD_TYPE}$")
     # single-config generator (eg. Unix Makefiles)
     cmake_path(SET dir "${value}")
+  else()
+    # multi-config generators (eg. Visual Studio) append /Release or /Debug
+    cmake_path(APPEND dir "${value}" "$ENV{OSRM_CONFIG}")
   endif()
   set(${key} "${dir}" PARENT_SCOPE)
 endfunction()
@@ -188,7 +188,7 @@ push_env("OSRM_BUILD_DIR" "${OSRM_BUILD_DIR}")
 push_env("OSRM_CONFIG" "${CMAKE_BUILD_TYPE}")
 
 set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
-if(NOT MSVC)
+if(EXISTS "${OSRM_BUILD_DIR}/compile_commands.json")
   add_custom_target(clangd-conf ALL
     COMMAND ${CMAKE_COMMAND} -E copy_if_different
       "${OSRM_BUILD_DIR}/compile_commands.json"

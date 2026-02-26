@@ -1,4 +1,4 @@
-# How-To build OSRM from Source
+# How-To: Build OSRM from Source
 
 > [!NOTE]
 > There is also an easy step-by-step [tutorial](tutorial.md).

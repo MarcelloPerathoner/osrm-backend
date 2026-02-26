@@ -1,4 +1,4 @@
-# Build OSRM from Source
+# Tutorial: Build OSRM from Source
 
 This tutorial explains how to build OSRM from source. It assumes familiarity with the
 shell, and you must have `git`, `cmake`, and a C++ compiler already installed. On
