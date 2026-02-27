@@ -86,24 +86,26 @@ endif()
 
 # add @loader_path/$ORIGIN to rpath to make binaries relocatable
 if(APPLE)
-  set(CMAKE_BUILD_RPATH "@loader_path")
-else()
-  set(CMAKE_BUILD_RPATH "\$ORIGIN")
-  if(NOT MSVC)
-    # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
-    set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin")
+  set(CMAKE_BUILD_RPATH   "@loader_path")
+  set(CMAKE_INSTALL_RPATH "@loader_path")
+endif()
+if(LINUX)
+  set(CMAKE_BUILD_RPATH   "\$ORIGIN")
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
 
-    # Fix for `cmake --install --component node_osrm` rising the error: "file Could not
-    # resolve runtime dependencies: libboost_system.so.1.88.0".  RUNPATH and RPATH are
-    # different animals, see: `man ld.so`.  While the RPATH of the grandparent is used
-    # when searching for dependencies the RUNPATH of the grandparent is not.  Thus we
-    # have to disable DT_RUNPATH and use DT_RPATH instead because we have the
-    # dependency: node_osrm.node => libboost_iostreams.so => libboost_system.so and
-    # there is no RUNPATH set in libboost_iostreams.so.
-    set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--disable-new-dtags")
-    set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
-  endif()
+  # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
+  set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin")
+
+  # Fix for `cmake --install --component node_osrm` rising the error: "file Could not
+  # resolve runtime dependencies: libboost_system.so.1.88.0".  RUNPATH and RPATH are
+  # different animals, see: `man ld.so`.  While the RPATH of the grandparent is used
+  # when searching for dependencies the RUNPATH of the grandparent is not.  Thus we
+  # have to disable DT_RUNPATH and use DT_RPATH instead because we have the
+  # dependency: node_osrm.node => libboost_iostreams.so => libboost_system.so and
+  # there is no RUNPATH set in libboost_iostreams.so.
+  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,--disable-new-dtags")
+  set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,--disable-new-dtags")
 endif()
 
 include(JSONParser)
@@ -514,7 +516,6 @@ set(ENGINE_LIBRARIES
 
 # Libraries
 
-add_library(osrm_utils     ${UtilGlob} ${StorageGlob} ${UpdaterGlob})
 add_library(osrm_contract  ${ContractorGlob})
 add_library(osrm_customize ${CustomizerGlob})
 add_library(osrm_extract   ${ExtractorGlob} ${GuidanceGlob})
@@ -522,6 +523,7 @@ add_library(osrm_partition ${PartitionerGlob})
 add_library(osrm_routed    ${EngineGlob} ${ServerGlob})
 add_library(osrm_store     ${StorageGlob})
 add_library(osrm_update    ${UpdaterGlob})
+add_library(osrm_utils     ${UtilGlob} ${StorageGlob} ${UpdaterGlob})
 
 add_library(osrm::utils ALIAS osrm_utils)
 

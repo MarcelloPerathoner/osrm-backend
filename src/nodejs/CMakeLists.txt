@@ -34,21 +34,14 @@ push_env("OSRM_NODEJS_BUILD_DIR" "${OSRM_NODEJS_BUILD_DIR}")
 set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
 push_env("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
 
+file(GLOB TARGETS  src/contractor/*.cpp src/osrm/contractor.cpp)
+
 list(APPEND TARGETS node_osrm)
-list(APPEND TARGETS osrm_routed)
-list(APPEND TARGETS osrm_utils)
 foreach(binary components contract customize datastore extract partition routed)
   list(APPEND TARGETS "osrm-${binary}")
 endforeach()
-
-foreach(t "${TARGETS}")
-  set_property(TARGET ${t} PROPERTY INSTALL_RPATH_USE_LINK_PATH FALSE)
-  if(APPLE)
-    set_property(TARGET ${t} PROPERTY INSTALL_RPATH "@loader_path")
-  endif()
-  if(LINUX)
-    set_property(TARGET ${t} PROPERTY INSTALL_RPATH "\$ORIGIN")
-  endif()
+foreach(library contract customize extract partition routed store update utils)
+  list(APPEND TARGETS "osrm_${library}")
 endforeach()
 
 install(
@@ -64,13 +57,20 @@ install(
         [[libgcc_s\.so\..*]]
         [[libm\.so\..*]]
         [[libstdc\+\+\.so\..*]]
-    POST_INCLUDE_REGEXES "conan2|boost|tbb|lua|bz2|zstd"
+    POST_INCLUDE_REGEXES
+        [[libboost.*]]
+        [[libtbb.*]]
+        [[liblua.*]]
+        [[libbz2.*]]
+        [[libzstd.*]]
+        [[libz\..*]]
+        [[libosrm.*]]
     POST_EXCLUDE_REGEXES
         [[.*/system32/.*\.dll]]
         [[^/lib.*]]
         [[^/usr/lib.*]]
     # defined in conan_toolchain.cmake
-    DIRECTORIES ${CONAN_RUNTIME_LIB_DIRS}
+    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
 )
 
 install(
