@@ -517,25 +517,28 @@ set(ENGINE_LIBRARIES
 
 # Libraries
 
-add_library(osrm_contract  ${ContractorGlob})
-add_library(osrm_customize ${CustomizerGlob})
-add_library(osrm_extract   ${ExtractorGlob} ${GuidanceGlob})
-add_library(osrm_partition ${PartitionerGlob})
-add_library(osrm_routed    ${EngineGlob} ${ServerGlob})
-add_library(osrm_store     ${StorageGlob})
-add_library(osrm_update    ${UpdaterGlob})
-add_library(osrm_utils     ${UtilGlob} ${StorageGlob} ${UpdaterGlob})
+add_library(osrm_utils ${UtilGlob} ${StorageGlob} ${UpdaterGlob})
+
+# used by one tool only, thus static
+add_library(osrm_contract  STATIC ${ContractorGlob})
+add_library(osrm_customize STATIC ${CustomizerGlob})
+add_library(osrm_extract   STATIC ${ExtractorGlob} ${GuidanceGlob})
+add_library(osrm_partition STATIC ${PartitionerGlob})
+add_library(osrm_routed    STATIC ${EngineGlob} ${ServerGlob})
+# deprecated, kept only for compatibility
+add_library(osrm_store     STATIC ${StorageGlob})
+add_library(osrm_update    STATIC ${UpdaterGlob})
 
 add_library(osrm::utils ALIAS osrm_utils)
 
 target_link_libraries(osrm_utils     ${COMMON_LIBRARIES} MICROTAR ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm_contract  osrm_utils)
-target_link_libraries(osrm_customize osrm_utils)
-target_link_libraries(osrm_extract   osrm_utils ${EXTRACTOR_LIBRARIES})
-target_link_libraries(osrm_partition osrm_utils)
-target_link_libraries(osrm_routed    osrm_utils ${ENGINE_LIBRARIES})
-target_link_libraries(osrm_store     osrm_utils)
-target_link_libraries(osrm_update    osrm_utils)
+target_link_libraries(osrm_contract)
+target_link_libraries(osrm_customize )
+target_link_libraries(osrm_extract    ${EXTRACTOR_LIBRARIES})
+target_link_libraries(osrm_partition )
+target_link_libraries(osrm_routed     ${ENGINE_LIBRARIES})
+target_link_libraries(osrm_store     )
+target_link_libraries(osrm_update    )
 
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -549,8 +552,6 @@ add_library(osrm::customize ALIAS osrm_customize)
 add_library(osrm::extract   ALIAS osrm_extract)
 add_library(osrm::osrm      ALIAS osrm_routed)
 add_library(osrm::partition ALIAS osrm_partition)
-add_library(osrm::store     ALIAS osrm_store)
-add_library(osrm::update    ALIAS osrm_update)
 
 # Binaries
 add_executable(osrm-components   src/tools/components.cpp)
@@ -562,14 +563,15 @@ add_executable(osrm-io-benchmark src/tools/io-benchmark.cpp)
 add_executable(osrm-partition    src/tools/partition.cpp)
 add_executable(osrm-routed       src/tools/routed.cpp)
 
-target_link_libraries(osrm-components   osrm_utils     )
-target_link_libraries(osrm-contract     osrm_contract  )
-target_link_libraries(osrm-customize    osrm_customize )
-target_link_libraries(osrm-datastore    osrm_store     osrm_update )
-target_link_libraries(osrm-extract      osrm_extract   )
-target_link_libraries(osrm-io-benchmark osrm_utils     )
-target_link_libraries(osrm-partition    osrm_partition )
-target_link_libraries(osrm-routed       osrm_routed    )
+# link order matters!
+target_link_libraries(osrm-components                  osrm_utils )
+target_link_libraries(osrm-contract     osrm_contract  osrm_utils )
+target_link_libraries(osrm-customize    osrm_customize osrm_utils )
+target_link_libraries(osrm-datastore                   osrm_utils )
+target_link_libraries(osrm-extract      osrm_extract   osrm_utils )
+target_link_libraries(osrm-io-benchmark                osrm_utils )
+target_link_libraries(osrm-partition    osrm_partition osrm_utils )
+target_link_libraries(osrm-routed       osrm_routed    osrm_utils )
 
 # to build a shared osrm_utils lib on Windows
 #

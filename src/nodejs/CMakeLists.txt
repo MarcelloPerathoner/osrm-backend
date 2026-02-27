@@ -23,7 +23,7 @@ string(STRIP ${NODE_ADDON_API_DIR} NODE_ADDON_API_DIR)
 message(STATUS "-I ${NODE_ADDON_API_DIR}")
 
 target_include_directories(node_osrm PRIVATE "${NODE_ADDON_API_DIR}")
-target_link_libraries(node_osrm osrm_utils osrm_routed)
+target_link_libraries(node_osrm osrm_routed osrm_utils)
 
 mk_build_dir("OSRM_NODEJS_BUILD_DIR" "${CMAKE_CURRENT_BINARY_DIR}")
 push_env("OSRM_NODEJS_BUILD_DIR" "${OSRM_NODEJS_BUILD_DIR}")

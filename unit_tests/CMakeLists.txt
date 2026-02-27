@@ -85,6 +85,8 @@ add_executable(library-extract-tests   EXCLUDE_FROM_ALL	${LibraryExtractTestsSou
 add_executable(library-partition-tests EXCLUDE_FROM_ALL ${LibraryPartitionTestsSources})
 add_executable(library-tests	         EXCLUDE_FROM_ALL	${LibraryTestsSources})
 
+add_dependencies(library-tests osrm-extract osrm-contract osrm-partition)
+
 foreach(t contractor customizer engine extractor partitioner server storage updater util)
   list(APPEND TESTS "${t}-tests")
 endforeach()
@@ -94,17 +96,6 @@ foreach(t contract customize extract partition)
 endforeach()
 
 list(APPEND TESTS "library-tests")
-
-add_dependencies(library-tests osrm-extract osrm-contract osrm-partition)
-
-foreach(t ${TESTS})
-  target_compile_definitions(${t} PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
-  target_include_directories(${t} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
-  target_link_libraries(${t} osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
-endforeach()
-
-target_compile_definitions(extractor-tests PRIVATE COMPILE_DEFINITIONS OSRM_FIXTURES_DIR="${TEST_FIXTURES_DIR}")
-target_compile_definitions(updater-tests   PRIVATE COMPILE_DEFINITIONS TEST_UPDATER_DATA_DIR="${TEST_UPDATER_DATA_DIR}")
 
 target_link_libraries(contractor-tests        osrm_contract)
 target_link_libraries(customizer-tests        osrm_customize)
@@ -117,6 +108,15 @@ target_link_libraries(library-partition-tests osrm_partition)
 target_link_libraries(library-tests           osrm_routed)
 target_link_libraries(partitioner-tests       osrm_partition)
 target_link_libraries(server-tests            osrm_routed)
+
+foreach(t ${TESTS})
+  target_compile_definitions(${t} PRIVATE COMPILE_DEFINITIONS OSRM_TEST_DATA_DIR="${OSRM_TEST_DATA_DIR}")
+  target_include_directories(${t} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+  target_link_libraries(${t} osrm_utils ${BOOST_UNIT_TEST_LIBRARIES})
+endforeach()
+
+target_compile_definitions(extractor-tests PRIVATE COMPILE_DEFINITIONS OSRM_FIXTURES_DIR="${TEST_FIXTURES_DIR}")
+target_compile_definitions(updater-tests   PRIVATE COMPILE_DEFINITIONS TEST_UPDATER_DATA_DIR="${TEST_UPDATER_DATA_DIR}")
 
 add_custom_target(tests DEPENDS ${TESTS})
 add_custom_target(osrm_tests DEPENDS ${TESTS})
