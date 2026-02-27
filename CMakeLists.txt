@@ -86,19 +86,21 @@ endif()
 
 # add @loader_path/$ORIGIN to rpath to make binaries relocatable
 if(APPLE)
-  set(CMAKE_BUILD_RPATH   "@loader_path")
-  set(CMAKE_INSTALL_RPATH "@loader_path")
+  set(RPATH_ORIGIN "@loader_path")
+  set(CMAKE_BUILD_RPATH   "@loader_path/../lib")
+  set(CMAKE_INSTALL_RPATH "@loader_path/../lib")
 endif()
 
 if(LINUX)
-  set(CMAKE_BUILD_RPATH   "\$ORIGIN:\$ORIGIN/../lib")
-  set(CMAKE_INSTALL_RPATH "\$ORIGIN:\$ORIGIN/../lib")
+  set(RPATH_ORIGIN "\$ORIGIN")
+  set(CMAKE_BUILD_RPATH   "\$ORIGIN/../lib")
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN/../lib")
 
   # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
   set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin")
 
-  # Fix for `cmake --install --component node_osrm` rising the error: "file Could not
+  # Fix for `cmake --install --component node_package` rising the error: "file Could not
   # resolve runtime dependencies: libboost_system.so.1.88.0".  RUNPATH and RPATH are
   # different animals, see: `man ld.so`.  While the RPATH of the grandparent is used
   # when searching for dependencies the RUNPATH of the grandparent is not.  Thus we
@@ -514,6 +516,9 @@ set(EXTRACTOR_LIBRARIES
 set(ENGINE_LIBRARIES
     ${MAYBE_SOCKET_LIBRARIES})
 
+set (ALL_BINARIES "components;contract;customize;datastore;extract;partition;routed")
+set (ALL_LIBRARIES "contract;customize;extract;partition;routed;store;update;utils")
+
 # Libraries
 
 add_library(osrm_utils ${UtilGlob} ${StorageGlob} ${UpdaterGlob} ${MicrotarGlob})
@@ -528,29 +533,19 @@ add_library(osrm_routed    STATIC ${EngineGlob} ${ServerGlob})
 add_library(osrm_store     STATIC ${StorageGlob})
 add_library(osrm_update    STATIC ${UpdaterGlob})
 
-add_library(osrm::utils ALIAS osrm_utils)
-
-target_link_libraries(osrm_utils     ${COMMON_LIBRARIES} ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm_contract)
-target_link_libraries(osrm_customize )
-target_link_libraries(osrm_extract    ${EXTRACTOR_LIBRARIES})
-target_link_libraries(osrm_partition )
-target_link_libraries(osrm_routed     ${ENGINE_LIBRARIES})
-target_link_libraries(osrm_store     )
-target_link_libraries(osrm_update    )
-
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
+# ALIAS targets with :: provide compile-time safety: typos error at configure time, not link time
+foreach(lib ${ALL_LIBRARIES})
+  add_library("osrm::${lib}" ALIAS "osrm_${lib}")
+endforeach()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
   # fixes error: ‘MEM <unsigned char[24]> [(char * {ref-all})...]’ is used uninitialized [-Werror=uninitialized]
   set_target_properties(osrm_routed PROPERTIES INTERPROCEDURAL_OPTIMIZATION FALSE)
 endif()
 
-# ALIAS targets with :: provide compile-time safety: typos error at configure time, not link time
-add_library(osrm::contract  ALIAS osrm_contract)
-add_library(osrm::customize ALIAS osrm_customize)
-add_library(osrm::extract   ALIAS osrm_extract)
-add_library(osrm::osrm      ALIAS osrm_routed)
-add_library(osrm::partition ALIAS osrm_partition)
+target_link_libraries(osrm_utils   ${COMMON_LIBRARIES} ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm_extract ${EXTRACTOR_LIBRARIES})
+target_link_libraries(osrm_routed  ${ENGINE_LIBRARIES})
 
 # Binaries
 add_executable(osrm-components   src/tools/components.cpp)
@@ -563,14 +558,14 @@ add_executable(osrm-partition    src/tools/partition.cpp)
 add_executable(osrm-routed       src/tools/routed.cpp)
 
 # link order matters!
-target_link_libraries(osrm-components                  osrm_utils )
-target_link_libraries(osrm-contract     osrm_contract  osrm_utils )
-target_link_libraries(osrm-customize    osrm_customize osrm_utils )
-target_link_libraries(osrm-datastore                   osrm_utils )
-target_link_libraries(osrm-extract      osrm_extract   osrm_utils )
-target_link_libraries(osrm-io-benchmark                osrm_utils )
-target_link_libraries(osrm-partition    osrm_partition osrm_utils )
-target_link_libraries(osrm-routed       osrm_routed    osrm_utils )
+target_link_libraries(osrm-components                  osrm_utils)
+target_link_libraries(osrm-contract     osrm_contract  osrm_utils)
+target_link_libraries(osrm-customize    osrm_customize osrm_utils)
+target_link_libraries(osrm-datastore                   osrm_utils)
+target_link_libraries(osrm-extract      osrm_extract   osrm_utils)
+target_link_libraries(osrm-io-benchmark                osrm_utils)
+target_link_libraries(osrm-partition    osrm_partition osrm_utils)
+target_link_libraries(osrm-routed       osrm_routed    osrm_utils)
 
 # to build a shared osrm_utils lib on Windows
 #
@@ -588,14 +583,14 @@ target_link_libraries(osrm-routed       osrm_routed    osrm_utils )
 # Add RPATH info to executables so that when they are run after being installed
 # (i.e., from /usr/local/bin/) the linker can find library dependencies. For
 # more info see https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
-set_property(TARGET osrm-components   PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-contract     PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-customize    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-datastore    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-extract      PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-io-benchmark PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-partition    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-set_property(TARGET osrm-routed       PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-components   PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-contract     PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-customize    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-datastore    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-extract      PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-io-benchmark PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-partition    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
+# set_property(TARGET osrm-routed       PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
 
 ### install ###
 
@@ -622,23 +617,13 @@ install(FILES ${ParametersGlob}    DESTINATION include/osrm/engine/api  COMPONEN
 install(FILES ${ApiHeader}         DESTINATION include/osrm/engine/api  COMPONENT headers)
 install(FILES ${FlatbuffersGlob}   DESTINATION include/flatbuffers      COMPONENT flatbuffers)
 
-install(TARGETS osrm-components   DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-contract     DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-customize    DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-datastore    DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-extract      DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-io-benchmark DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-partition    DESTINATION bin COMPONENT applications)
-install(TARGETS osrm-routed       DESTINATION bin COMPONENT applications)
+foreach(bin ${ALL_BINARIES})
+  install(TARGETS "osrm-${bin}" DESTINATION bin COMPONENT applications)
+endforeach()
 
-install(TARGETS osrm_contract  DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_customize DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_extract   DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_partition DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_routed    DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_store     DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_update    DESTINATION lib COMPONENT libraries)
-install(TARGETS osrm_utils     DESTINATION lib COMPONENT libraries)
+foreach(lib ${ALL_LIBRARIES})
+  install(TARGETS "osrm_${lib}" DESTINATION lib COMPONENT libraries)
+endforeach()
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default
 install(DIRECTORY profiles DESTINATION share/osrm COMPONENT applications)

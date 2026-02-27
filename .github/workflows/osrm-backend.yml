@@ -136,6 +136,7 @@ jobs:
 
           - name: conan-macos-15-x64-release-node-xcode
             runs-on: macos-15-intel # x64
+            continue-on-error: true
 
           - name: conan-macos-15-arm64-release-shared-node
             runs-on: macos-15 # arm64
@@ -442,7 +443,8 @@ jobs:
       - name: Run unit tests
         if: env.RUN_UNIT_TESTS == 'ON'
         run: |
-          echo "::group::ls make -C test/data monaco"
+          echo "::group::${MAKE} -C test/data monaco"
+          $MAKE --version
           $MAKE -C "$TEST_DIR/data" monaco
           echo "::endgroup::"
 

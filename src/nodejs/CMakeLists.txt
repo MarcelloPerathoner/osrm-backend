@@ -34,20 +34,40 @@ push_env("OSRM_NODEJS_BUILD_DIR" "${OSRM_NODEJS_BUILD_DIR}")
 set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
 push_env("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
 
-file(GLOB TARGETS  src/contractor/*.cpp src/osrm/contractor.cpp)
+foreach(binary ${ALL_BINARIES})
+  list(APPEND NODE_BINARIES "osrm-${binary}")
+endforeach()
+foreach(library ${ALL_LIBRARIES})
+  list(APPEND NODE_LIBRARIES "osrm_${library}")
+endforeach()
 
-list(APPEND TARGETS node_osrm)
-foreach(binary components contract customize datastore extract partition routed)
-  list(APPEND TARGETS "osrm-${binary}")
-endforeach()
-foreach(library contract customize extract partition routed store update utils)
-  list(APPEND TARGETS "osrm_${library}")
-endforeach()
+### This is meant to be installed with --prefix build/nodejs ###
 
 install(
-  TARGETS ${TARGETS}
-  DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib/binding_napi_v${NAPI_VERSION}"
-  COMPONENT node_osrm
+  FILES "${PROJECT_SOURCE_DIR}/package.json"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/.."
+  COMPONENT node_package
+  EXCLUDE_FROM_ALL
+)
+
+install(
+  FILES "index.js"
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+  COMPONENT node_package
+  EXCLUDE_FROM_ALL
+)
+
+install(
+  TARGETS node_osrm
+  DESTINATION "${CMAKE_INSTALL_LIBDIR}/binding_napi_v${NAPI_VERSION}"
+  COMPONENT node_package
+  EXCLUDE_FROM_ALL
+)
+set_property(TARGET node_osrm PROPERTY INSTALL_RPATH "${RPATH_ORIGIN}/..")
+
+install(
+  TARGETS ${NODE_LIBRARIES} ${NODE_BINARIES}
+  COMPONENT node_package
   EXCLUDE_FROM_ALL
   RUNTIME_DEPENDENCIES
     PRE_EXCLUDE_REGEXES
@@ -72,18 +92,4 @@ install(
         [[^/usr/lib.*]]
     # defined in conan_toolchain.cmake
     DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
-)
-
-install(
-  FILES "index.js"
-  DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib"
-  COMPONENT node_osrm
-  EXCLUDE_FROM_ALL
-)
-
-install(
-  FILES "${PROJECT_SOURCE_DIR}/package.json"
-  DESTINATION "${OSRM_NODEJS_INSTALL_DIR}"
-  COMPONENT node_osrm
-  EXCLUDE_FROM_ALL
 )
