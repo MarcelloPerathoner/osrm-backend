@@ -89,10 +89,11 @@ set(RPATH_ORIGIN "\$ORIGIN")
 if(APPLE)
   set(RPATH_ORIGIN "@loader_path")
 endif()
-if(UNIX)
-  set(CMAKE_BUILD_RPATH   ${RPATH_ORIGIN})
-  set(CMAKE_INSTALL_RPATH ${RPATH_ORIGIN})
 
+set(CMAKE_BUILD_RPATH   ${RPATH_ORIGIN})
+set(CMAKE_INSTALL_RPATH ${RPATH_ORIGIN})
+
+if(UNIX)
   # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
   set(CMAKE_EXE_LINKER_FLAGS       "${CMAKE_EXE_LINKER_FLAGS} -Wl,-z,origin")
