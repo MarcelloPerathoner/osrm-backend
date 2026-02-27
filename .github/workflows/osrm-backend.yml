@@ -362,6 +362,7 @@ jobs:
       - name: Debug build
         if: always()
         run: |
+          set +e
           cat build/osrm-build.env >> $GITHUB_ENV
 
           echo "::group::ls ${OSRM_BUILD_DIR}"
@@ -369,19 +370,19 @@ jobs:
           echo "::endgroup::"
 
           echo "::group::ls ${OSRM_UNIT_TESTS_BUILD_DIR}"
-          ls -al ${OSRM_UNIT_TESTS_BUILD_DIR} || true
+          ls -al ${OSRM_UNIT_TESTS_BUILD_DIR}
           echo "::endgroup::"
 
           echo "::group::ls ${OSRM_BENCHMARKS_BUILD_DIR}"
-          ls -al ${OSRM_BENCHMARKS_BUILD_DIR} || true
+          ls -al ${OSRM_BENCHMARKS_BUILD_DIR}
           echo "::endgroup::"
 
           echo "::group::ls ${OSRM_NODEJS_BUILD_DIR}"
-          ls -al ${OSRM_NODEJS_BUILD_DIR} || true
+          ls -al ${OSRM_NODEJS_BUILD_DIR}
           echo "::endgroup::"
 
           echo "::group::ls ${NAPI_DIR}"
-          ls -al ${NAPI_DIR} || true
+          ls -al ${NAPI_DIR}
           echo "::endgroup::"
 
       # Save compiler cache

@@ -220,7 +220,9 @@ class OsrmConan(ConanFile):
             configure_preset = f"conan-{self.settings.build_type}".lower()
             build_preset = configure_preset
             test_preset = configure_preset
-            if self.settings.os == "Windows":
+            if generator is not None and (
+                generator == "Xcode" or generator.startswith("Visual")
+            ):
                 configure_preset = "conan-default"
 
             fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={configure_preset}\n")
