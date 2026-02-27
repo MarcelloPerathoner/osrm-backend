@@ -179,7 +179,7 @@ ver = "-" + version if version else ""
 if compiler == "clang":
     envs["CC"] = f"clang{ver}"
     envs["CXX"] = f"clang++{ver}"
-    if cdefs["ENABLE_TIDY"] == "ON":
+    if cdefs.get("ENABLE_TIDY") == "ON":
         envs["CLANG_TIDY"] = f"clang-tidy{ver}"
 
 if compiler == "gcc":
@@ -232,8 +232,8 @@ envs["APT_GET_DEPS"] = ":".join(apt_get_deps)
 # write KEY=VALUE pairs
 envs.update(cdefs)
 for key in sorted(envs):
-    if envs[key] is not None:
-        print(f"{key}={envs[key]}", file=args.output)
+    if value := envs.get(key):
+        print(f"{key}={value}", file=args.output)
 
 # Write CMakePresets.json
 
