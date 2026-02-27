@@ -92,4 +92,7 @@ install(
         [[^/usr/lib.*]]
     # defined in conan_toolchain.cmake
     DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
+
+  # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
+  FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
