@@ -217,6 +217,7 @@ file(GLOB ServerGlob      src/server/*.cpp src/server/**/*.cpp)
 file(GLOB StorageGlob     src/storage/*.cpp)
 file(GLOB UpdaterGlob     src/updater/*.cpp)
 file(GLOB UtilGlob        src/util/*.cpp src/util/*/*.cpp)
+file(GLOB MicrotarGlob    third_party/microtar/src/microtar.c)
 
 # set_target_properties(UTIL PROPERTIES LINKER_LANGUAGE CXX)
 
@@ -415,14 +416,12 @@ message(STATUS "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 set(RAPIDJSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/rapidjson/include")
 include_directories(SYSTEM ${RAPIDJSON_INCLUDE_DIR})
 
-set(MICROTAR_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/microtar/src")
-include_directories(SYSTEM ${MICROTAR_INCLUDE_DIR})
-
-add_library(MICROTAR STATIC "${CMAKE_CURRENT_SOURCE_DIR}/third_party/microtar/src/microtar.c")
-set_property(TARGET MICROTAR PROPERTY POSITION_INDEPENDENT_CODE ON)
-
-target_no_warning(MICROTAR unused-variable)
-target_no_warning(MICROTAR format)
+include_directories(SYSTEM "${CMAKE_CURRENT_SOURCE_DIR}/third_party/microtar/src")
+set_source_files_properties(
+  ${MicrotarGlob}
+  PROPERTIES
+  COMPILE_FLAGS "-Wno-unused-variable -Wno-format"
+)
 
 set(PROTOZERO_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/protozero/include")
 include_directories(SYSTEM ${PROTOZERO_INCLUDE_DIR})
@@ -517,7 +516,7 @@ set(ENGINE_LIBRARIES
 
 # Libraries
 
-add_library(osrm_utils ${UtilGlob} ${StorageGlob} ${UpdaterGlob})
+add_library(osrm_utils ${UtilGlob} ${StorageGlob} ${UpdaterGlob} ${MicrotarGlob})
 
 # used by one tool only, thus static
 add_library(osrm_contract  STATIC ${ContractorGlob})
@@ -531,7 +530,7 @@ add_library(osrm_update    STATIC ${UpdaterGlob})
 
 add_library(osrm::utils ALIAS osrm_utils)
 
-target_link_libraries(osrm_utils     ${COMMON_LIBRARIES} MICROTAR ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
+target_link_libraries(osrm_utils     ${COMMON_LIBRARIES} ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
 target_link_libraries(osrm_contract)
 target_link_libraries(osrm_customize )
 target_link_libraries(osrm_extract    ${EXTRACTOR_LIBRARIES})

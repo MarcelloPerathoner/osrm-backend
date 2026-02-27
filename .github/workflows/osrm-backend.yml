@@ -56,11 +56,10 @@ jobs:
           # - name: clang-21-release
           #   runs-on: ubuntu-26.04
 
-          - name: clang-20-release
+          - name: clang-20-release-ninja
             runs-on: ubuntu-24.04
             BUILD_BENCHMARKS: ON
             RUN_BENCHMARKS: ON
-            CMAKE_GENERATOR: Ninja
 
           - name: clang-20-debug-node-tidy
             continue-on-error: true
@@ -122,22 +121,20 @@ jobs:
             CC: clang-19
             CXX: clang++-19
 
-          - name: conan-linux-debug-node
+          - name: conan-linux-debug-node-ninja
             runs-on: ubuntu-24.04
             continue-on-error: true
             CC: clang-19
             CXX: clang++-19
-            CMAKE_GENERATOR: Ninja
 
-          - name: macos-15-arm64-release-node
+          - name: macos-15-arm64-release-node-xcode
             runs-on: macos-15 # arm64
             continue-on-error: true
-            CMAKE_GENERATOR: Xcode
 
           - name: conan-macos-26-arm64-release-node
             runs-on: macos-26 # arm64
 
-          - name: conan-macos-15-x64-release-node
+          - name: conan-macos-15-x64-release-node-xcode
             runs-on: macos-15-intel # x64
 
           - name: conan-macos-15-arm64-release-shared-node

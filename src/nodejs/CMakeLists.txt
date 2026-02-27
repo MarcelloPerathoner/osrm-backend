@@ -59,7 +59,7 @@ install(
         [[libstdc\+\+\.so\..*]]
     POST_INCLUDE_REGEXES
         [[libboost.*]] [[boost.*\.dll]]
-        [[libtbb.*]]   [[tbb.*\.dll]
+        [[libtbb.*]]   [[tbb.*\.dll]]
         [[liblua.*]]   [[lua.*\.dll]]
         [[libbz2.*]]   [[bz2\.dll]]
         [[libzstd.*]]  [[zstd.*\.dll]]
