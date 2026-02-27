@@ -85,13 +85,13 @@ if(ENABLE_LTO)
 endif()
 
 # add @loader_path/$ORIGIN to rpath to make binaries relocatable
+set(RPATH_ORIGIN "\$ORIGIN")
 if(APPLE)
-  set(CMAKE_BUILD_RPATH   "@loader_path")
-  set(CMAKE_INSTALL_RPATH "@loader_path")
+  set(RPATH_ORIGIN "@loader_path")
 endif()
-if(LINUX)
-  set(CMAKE_BUILD_RPATH   "\$ORIGIN")
-  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+if(UNIX)
+  set(CMAKE_BUILD_RPATH   ${RPATH_ORIGIN})
+  set(CMAKE_INSTALL_RPATH ${RPATH_ORIGIN})
 
   # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
