@@ -25,7 +25,7 @@ env:
   LOG_DIR: ${{ github.workspace }}/test/logs
   CI_DIR: ${{ github.workspace }}/scripts/ci
   NODE_DIR: ${{ github.workspace }}/.npm
-  NAPI_DIR: ${{ github.workspace }}/build/nodejs/lib/binding_napi_v8
+  NAPI_DIR: ${{ github.workspace }}/build/nodejs
   CONAN_HOME: ${{ github.workspace }}/.conan2
   CONAN_CACHE: ${{ github.workspace }}/.conan2/p
   CONAN_DOWNLOAD_CACHE: ${{ github.workspace }}/.conan2/downloads
@@ -382,8 +382,8 @@ jobs:
           ls -al ${OSRM_NODEJS_BUILD_DIR}
           echo "::endgroup::"
 
-          echo "::group::ls ${NAPI_DIR}"
-          ls -al ${NAPI_DIR}
+          echo "::group::ls ${NAPI_DIR}/lib/binding_napi_v8"
+          ls -al ${NAPI_DIR}/lib/binding_napi_v8
           echo "::endgroup::"
 
       - name: Install

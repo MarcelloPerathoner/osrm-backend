@@ -7,8 +7,8 @@ An OSRM instance requires a `.osrm.*` dataset(`.osrm.*` because it contains seve
 You can create such a `.osrm.*` dataset by running the OSRM binaries we ship in `node_modules/osrm/lib/binding_napi_v8/` and default
 profiles (e.g. for setting speeds and determining road types to route on) in `node_modules/osrm/profiles/`:
 
-    node_modules/osrm/lib/binding_napi_v8/osrm-extract data.osm.pbf -p node_modules/osrm/profiles/car.lua
-    node_modules/osrm/lib/binding_napi_v8/osrm-contract data.osrm
+    node_modules/osrm/bin/osrm-extract data.osm.pbf -p node_modules/osrm/profiles/car.lua
+    node_modules/osrm/bin/osrm-contract data.osrm
 
 Consult the [osrm-backend][1] documentation for further details.
 

@@ -2,7 +2,7 @@ name: Node tests
 description: Run Node tests
 
 runs:
-  using: "composite"
+  using: 'composite'
   steps:
     - name: Prepare test data
       shell: bash
@@ -19,7 +19,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node 20"
-        ${NAPI_DIR}/osrm-datastore ${DATASET}
+        ${NAPI_DIR}/bin/osrm-datastore ${DATASET}
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"
 
@@ -32,7 +32,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node 22"
-        ${NAPI_DIR}/osrm-datastore ${DATASET}
+        ${NAPI_DIR}/bin/osrm-datastore ${DATASET}
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"
 
@@ -45,7 +45,7 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node 24"
-        ${NAPI_DIR}/osrm-datastore ${DATASET}
+        ${NAPI_DIR}/bin/osrm-datastore ${DATASET}
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"
 
@@ -58,6 +58,6 @@ runs:
       shell: bash
       run: |
         echo "::group::Running on node latest"
-        ${NAPI_DIR}/osrm-datastore ${DATASET}
+        ${NAPI_DIR}/bin/osrm-datastore ${DATASET}
         node ${TEST_DIR}/nodejs/index.js | npx faucet
         echo "::endgroup::"

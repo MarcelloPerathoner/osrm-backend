@@ -287,14 +287,29 @@ endif()
 
 if(ENABLE_ASAN)
   set(ASAN_FLAGS "-shared-libasan -fsanitize=address -fsanitize-address-use-after-scope")
+  execute_process(
+    COMMAND clang -print-file-name=libclang_rt.asan-x86_64.so
+    OUTPUT_VARIABLE MAYBE_SANITIZER_LIBRARY
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
 endif()
 
 if(ENABLE_TSAN)
   set(TSAN_FLAGS "-fsanitize=thread")
+  execute_process(
+    COMMAND clang -print-file-name=libclang_rt.tsan-x86_64.so
+    OUTPUT_VARIABLE MAYBE_SANITIZER_LIBRARY
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
 endif()
 
 if(ENABLE_UBSAN)
   set(UBSAN_FLAGS "-fsanitize=undefined")
+  execute_process(
+    COMMAND clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so
+    OUTPUT_VARIABLE MAYBE_SANITIZER_LIBRARY
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+  )
 endif()
 
 if(ENABLE_ASAN OR ENABLE_TSAN OR ENABLE_UBSAN)
@@ -644,12 +659,13 @@ install(
         [[libzstd.*]]  [[zstd.*\.dll]]
         [[libz\..*]]   [[z.*\.dll]]
         [[libosrm.*]]  [[osrm.*\.dll]]
+        [[libclang_rt.*]]
     POST_EXCLUDE_REGEXES
         [[.*/system32/.*\.dll]]
         [[^/lib.*]]
         [[^/usr/lib.*]]
     # defined in conan_toolchain.cmake
-    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
+    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS}" "${MAYBE_SANITIZER_LIBRARY}"
   RUNTIME COMPONENT applications
   LIBRARY COMPONENT libraries
   # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
@@ -824,3 +840,5 @@ endif()
 message(STATUS "OSRM_TEST_DATA_DIR is:        $ENV{OSRM_TEST_DATA_DIR}")
 message(STATUS "CMAKE_INSTALL_PREFIX is:      ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "-----------------------------")
+message(STATUS "RT_ASAN_LIB is:               ${RT_ASAN_LIB}")
+message(STATUS "RT_ASAN_DIR is:               ${RT_ASAN_DIR}")
