@@ -242,8 +242,8 @@ if args.cmake_presets_template and args.cmake_presets:
     js = json.loads(s)
     preset = js["configurePresets"][0]
 
-    if "CMAKE_GENERATOR" in cdefs:
-        preset["generator"] = cdefs["CMAKE_GENERATOR"]
+    if generator := cdefs.get("CMAKE_GENERATOR"):
+        preset["generator"] = generator
         del cdefs["CMAKE_GENERATOR"]
 
     cache_vars = {"CMAKE_POLICY_DEFAULT_CMP0091": "NEW"}
