@@ -34,12 +34,12 @@ push_env("OSRM_NODEJS_BUILD_DIR" "${OSRM_NODEJS_BUILD_DIR}")
 set(OSRM_NODEJS_INSTALL_DIR "${PROJECT_SOURCE_DIR}/build/nodejs")
 push_env("OSRM_NODEJS_INSTALL_DIR" "${OSRM_NODEJS_INSTALL_DIR}")
 
-foreach(binary ${ALL_BINARIES})
-  list(APPEND NODE_BINARIES "osrm-${binary}")
-endforeach()
-foreach(library ${ALL_LIBRARIES})
-  list(APPEND NODE_LIBRARIES "osrm_${library}")
-endforeach()
+# foreach(binary ${ALL_BINARIES})
+#   list(APPEND NODE_BINARIES "osrm-${binary}")
+# endforeach()
+# foreach(library ${ALL_LIBRARIES})
+#   list(APPEND NODE_LIBRARIES "osrm_${library}")
+# endforeach()
 
 ### This is meant to be installed with --prefix build/nodejs ###
 
@@ -65,34 +65,34 @@ install(
 )
 set_property(TARGET node_osrm PROPERTY INSTALL_RPATH "${RPATH_ORIGIN}/..")
 
-install(
-  TARGETS ${NODE_LIBRARIES} ${NODE_BINARIES}
-  COMPONENT node_package
-  EXCLUDE_FROM_ALL
-  RUNTIME_DEPENDENCIES
-    PRE_EXCLUDE_REGEXES
-        [[api-ms-win-.*]]
-        [[ext-ms-.*]]
-        [[kernel32\.dll]]
-        [[libc\.so\..*]]
-        [[libgcc_s\.so\..*]]
-        [[libm\.so\..*]]
-        [[libstdc\+\+\.so\..*]]
-    POST_INCLUDE_REGEXES
-        [[libboost.*]] [[boost.*\.dll]]
-        [[libtbb.*]]   [[tbb.*\.dll]]
-        [[liblua.*]]   [[lua.*\.dll]]
-        [[libbz2.*]]   [[bz2\.dll]]
-        [[libzstd.*]]  [[zstd.*\.dll]]
-        [[libz\..*]]   [[z.*\.dll]]
-        [[libosrm.*]]  [[osrm.*\.dll]]
-    POST_EXCLUDE_REGEXES
-        [[.*/system32/.*\.dll]]
-        [[^/lib.*]]
-        [[^/usr/lib.*]]
-    # defined in conan_toolchain.cmake
-    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
-
-  # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
-  FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}"
-)
+# install(
+#   TARGETS ${NODE_LIBRARIES} ${NODE_BINARIES}
+#   COMPONENT node_package
+#   EXCLUDE_FROM_ALL
+#   RUNTIME_DEPENDENCIES
+#     PRE_EXCLUDE_REGEXES
+#         [[api-ms-win-.*]]
+#         [[ext-ms-.*]]
+#         [[kernel32\.dll]]
+#         [[libc\.so\..*]]
+#         [[libgcc_s\.so\..*]]
+#         [[libm\.so\..*]]
+#         [[libstdc\+\+\.so\..*]]
+#     POST_INCLUDE_REGEXES
+#         [[libboost.*]] [[boost.*\.dll]]
+#         [[libtbb.*]]   [[tbb.*\.dll]]
+#         [[liblua.*]]   [[lua.*\.dll]]
+#         [[libbz2.*]]   [[bz2\.dll]]
+#         [[libzstd.*]]  [[zstd.*\.dll]]
+#         [[libz\..*]]   [[z.*\.dll]]
+#         [[libosrm.*]]  [[osrm.*\.dll]]
+#     POST_EXCLUDE_REGEXES
+#         [[.*/system32/.*\.dll]]
+#         [[^/lib.*]]
+#         [[^/usr/lib.*]]
+#     # defined in conan_toolchain.cmake
+#     DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
+#
+#   # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
+#   FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+# )

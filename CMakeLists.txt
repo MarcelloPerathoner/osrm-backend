@@ -516,8 +516,8 @@ set(EXTRACTOR_LIBRARIES
 set(ENGINE_LIBRARIES
     ${MAYBE_SOCKET_LIBRARIES})
 
-set (ALL_BINARIES "components;contract;customize;datastore;extract;partition;routed")
-set (ALL_LIBRARIES "contract;customize;extract;partition;routed;store;update;utils")
+set (ALL_BINARIES_STEMS "components;contract;customize;datastore;extract;partition;routed")
+set (ALL_LIBRARIES_STEMS "contract;customize;extract;partition;routed;store;update;utils")
 
 # Libraries
 
@@ -535,7 +535,7 @@ add_library(osrm_update    STATIC ${UpdaterGlob})
 
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 # ALIAS targets with :: provide compile-time safety: typos error at configure time, not link time
-foreach(lib ${ALL_LIBRARIES})
+foreach(lib ${ALL_LIBRARIES_STEMS})
   add_library("osrm::${lib}" ALIAS "osrm_${lib}")
 endforeach()
 if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
@@ -606,30 +606,61 @@ set(PartitionerHeader include/partitioner/partitioner.hpp include/partitioner/pa
 set(ContractorHeader include/contractor/contractor.hpp include/contractor/contractor_config.hpp)
 set(StorageHeader include/storage/storage.hpp include/storage/io_config.hpp include/storage/storage_config.hpp)
 
-install(FILES ${EngineHeader}      DESTINATION include/osrm/engine      COMPONENT headers)
-install(FILES ${UtilHeader}        DESTINATION include/osrm/util        COMPONENT headers)
-install(FILES ${StorageHeader}     DESTINATION include/osrm/storage     COMPONENT headers)
-install(FILES ${ExtractorHeader}   DESTINATION include/osrm/extractor   COMPONENT headers)
-install(FILES ${PartitionerHeader} DESTINATION include/osrm/partitioner COMPONENT headers)
-install(FILES ${ContractorHeader}  DESTINATION include/osrm/contractor  COMPONENT headers)
-install(FILES ${LibraryGlob}       DESTINATION include/osrm             COMPONENT headers)
-install(FILES ${ParametersGlob}    DESTINATION include/osrm/engine/api  COMPONENT headers)
-install(FILES ${ApiHeader}         DESTINATION include/osrm/engine/api  COMPONENT headers)
-install(FILES ${FlatbuffersGlob}   DESTINATION include/flatbuffers      COMPONENT flatbuffers)
+install(FILES ${EngineHeader}      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/engine      COMPONENT headers)
+install(FILES ${UtilHeader}        DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/util        COMPONENT headers)
+install(FILES ${StorageHeader}     DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/storage     COMPONENT headers)
+install(FILES ${ExtractorHeader}   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/extractor   COMPONENT headers)
+install(FILES ${PartitionerHeader} DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/partitioner COMPONENT headers)
+install(FILES ${ContractorHeader}  DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/contractor  COMPONENT headers)
+install(FILES ${LibraryGlob}       DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm             COMPONENT headers)
+install(FILES ${ParametersGlob}    DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/engine/api  COMPONENT headers)
+install(FILES ${ApiHeader}         DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/osrm/engine/api  COMPONENT headers)
+install(FILES ${FlatbuffersGlob}   DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}/flatbuffers      COMPONENT flatbuffers)
 
-foreach(bin ${ALL_BINARIES})
-  install(TARGETS "osrm-${bin}" DESTINATION bin COMPONENT applications)
+foreach(bin ${ALL_BINARIES_STEMS})
+  list(APPEND ALL_BINARIES "osrm-${bin}")
 endforeach()
 
-foreach(lib ${ALL_LIBRARIES})
-  install(TARGETS "osrm_${lib}" DESTINATION lib COMPONENT libraries)
+foreach(lib ${ALL_LIBRARIES_STEMS})
+  list(APPEND ALL_LIBRARIES "osrm_${lib}")
 endforeach()
+
+install(
+  TARGETS ${ALL_BINARIES} ${ALL_LIBRARIES}
+  RUNTIME_DEPENDENCIES
+    PRE_EXCLUDE_REGEXES
+        [[api-ms-win-.*]]
+        [[ext-ms-.*]]
+        [[kernel32\.dll]]
+        [[libc\.so\..*]]
+        [[libgcc_s\.so\..*]]
+        [[libm\.so\..*]]
+        [[libstdc\+\+\.so\..*]]
+    POST_INCLUDE_REGEXES
+        [[libboost.*]] [[boost.*\.dll]]
+        [[libtbb.*]]   [[tbb.*\.dll]]
+        [[liblua.*]]   [[lua.*\.dll]]
+        [[libbz2.*]]   [[bz2\.dll]]
+        [[libzstd.*]]  [[zstd.*\.dll]]
+        [[libz\..*]]   [[z.*\.dll]]
+        [[libosrm.*]]  [[osrm.*\.dll]]
+    POST_EXCLUDE_REGEXES
+        [[.*/system32/.*\.dll]]
+        [[^/lib.*]]
+        [[^/usr/lib.*]]
+    # defined in conan_toolchain.cmake
+    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS} ${OSRM_BUILD_DIR}"
+  RUNTIME COMPONENT applications
+  LIBRARY COMPONENT libraries
+  # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
+  FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default
-install(DIRECTORY profiles DESTINATION share/osrm COMPONENT applications)
+install(DIRECTORY profiles DESTINATION "${CMAKE_INSTALL_DATADIR}/osrm" COMPONENT data)
 
 # Install data geojson files to /usr/local/share/osrm/data by default
-install(DIRECTORY data DESTINATION share/osrm COMPONENT applications)
+install(DIRECTORY data DESTINATION "${CMAKE_INSTALL_DATADIR}/osrm" COMPONENT data)
 
 if(BUILD_PACKAGE)
   include(CPackConfig)
@@ -639,6 +670,7 @@ if(BUILD_PACKAGE)
   cpack_add_component_group(Development DISPLAY_NAME "Development")
 
   cpack_add_component(applications GROUP Runtime     DISPLAY_NAME "OSRM Application")
+  cpack_add_component(data         GROUP Runtime     DISPLAY_NAME "OSRM Data Files"   DEPENDS applications)
   cpack_add_component(libraries    GROUP Development DISPLAY_NAME "OSRM Libraries")
   cpack_add_component(headers      GROUP Development DISPLAY_NAME "OSRM Headers"      DEPENDS libraries)
   cpack_add_component(pkgconfig    GROUP Development DISPLAY_NAME "pkg-config"        DEPENDS libraries)
@@ -669,8 +701,8 @@ if(BUILD_PACKAGE)
   # pkgconfig defines
   set(PKGCONFIG_OSRM_CXXFLAGS "${LibOSRM_CXXFLAGS}")
   set(PKGCONFIG_OSRM_LDFLAGS "${LibOSRM_LDFLAGS}")
-  set(PKGCONFIG_LIBRARY_DIR "${CMAKE_INSTALL_PREFIX}/lib")
-  set(PKGCONFIG_INCLUDE_DIR "${CMAKE_INSTALL_PREFIX}/include")
+  set(PKGCONFIG_LIBRARY_DIR "${CMAKE_INSTALL_LIBDIR}")
+  set(PKGCONFIG_INCLUDE_DIR "${CMAKE_INSTALL_INCLUDEDIR}")
 
   list(APPEND DEPENDENCIES_INCLUDE_DIRS "${PKGCONFIG_INCLUDE_DIR}")
   list(APPEND DEPENDENCIES_INCLUDE_DIRS "${PKGCONFIG_INCLUDE_DIR}/osrm")

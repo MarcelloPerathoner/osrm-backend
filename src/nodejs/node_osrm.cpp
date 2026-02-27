@@ -47,8 +47,8 @@ Napi::Object Engine::Init(Napi::Env env, Napi::Object exports)
  * You can create such a `.osrm.*` dataset by running the OSRM binaries we ship in `node_modules/osrm/lib/binding_napi_v8/` and default
  * profiles (e.g. for setting speeds and determining road types to route on) in `node_modules/osrm/profiles/`:
  *
- *     node_modules/osrm/lib/binding_napi_v8/osrm-extract data.osm.pbf -p node_modules/osrm/profiles/car.lua
- *     node_modules/osrm/lib/binding_napi_v8/osrm-contract data.osrm
+ *     node_modules/osrm/bin/osrm-extract data.osm.pbf -p node_modules/osrm/profiles/car.lua
+ *     node_modules/osrm/bin/osrm-contract data.osrm
  *
  * Consult the [osrm-backend](https://github.com/Project-OSRM/osrm-backend) documentation for further details.
  *

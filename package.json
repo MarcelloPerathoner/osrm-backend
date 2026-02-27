@@ -15,7 +15,7 @@
     "docs": "./scripts/build_api_docs.sh",
     "docs:dev": "vitepress dev docs",
     "install": "node-pre-gyp install --fallback-to-build=false || ./scripts/node_install.sh",
-    "nodejs-tests": "make -C test/data && build/nodejs/lib/binding_napi_v8/osrm-datastore test/data/ch/monaco.osrm && node test/nodejs/index.js | faucet",
+    "nodejs-tests": "make -C test/data && build/nodejs/bin/osrm-datastore test/data/ch/monaco.osrm && node test/nodejs/index.js | faucet",
     "prepare": "husky"
   },
   "repository": {
