@@ -1,5 +1,6 @@
 import json
 import os
+import platform
 import re
 import subprocess
 import textwrap
@@ -7,6 +8,7 @@ import textwrap
 from conan import ConanFile
 from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 from conan.tools.cmake.cmakedeps.cmakedeps import CMakeDeps
+from conan.tools.cmake.utils import is_multi_configuration
 from conan.tools.env import VirtualBuildEnv, VirtualRunEnv
 from conan.tools.env.environment import _EnvVarPlaceHolder
 
@@ -217,12 +219,11 @@ class OsrmConan(ConanFile):
         # Put an environment into the well-known location `build/conan.env`
         with open(os.path.join(self.recipe_folder, BUILD_ROOT, "conan.env"), "w") as fp:
             generators_dir = _bash_path(self.folders.generators_folder)
-            configure_preset = f"conan-{self.settings.build_type}".lower()
+            configure_preset = f"conan-{self.settings.get_safe("build_type")}".lower()
             build_preset = configure_preset
             test_preset = configure_preset
-            if generator is not None and (
-                generator == "Xcode" or generator.startswith("Visual")
-            ):
+
+            if platform.system() == "Windows" or is_multi_configuration(generator):
                 configure_preset = "conan-default"
 
             fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={configure_preset}\n")

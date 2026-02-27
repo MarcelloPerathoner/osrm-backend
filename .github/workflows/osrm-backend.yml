@@ -385,6 +385,10 @@ jobs:
           ls -al ${NAPI_DIR}
           echo "::endgroup::"
 
+      - name: Install
+        run: |
+          cmake --install "${CMAKE_BINARY_DIR}" --config "${OSRM_CONFIG}" -v
+
       # Save compiler cache
 
       - name: Save CCache

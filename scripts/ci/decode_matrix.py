@@ -247,6 +247,7 @@ if args.cmake_presets_template and args.cmake_presets:
     )
     js = json.loads(s)
     preset = js["configurePresets"][0]
+    preset["configuration"] = config
 
     if generator := cdefs.get("CMAKE_GENERATOR"):
         preset["generator"] = generator
