@@ -91,8 +91,8 @@ if(APPLE)
 endif()
 
 if(LINUX)
-  set(CMAKE_BUILD_RPATH   "\$ORIGIN")
-  set(CMAKE_INSTALL_RPATH "\$ORIGIN")
+  set(CMAKE_BUILD_RPATH   "\$ORIGIN:\$ORIGIN/../lib")
+  set(CMAKE_INSTALL_RPATH "\$ORIGIN:\$ORIGIN/../lib")
 
   # https://stackoverflow.com/questions/6324131/rpath-origin-not-having-desired-effect
   set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} -Wl,-z,origin")
@@ -805,4 +805,5 @@ message(STATUS "OSRM_NODE_JS_BUILD_DIR is:    $ENV{OSRM_NODEJS_BUILD_DIR}")
 message(STATUS "OSRM_NODE_JS_INSTALL_DIR is:  $ENV{OSRM_NODEJS_INSTALL_DIR}")
 endif()
 message(STATUS "OSRM_TEST_DATA_DIR is:        $ENV{OSRM_TEST_DATA_DIR}")
+message(STATUS "CMAKE_INSTALL_PREFIX is:      ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "-----------------------------")

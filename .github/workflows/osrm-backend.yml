@@ -387,7 +387,7 @@ jobs:
 
       - name: Install
         run: |
-          cmake --install "${CMAKE_BINARY_DIR}" --config "${OSRM_CONFIG}" -v
+          sudo cmake --install "${CMAKE_BINARY_DIR}" --config "${OSRM_CONFIG}" -v
 
       # Save compiler cache
 

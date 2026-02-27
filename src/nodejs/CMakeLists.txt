@@ -48,6 +48,7 @@ install(
   TARGETS ${TARGETS}
   DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib/binding_napi_v${NAPI_VERSION}"
   COMPONENT node_osrm
+  EXCLUDE_FROM_ALL
   RUNTIME_DEPENDENCIES
     PRE_EXCLUDE_REGEXES
         [[api-ms-win-.*]]
@@ -77,10 +78,12 @@ install(
   FILES "index.js"
   DESTINATION "${OSRM_NODEJS_INSTALL_DIR}/lib"
   COMPONENT node_osrm
+  EXCLUDE_FROM_ALL
 )
 
 install(
   FILES "${PROJECT_SOURCE_DIR}/package.json"
   DESTINATION "${OSRM_NODEJS_INSTALL_DIR}"
   COMPONENT node_osrm
+  EXCLUDE_FROM_ALL
 )
