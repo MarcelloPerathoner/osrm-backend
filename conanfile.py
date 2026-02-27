@@ -18,6 +18,10 @@ BUILD_ROOT = "build"
 `Release` and `Debug` subdirectories of this directory. """
 
 
+class Data:
+    pass
+
+
 class OsrmGenericBlock:
     # Everything here is copied verbatim into the toolchain file
     template = textwrap.dedent(
@@ -134,8 +138,9 @@ class OsrmConan(ConanFile):
                 self.options["boost"].shared = True
                 self.options["onetbb"].shared = True
 
-        self.cache_variables = {}
-        self.generator = None
+        self.data = Data()
+        self.data.cache_variables = {}
+        self.data.generator = None
 
         # if `decode_matrix.py` output a `/CMakePresets.json`, copy the `cacheVariables`
         # section
@@ -144,14 +149,14 @@ class OsrmConan(ConanFile):
             with open(cmake_presets, "r") as fp:
                 js = json.loads(fp.read())
                 preset = js["configurePresets"][0]
-                self.cache_variables.update(preset.get("cacheVariables", {}))
-                self.generator = preset.get("generator")
-                self.build_folder = preset.get("binaryDir")
+                self.data.cache_variables.update(preset.get("cacheVariables", {}))
+                self.data.generator = preset.get("generator")
+                self.data.binary_dir = preset.get("binaryDir")
         except IOError:
             pass
 
         if self.options.generator != None:  # noqa: E711
-            self.generator = str(self.options.generator)
+            self.data.generator = str(self.options.generator)
 
     def generate(self):
         def cache(env_name, cmake_name, option):
@@ -169,8 +174,8 @@ class OsrmConan(ConanFile):
                     os.environ.get(name).lower() in boolean_true_expressions
                 )
 
-        tc = CMakeToolchain(self, generator=self.generator)
-        tc.cache_variables.update(self.cache_variables)
+        tc = CMakeToolchain(self, generator=self.data.generator)
+        tc.cache_variables.update(self.data.cache_variables)
 
         # CAVEAT: MISNOMER! cache_variables end up in CMakePresets.json
         # and must be recalled with `cmake --preset conan-release`
@@ -224,7 +229,9 @@ class OsrmConan(ConanFile):
             build_preset = configure_preset
             test_preset = configure_preset
 
-            if platform.system() == "Windows" or is_multi_configuration(self.generator):
+            if platform.system() == "Windows" or is_multi_configuration(
+                self.data.generator
+            ):
                 configure_preset = "conan-default"
 
             fp.write(f"CMAKE_CONFIGURE_PRESET_NAME={configure_preset}\n")
@@ -239,7 +246,7 @@ class OsrmConan(ConanFile):
         tc.generate()
 
     def layout(self):
-        cmake_layout(self, build_folder=BUILD_ROOT, generator=self.generator)
+        cmake_layout(self, build_folder=BUILD_ROOT, generator=self.data.generator)
 
     def build(self):
         cmake = CMake(self)
