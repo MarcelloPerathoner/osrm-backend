@@ -1,5 +1,5 @@
 ---
-name: "Install Conan"
+name: 'Install Conan'
 description: |
   Runs conan install and caches dependencies.
 
@@ -53,27 +53,31 @@ runs:
     - name: Debug Conan environment
       shell: bash
       run: |
+        echo "::group::ls ${CONAN_GENERATORS_DIR}"
+        ls "${CONAN_GENERATORS_DIR}"
+        echo "::endgroup::"
+
+        echo "::group::cat ${CONAN_GENERATORS_DIR}/conan_toolchain.cmake"
+        cat "${CONAN_GENERATORS_DIR}/conan_toolchain.cmake"
+        echo "::endgroup::"
+
+        echo "::group::cat ${CONAN_GENERATORS_DIR}/CMakePresets.json"
+        cat "${CONAN_GENERATORS_DIR}/CMakePresets.json"
+        echo "::endgroup::"
+
+        echo "::group::cat CMakeUserPresets.json"
+        cat "CMakePresets.json"
+        echo "::endgroup::"
+
         echo "::group::cat build/conan.env"
         cat build/conan.env
         echo "::endgroup::"
 
-        echo "::group::ls"
-        ls "${CONAN_GENERATORS_DIR}"
-        echo "::endgroup::"
-
-        echo "::group::cat conan_toolchain.cmake"
-        cat "${CONAN_GENERATORS_DIR}/conan_toolchain.cmake"
-        echo "::endgroup::"
-
-        echo "::group::cat CMakePresets.json"
-        cat "${CONAN_GENERATORS_DIR}/CMakePresets.json"
-        echo "::endgroup::"
-
-        echo "::group::cat conan-build-env.sh"
+        echo "::group::cat build/conan-build-env.sh"
         cat "build/conan-build-env.sh"
         echo "::endgroup::"
 
-        echo "::group::cat conan-run-env.sh"
+        echo "::group::cat build/conan-run-env.sh"
         cat "build/conan-run-env.sh"
         echo "::endgroup::"
 

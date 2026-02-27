@@ -18,6 +18,7 @@ The build must work with most of these combinations:
 | home     | Linux   | Conan   | Make    | clang    | static | Release |
 | github   | macOS   | apt-get | Ninja   | gcc      | shared | Debug   |
 |          | Windows |         | MSBuild | msvc     |        |         |
+|          |         |         | Xcode   |          |        |         |
 
 ### Communication between build stages
 

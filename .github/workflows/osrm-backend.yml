@@ -338,11 +338,12 @@ jobs:
       - name: Cmake configure
         run: |
           cmake --preset ${CMAKE_CONFIGURE_PRESET_NAME}
-          cat build/osrm-run.env >> $GITHUB_ENV
+          cat build/osrm-build.env >> $GITHUB_ENV
 
       - name: Build core
         run: |
           cmake --build --preset ${CMAKE_BUILD_PRESET_NAME}
+
       - name: Build unit tests
         if: env.BUILD_UNIT_TESTS == 'ON'
         run: |
@@ -361,6 +362,8 @@ jobs:
       - name: Debug build
         if: always()
         run: |
+          cat build/osrm-build.env >> $GITHUB_ENV
+
           echo "::group::ls ${OSRM_BUILD_DIR}"
           ls -al ${OSRM_BUILD_DIR}
           echo "::endgroup::"

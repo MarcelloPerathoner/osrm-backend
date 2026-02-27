@@ -81,7 +81,13 @@ def in_job_name(needle, value, default=None):
     return value if needle in haystack else default
 
 
-def get(d, key, default=None):
+def put(d, key, value):
+    """Puts a value into a dict."""
+    if value is not None:
+        d[key] = value
+
+
+def from_matrix(d, key, default=None):
     """Get a value from the job matrix with default."""
     if key in matrix:
         d[key] = matrix[key]
@@ -94,36 +100,36 @@ def get(d, key, default=None):
 
 # fmt: off
 # encoded in job name
-envs["OSRM_CONFIG"]         = in_job_name("debug",  "Debug", "Release")
-envs["ENABLE_CONAN"]        = in_job_name("conan",  "ON")
-cdefs["BUILD_SHARED_LIBS"]  = in_job_name("shared", "ON")
-cdefs["BUILD_NODE_PACKAGE"] = in_job_name("node",   "ON")
-cdefs["ENABLE_TIDY"]        = in_job_name("tidy",   "ON")
-cdefs["ENABLE_COVERAGE"]    = in_job_name("cov",    "ON")
-cdefs["ENABLE_ASAN"]        = in_job_name("asan",   "ON")
-cdefs["ENABLE_UBSAN"]       = in_job_name("ubsan",  "ON")
-cdefs["CMAKE_GENERATOR"]    = in_job_name("ninja",  "Ninja")
-cdefs["CMAKE_GENERATOR"]    = in_job_name("xcode",  "Xcode")
+put(envs,  "OSRM_CONFIG",        in_job_name("debug",  "Debug", "Release"))
+put(envs,  "ENABLE_CONAN",       in_job_name("conan",  "ON"))
+put(cdefs, "BUILD_SHARED_LIBS",  in_job_name("shared", "ON"))
+put(cdefs, "BUILD_NODE_PACKAGE", in_job_name("node",   "ON"))
+put(cdefs, "ENABLE_TIDY",        in_job_name("tidy",   "ON"))
+put(cdefs, "ENABLE_COVERAGE",    in_job_name("cov",    "ON"))
+put(cdefs, "ENABLE_ASAN",        in_job_name("asan",   "ON"))
+put(cdefs, "ENABLE_UBSAN",       in_job_name("ubsan",  "ON"))
+put(cdefs, "CMAKE_GENERATOR",    in_job_name("ninja",  "Ninja"))
+put(cdefs, "CMAKE_GENERATOR",    in_job_name("xcode",  "Xcode"))
 
 # not in matrix OR user override
-get(cdefs, "CMAKE_GENERATOR")
-get(cdefs, "ENABLE_ASAN")
-get(cdefs, "ENABLE_ASSERTIONS")
-get(cdefs, "ENABLE_CCACHE")
-get(envs,  "ENABLE_CONAN")
-get(cdefs, "ENABLE_COVERAGE")
-get(cdefs, "ENABLE_LTO")
-get(cdefs, "ENABLE_SCCACHE")
-get(cdefs, "ENABLE_TIDY")
-get(cdefs, "ENABLE_UBSAN")
+from_matrix(cdefs, "CMAKE_GENERATOR")
+from_matrix(cdefs, "ENABLE_ASAN")
+from_matrix(cdefs, "ENABLE_ASSERTIONS")
+from_matrix(cdefs, "ENABLE_CCACHE")
+from_matrix(envs,  "ENABLE_CONAN")
+from_matrix(cdefs, "ENABLE_COVERAGE")
+from_matrix(cdefs, "ENABLE_LTO")
+from_matrix(cdefs, "ENABLE_SCCACHE")
+from_matrix(cdefs, "ENABLE_TIDY")
+from_matrix(cdefs, "ENABLE_UBSAN")
 
-get(envs, "NODE_VERSION",       24)
-get(envs, "BUILD_UNIT_TESTS",   "ON")
-get(envs, "BUILD_BENCHMARKS",   "OFF")
-get(envs, "RUN_UNIT_TESTS",     "ON")
-get(envs, "RUN_CUCUMBER_TESTS", "ON")
-get(envs, "RUN_NODE_TESTS",     cdefs.get("BUILD_NODE_PACKAGE"))
-get(envs, "RUN_BENCHMARKS",     "OFF")
+from_matrix(envs, "NODE_VERSION",       24)
+from_matrix(envs, "BUILD_UNIT_TESTS",   "ON")
+from_matrix(envs, "BUILD_BENCHMARKS",   "OFF")
+from_matrix(envs, "RUN_UNIT_TESTS",     "ON")
+from_matrix(envs, "RUN_CUCUMBER_TESTS", "ON")
+from_matrix(envs, "RUN_NODE_TESTS",     cdefs.get("BUILD_NODE_PACKAGE"))
+from_matrix(envs, "RUN_BENCHMARKS",     "OFF")
 
 # fmt: on
 
@@ -182,12 +188,12 @@ if compiler == "gcc":
 
 # fmt: off
 # let the user override our choice using explicit CC, CXX etc.
-get(envs, "CC")
-get(envs, "CFLAGS")
-get(envs, "CXX")
-get(envs, "CXXFLAGS")
-get(envs, "CLANG_TIDY")
-get(envs, "LLVM")
+from_matrix(envs, "CC")
+from_matrix(envs, "CFLAGS")
+from_matrix(envs, "CXX")
+from_matrix(envs, "CXXFLAGS")
+from_matrix(envs, "CLANG_TIDY")
+from_matrix(envs, "LLVM")
 
 cdefs["CMAKE_C_COMPILER"]     = envs.get("CC")
 cdefs["CMAKE_CXX_COMPILER"]   = envs.get("CXX")
