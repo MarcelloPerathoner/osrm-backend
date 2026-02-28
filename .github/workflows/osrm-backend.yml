@@ -318,15 +318,15 @@ jobs:
 
           if [[ "${RUNNER_OS}" == "Linux" ]]; then
             if [[ "$ENABLE_ASAN" == "ON" ]]; then
-              export "LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_LIBRARY_PATH"
+              LD_PRELOAD=$(dirname `clang -print-file-name=libclang_rt.asan-x86_64.so`):$LD_PRELOAD
               echo "ASAN_OPTIONS=log_path=${LOG_DIR}/asan.log:print_suppressions=0:suppressions=${CI_DIR}/addresssanitizer.conf" >> $GITHUB_ENV
               echo "LSAN_OPTIONS=log_path=${LOG_DIR}/lsan.log:print_suppressions=0:suppressions=${CI_DIR}/leaksanitizer.conf" >> $GITHUB_ENV
             fi
             if [[ "$ENABLE_UBSAN" == "ON" ]]; then
-              export "LD_LIBRARY_PATH=$(dirname `clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`):$LD_LIBRARY_PATH"
+              LD_PRELOAD=$(dirname `clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so`):$LD_PRELOAD
               echo "UBSAN_OPTIONS=log_path=${LOG_DIR}/ubsan.log:symbolize=1:halt_on_error=1:print_stacktrace=1:suppressions=${CI_DIR}/undefinedsanitizer.conf" >> $GITHUB_ENV
             fi
-            echo "LD_LIBRARY_PATH=$LD_LIBRARY_PATH" >> $GITHUB_ENV
+            echo "LD_PRELOAD=$LD_PRELOAD" >> $GITHUB_ENV
           fi
 
           echo "::group::PATH"
@@ -334,6 +334,7 @@ jobs:
           echo LIBRARY_PATH=${LIBRARY_PATH}
           echo LD_LIBRARY_PATH=${LD_LIBRARY_PATH}
           echo DYLD_LIBRARY_PATH=${DYLD_LIBRARY_PATH}
+          echo LD_PRELOAD=${LD_PRELOAD}
           echo "::endgroup::"
 
       - name: Cmake configure

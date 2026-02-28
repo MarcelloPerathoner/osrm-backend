@@ -286,54 +286,71 @@ if(ENABLE_COVERAGE)
 endif()
 
 if(ENABLE_ASAN)
-  set(ASAN_FLAGS "-shared-libasan -fsanitize=address -fsanitize-address-use-after-scope")
+  set(SANITIZER_CXX_FLAGS    "-fsanitize=address -shared-libasan -fsanitize-address-use-after-scope")
+  set(SANITIZER_LINKER_FLAGS "-fsanitize=address")
   execute_process(
     COMMAND clang -print-file-name=libclang_rt.asan-x86_64.so
-    OUTPUT_VARIABLE MAYBE_SANITIZER_LIBRARY
+    OUTPUT_VARIABLE TMP
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  list(APPEND SANITIZER_LD_PRELOAD "${TMP}")
+  cmake_path(GET TMP PARENT_PATH TMP)
+  list(APPEND SANITIZER_LIBDIRS "${TMP}")
 endif()
 
 if(ENABLE_TSAN)
-  set(TSAN_FLAGS "-fsanitize=thread")
+  set(SANITIZER_CXX_FLAGS    "${SANITIZER_CXX_FLAGS}    -fsanitize=thread")
+  set(SANITIZER_LINKER_FLAGS "${SANITIZER_LINKER_FLAGS} -fsanitize=thread")
   execute_process(
     COMMAND clang -print-file-name=libclang_rt.tsan-x86_64.so
-    OUTPUT_VARIABLE MAYBE_SANITIZER_LIBRARY
+    OUTPUT_VARIABLE TMP
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  list(APPEND SANITIZER_LD_PRELOAD "${TMP}")
+  cmake_path(GET TMP PARENT_PATH TMP)
+  list(APPEND SANITIZER_LIBDIRS "${TMP}")
 endif()
 
 if(ENABLE_UBSAN)
-  set(UBSAN_FLAGS "-fsanitize=undefined")
+  set(SANITIZER_CXX_FLAGS    "${SANITIZER_CXX_FLAGS}    -fsanitize=undefined")
+  set(SANITIZER_LINKER_FLAGS "${SANITIZER_LINKER_FLAGS} -fsanitize=undefined")
   execute_process(
     COMMAND clang -print-file-name=libclang_rt.ubsan_standalone-x86_64.so
-    OUTPUT_VARIABLE MAYBE_SANITIZER_LIBRARY
+    OUTPUT_VARIABLE TMP
     OUTPUT_STRIP_TRAILING_WHITESPACE
   )
+  list(APPEND SANITIZER_LD_PRELOAD "${TMP}")
+  cmake_path(GET TMP PARENT_PATH TMP)
+  list(APPEND SANITIZER_LIBDIRS "${TMP}")
 endif()
 
 if(ENABLE_ASAN OR ENABLE_TSAN OR ENABLE_UBSAN)
-  set(SANITIZER_FLAGS "-g ${ASAN_FLAGS} ${TSAN_FLAGS} ${UBSAN_FLAGS} -fno-omit-frame-pointer")
+  set(SANITIZER_CXX_FLAGS "-g ${SANITIZER_CXX_FLAGS} -fno-omit-frame-pointer")
+  list(REMOVE_DUPLICATES SANITIZER_LIBDIRS)
 
-  set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} ${SANITIZER_FLAGS}")
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${SANITIZER_FLAGS}")
-  set(OSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${SANITIZER_FLAGS}")
-  set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} ${SANITIZER_FLAGS}")
-  set(CMAKE_SHARED_LINKER_FLAGS "${CMAKE_SHARED_LINKER_FLAGS} ${SANITIZER_FLAGS}")
+  set(CMAKE_CXX_FLAGS "${SANITIZER_CXX_FLAGS} ${CMAKE_CXX_FLAGS}")
+  set(CMAKE_C_FLAGS   "${SANITIZER_CXX_FLAGS} ${CMAKE_C_FLAGS}")
+  set(CMAKE_EXE_LINKER_FLAGS    "${SANITIZER_LINKER_FLAGS} ${CMAKE_EXE_LINKER_FLAGS}")
+  set(CMAKE_SHARED_LINKER_FLAGS "${SANITIZER_LINKER_FLAGS} ${CMAKE_SHARED_LINKER_FLAGS}")
 endif()
 
 # Configuring compilers
 include(cmake/warnings.cmake)
 if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fPIC -fcolor-diagnostics -ftemplate-depth=1024")
+  set(EXTRA_FLAGS "-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 -fPIC -fcolor-diagnostics -ftemplate-depth=1024")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_FLAGS}")
+  set(CMAKE_C_FLAGS   "${CMAKE_C_FLAGS}   ${EXTRA_FLAGS}")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-  set(COLOR_FLAG "-fdiagnostics-color=auto")
+  # using GCC
   check_cxx_compiler_flag("-fdiagnostics-color=auto" HAS_COLOR_FLAG)
-  if(NOT HAS_COLOR_FLAG)
+  if(HAS_COLOR_FLAG)
+    set(COLOR_FLAG "-fdiagnostics-color=auto")
+  else()
     set(COLOR_FLAG "")
   endif()
-  # using GCC
-  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 ${COLOR_FLAG} -fPIC -ftemplate-depth=1024")
+  set(EXTRA_FLAGS "-U_FORTIFY_SOURCE -D_FORTIFY_SOURCE=2 ${COLOR_FLAG} -fPIC -ftemplate-depth=1024")
+  set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${EXTRA_FLAGS}")
+  set(CMAKE_C_FLAGS   "${CMAKE_CXX_FLAGS} ${EXTRA_FLAGS}")
 elseif(CMAKE_CXX_COMPILER_ID MATCHES "Intel")
   # using Intel C++
   set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -static-intel -wd10237 -Wall -ipo -fPIC")
@@ -665,7 +682,7 @@ install(
         [[^/lib.*]]
         [[^/usr/lib.*]]
     # defined in conan_toolchain.cmake
-    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS}" "${MAYBE_SANITIZER_LIBRARY}"
+    DIRECTORIES "${CONAN_RUNTIME_LIB_DIRS}" "${SANITIZER_LIBDIRS}"
   RUNTIME COMPONENT applications
   LIBRARY COMPONENT libraries
   # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
@@ -698,7 +715,7 @@ if(BUILD_PACKAGE)
   endfunction()
 
   JOIN("${OSRM_DEFINES}" " " TMP_OSRM_DEFINES)
-  set(LibOSRM_CXXFLAGS "${OSRM_CXXFLAGS} ${TMP_OSRM_DEFINES}")
+  set(LibOSRM_CXXFLAGS "${SANITIZER_FLAGS} ${TMP_OSRM_DEFINES}")
   set(LibOSRM_LDFLAGS "${OSRM_LDFLAGS}")
 
   if(BUILD_AS_SUBPROJECT)
@@ -808,6 +825,7 @@ push_env("CMAKE_BINARY_DIR" "${CMAKE_BINARY_DIR}")
 push_env("PROJECT_SOURCE_DIR" "${PROJECT_SOURCE_DIR}")
 push_env("USE_CCACHE" "${USE_CCACHE}")
 push_env("EXE" "${CMAKE_EXECUTABLE_SUFFIX}")
+push_env("SANITIZER_LD_PRELOAD" ${SANITIZER_LD_PRELOAD})
 
 message(STATUS "-----------------------")
 message(STATUS "Build System is:        ${CMAKE_SYSTEM_NAME}")
@@ -840,5 +858,3 @@ endif()
 message(STATUS "OSRM_TEST_DATA_DIR is:        $ENV{OSRM_TEST_DATA_DIR}")
 message(STATUS "CMAKE_INSTALL_PREFIX is:      ${CMAKE_INSTALL_PREFIX}")
 message(STATUS "-----------------------------")
-message(STATUS "RT_ASAN_LIB is:               ${RT_ASAN_LIB}")
-message(STATUS "RT_ASAN_DIR is:               ${RT_ASAN_DIR}")
