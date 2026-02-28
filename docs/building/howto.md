@@ -78,7 +78,7 @@ Install dependencies:
 ::: code-group
 
 ```bash [Linux]
-sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
+sudo apt-get install -y libxml2-dev libbz2-dev libzstd-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
 ```
 
 ```bash [macOS]

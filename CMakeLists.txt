@@ -197,7 +197,7 @@ if(EXISTS "${OSRM_BUILD_DIR}/compile_commands.json")
 endif()
 
 include(CheckCXXCompilerFlag)
-include(FindPackageHandleStandardArgs)
+# include(FindPackageHandleStandardArgs)
 include(GNUInstallDirs)
 
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
@@ -445,6 +445,18 @@ endif()
 # Third-party libraries
 #
 
+# node_osrm is a dynamic library
+# all code linked into a dynamic library needs -fPIC
+# static libbost*.a libraries on debian are compiled without -fPIC
+# tldr: we cannot use static libbost libraries
+
+# if (NOT BUILD_SHARED_LIBS)
+#   set(CMAKE_FIND_LIBRARY_SUFFIXES ".a" ".so") # prefer static libs
+#   set(ZLIB_USE_STATIC_LIBS ON)
+#   set(Boost_USE_STATIC_LIBS ON)
+#   set(Boost_USE_STATIC_RUNTIME OFF)
+# endif()
+
 message(STATUS "CMAKE_PREFIX_PATH=${CMAKE_PREFIX_PATH}")
 
 set(RAPIDJSON_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/rapidjson/include")
@@ -475,13 +487,6 @@ set(FMT_INCLUDE_DIR "${CMAKE_CURRENT_SOURCE_DIR}/third_party/fmt/include")
 add_compile_definitions(FMT_HEADER_ONLY)
 include_directories(SYSTEM ${FMT_INCLUDE_DIR})
 
-# set(CMAKE_THREAD_LIBS_INIT "-lpthread")
-# set(CMAKE_HAVE_THREADS_LIBRARY 1)
-# set(CMAKE_USE_WIN32_THREADS_INIT 0)
-# set(CMAKE_USE_PTHREADS_INIT 1)
-# set(THREADS_PREFER_PTHREAD_FLAG ON)
-# find_package(Threads)
-
 set(BOOST_COMPONENTS date_time iostreams program_options thread unit_test_framework)
 
 set(Boost_VERBOSE ON)
@@ -490,23 +495,14 @@ find_package(BZip2 REQUIRED)
 find_package(EXPAT REQUIRED)
 find_package(Lua 5.2 REQUIRED)
 find_package(TBB REQUIRED)
+find_package(ZLIB REQUIRED)
 
-if(USE_CONAN)
-  # Note: prefer zlib from system, the same as nodejs will use
-  find_path(ZLIB_H "zlib.h" PATHS "/usr/include" NO_DEFAULT_PATH)
-endif()
-if(NOT ZLIB_H)
-  find_package(ZLIB REQUIRED)
-  add_dependency_includes(${ZLIB_INCLUDE_DIRS})
-endif()
-
-# Note: prefer expat and bzip2 from Conan
-# Osmium depends on expat and bzip2
 add_dependency_includes(${Boost_INCLUDE_DIRS})
 add_dependency_includes(${TBB_INCLUDE_DIRS})
 add_dependency_includes(${BZIP2_INCLUDE_DIR})
 add_dependency_includes(${EXPAT_INCLUDE_DIRS})
 add_dependency_includes(${LUA_INCLUDE_DIR})
+add_dependency_includes(${ZLIB_INCLUDE_DIRS})
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/third_party/libosmium/cmake")
 if(NOT OSMIUM_INCLUDE_DIR)
@@ -554,6 +550,12 @@ set(EXTRACTOR_LIBRARIES
 
 set(ENGINE_LIBRARIES
     ${MAYBE_SOCKET_LIBRARIES})
+
+list(REMOVE_DUPLICATES COMMON_LIBRARIES)
+list(REMOVE_DUPLICATES EXTRACTOR_LIBRARIES)
+
+message(STATUS "****************** common libraries: ${COMMON_LIBRARIES}")
+message(STATUS "****************** extractor libraries: ${EXTRACTOR_LIBRARIES}")
 
 set (ALL_BINARIES_STEMS "components;contract;customize;datastore;extract;partition;routed")
 set (ALL_LIBRARIES_STEMS "contract;customize;extract;partition;routed;store;update;utils")
@@ -619,18 +621,6 @@ target_link_libraries(osrm-routed       osrm_routed    osrm_utils)
 # target_compile_definitions(UTIL PRIVATE osrm_utils_EXPORTS)
 # end build shared libs on Windows
 
-# Add RPATH info to executables so that when they are run after being installed
-# (i.e., from /usr/local/bin/) the linker can find library dependencies. For
-# more info see https://gitlab.kitware.com/cmake/community/-/wikis/doc/cmake/RPATH-handling
-# set_property(TARGET osrm-components   PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-contract     PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-customize    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-datastore    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-extract      PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-io-benchmark PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-partition    PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-# set_property(TARGET osrm-routed       PROPERTY INSTALL_RPATH_USE_LINK_PATH TRUE)
-
 ### install ###
 
 file(GLOB FlatbuffersGlob third_party/flatbuffers/include/flatbuffers/*.h)
@@ -664,6 +654,18 @@ foreach(lib ${ALL_LIBRARIES_STEMS})
   list(APPEND ALL_LIBRARIES "osrm_${lib}")
 endforeach()
 
+
+if($ENV{ALPINE})
+# RUNTIME_DEPENDENCIES does not work on Alpine because of their bogus ldconfig
+# all dependencies are supposed to be system dependencies anyway
+install(
+  TARGETS ${ALL_BINARIES} ${ALL_LIBRARIES}
+  RUNTIME COMPONENT applications
+  LIBRARY COMPONENT libraries
+  # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
+  FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}"
+)
+else()
 install(
   TARGETS ${ALL_BINARIES} ${ALL_LIBRARIES}
   RUNTIME_DEPENDENCIES
@@ -695,6 +697,7 @@ install(
   # https://gitlab.kitware.com/cmake/cmake/-/issues/25122
   FRAMEWORK DESTINATION "${CMAKE_INSTALL_LIBDIR}"
 )
+endif()
 
 # Install profiles and support library to /usr/local/share/osrm/profiles by default
 install(DIRECTORY profiles DESTINATION "${CMAKE_INSTALL_DATADIR}/osrm" COMPONENT data)

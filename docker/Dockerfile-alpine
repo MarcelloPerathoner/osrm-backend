@@ -10,7 +10,7 @@ RUN apk update && \
 
 ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2
 ENV MIMALLOC_LARGE_OS_PAGES=1
-
+ENV ALPINE=ON
 
 FROM alpine-mimalloc AS builder
 ARG DOCKER_TAG
@@ -33,21 +33,24 @@ RUN mkdir -p /src /opt && \
 COPY . /src
 WORKDIR /src
 
+# cmake install failing with "Failed to run ldconfig"
+# See: https://discourse.cmake.org/t/cmake-test-suite-failing-on-alpine-linux/5064
+
 RUN NPROC=${BUILD_CONCURRENCY:-$(nproc)} && \
     echo "Building OSRM ${DOCKER_TAG}" && \
     git show --format="%H" | head -n1 > /opt/OSRM_GITSHA && \
     echo "Building OSRM gitsha $(cat /opt/OSRM_GITSHA)" && \
+    /usr/sbin/ldconfig --help && \
     mkdir -p build && \
-    cd build && \
     CMAKE_BUILD_TYPE="Release" && \
     ENABLE_ASSERTIONS="Off" && \
     case ${DOCKER_TAG} in *"-debug"*) CMAKE_BUILD_TYPE="Debug";; esac && \
     case ${DOCKER_TAG} in *"-assertions"*) CMAKE_BUILD_TYPE="RelWithDebInfo" && ENABLE_ASSERTIONS="On";; esac && \
     echo "Building ${CMAKE_BUILD_TYPE} with ENABLE_ASSERTIONS=${ENABLE_ASSERTIONS}" && \
-    cmake .. -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS} -DENABLE_LTO=OFF && \
-    make -j${NPROC} install && \
-    cd ../profiles && \
-    cp -r * /opt && \
+    cmake -B build -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS} -DENABLE_LTO=OFF && \
+    cmake --build build -j && \
+    cmake --install build && \
+    cp -r profiles/* /opt && \
     strip /usr/local/bin/* && \
     rm -rf /src
 

@@ -289,7 +289,7 @@ jobs:
           # Install dev dependencies the traditional way
           case "${RUNNER_OS}" in
             Linux)
-              sudo apt-get install -y libbz2-dev libxml2-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
+              sudo apt-get install -y libxml2-dev libbz2-dev libzstd-dev libzip-dev liblua5.2-dev libtbb-dev libboost-all-dev
             ;;
             macOS)
               brew install libzip lua tbb boost
