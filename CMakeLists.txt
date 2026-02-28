@@ -37,6 +37,8 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 project(OSRM C CXX)
 
+set(CMAKE_VERBOSE_MAKEFILE ON)
+
 # use ccache/sccache if available
 if(ENABLE_CCACHE)
   set(USE_CCACHE "ccache")
