@@ -562,17 +562,18 @@ set (ALL_LIBRARIES_STEMS "contract;customize;extract;partition;routed;store;upda
 
 # Libraries
 
+# used by all binaries
 add_library(osrm_utils ${UtilGlob} ${StorageGlob} ${UpdaterGlob} ${MicrotarGlob})
 
-# used by one tool only, thus static
-add_library(osrm_contract  STATIC ${ContractorGlob})
-add_library(osrm_customize STATIC ${CustomizerGlob})
-add_library(osrm_extract   STATIC ${ExtractorGlob} ${GuidanceGlob})
-add_library(osrm_partition STATIC ${PartitionerGlob})
-add_library(osrm_routed    STATIC ${EngineGlob} ${ServerGlob})
-# deprecated, kept only for compatibility
-add_library(osrm_store     STATIC ${StorageGlob})
-add_library(osrm_update    STATIC ${UpdaterGlob})
+# used by one binary only
+add_library(osrm_contract  ${ContractorGlob})
+add_library(osrm_customize ${CustomizerGlob})
+add_library(osrm_extract   ${ExtractorGlob} ${GuidanceGlob})
+add_library(osrm_partition ${PartitionerGlob})
+add_library(osrm_routed    ${EngineGlob} ${ServerGlob})
+# used by none, deprecated, kept only for compatibility
+add_library(osrm_store     ${StorageGlob})
+add_library(osrm_update    ${UpdaterGlob})
 
 set_target_properties(osrm_routed PROPERTIES OUTPUT_NAME "osrm")
 # ALIAS targets with :: provide compile-time safety: typos error at configure time, not link time

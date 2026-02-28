@@ -33,14 +33,10 @@ RUN mkdir -p /src /opt && \
 COPY . /src
 WORKDIR /src
 
-# cmake install failing with "Failed to run ldconfig"
-# See: https://discourse.cmake.org/t/cmake-test-suite-failing-on-alpine-linux/5064
-
 RUN NPROC=${BUILD_CONCURRENCY:-$(nproc)} && \
     echo "Building OSRM ${DOCKER_TAG}" && \
     git show --format="%H" | head -n1 > /opt/OSRM_GITSHA && \
     echo "Building OSRM gitsha $(cat /opt/OSRM_GITSHA)" && \
-    /usr/sbin/ldconfig --help && \
     mkdir -p build && \
     CMAKE_BUILD_TYPE="Release" && \
     ENABLE_ASSERTIONS="Off" && \
