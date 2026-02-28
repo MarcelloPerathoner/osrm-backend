@@ -3,6 +3,7 @@ include (CheckCCompilerFlag)
 
 # Try to add -Wflag if compiler supports it (GCC/Clang)
 macro (add_warning flag)
+  if(NOT MSVC)
     string(REPLACE "-" "_" underscored_flag ${flag})
     string(REPLACE "+" "x" underscored_flag ${underscored_flag})
 
@@ -20,6 +21,7 @@ macro (add_warning flag)
     else()
         message(STATUS "Flag -W${flag} is unsupported")
     endif()
+  endif()
 endmacro()
 
 # MSVC warning management macros
@@ -61,6 +63,7 @@ endmacro ()
 
 # The same but only for specified target.
 macro (target_add_warning target flag)
+  if(NOT MSVC)
     string (REPLACE "-" "_" underscored_flag ${flag})
     string (REPLACE "+" "x" underscored_flag ${underscored_flag})
 
@@ -71,6 +74,7 @@ macro (target_add_warning target flag)
     else ()
         message (STATUS "Flag -W${flag} is unsupported")
     endif ()
+  endif()
 endmacro ()
 
 macro (target_no_warning target flag)

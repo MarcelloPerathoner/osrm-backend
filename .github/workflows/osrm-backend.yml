@@ -417,7 +417,7 @@ jobs:
           key: ${{ steps.cache-sccache-restore.outputs.cache-primary-key }}
 
       - name: Show SCCache statistics
-        if: env.ENABLE_SCCACHE == 'ON'
+        if: always() && env.ENABLE_SCCACHE == 'ON'
         run: |
           sccache --show-stats
           echo "::group::show log file"

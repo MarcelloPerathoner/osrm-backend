@@ -197,7 +197,7 @@ if(EXISTS "${OSRM_BUILD_DIR}/compile_commands.json")
 endif()
 
 include(CheckCXXCompilerFlag)
-# include(FindPackageHandleStandardArgs)
+include(FindPackageHandleStandardArgs)
 include(GNUInstallDirs)
 
 include_directories(BEFORE ${CMAKE_CURRENT_BINARY_DIR}/include/)
@@ -554,9 +554,6 @@ set(ENGINE_LIBRARIES
 list(REMOVE_DUPLICATES COMMON_LIBRARIES)
 list(REMOVE_DUPLICATES EXTRACTOR_LIBRARIES)
 
-message(STATUS "****************** common libraries: ${COMMON_LIBRARIES}")
-message(STATUS "****************** extractor libraries: ${EXTRACTOR_LIBRARIES}")
-
 set (ALL_BINARIES_STEMS "components;contract;customize;datastore;extract;partition;routed")
 set (ALL_LIBRARIES_STEMS "contract;customize;extract;partition;routed;store;update;utils")
 
@@ -586,8 +583,14 @@ if(CMAKE_CXX_COMPILER_ID STREQUAL "GNU")
 endif()
 
 target_link_libraries(osrm_utils   ${COMMON_LIBRARIES} ${BOOST_PROGRAM_OPTIONS_LIBRARIES})
-target_link_libraries(osrm_extract ${EXTRACTOR_LIBRARIES})
-target_link_libraries(osrm_routed  ${ENGINE_LIBRARIES})
+
+target_link_libraries(osrm_contract  osrm_utils)
+target_link_libraries(osrm_customize osrm_utils)
+target_link_libraries(osrm_extract   osrm_utils ${EXTRACTOR_LIBRARIES})
+target_link_libraries(osrm_partition osrm_utils)
+target_link_libraries(osrm_routed    osrm_utils ${ENGINE_LIBRARIES})
+target_link_libraries(osrm_store     osrm_utils)
+target_link_libraries(osrm_update    osrm_utils)
 
 # Binaries
 add_executable(osrm-components   src/tools/components.cpp)
@@ -599,15 +602,14 @@ add_executable(osrm-io-benchmark src/tools/io-benchmark.cpp)
 add_executable(osrm-partition    src/tools/partition.cpp)
 add_executable(osrm-routed       src/tools/routed.cpp)
 
-# link order matters!
-target_link_libraries(osrm-components                  osrm_utils)
-target_link_libraries(osrm-contract     osrm_contract  osrm_utils)
-target_link_libraries(osrm-customize    osrm_customize osrm_utils)
-target_link_libraries(osrm-datastore                   osrm_utils)
-target_link_libraries(osrm-extract      osrm_extract   osrm_utils)
-target_link_libraries(osrm-io-benchmark                osrm_utils)
-target_link_libraries(osrm-partition    osrm_partition osrm_utils)
-target_link_libraries(osrm-routed       osrm_routed    osrm_utils)
+target_link_libraries(osrm-components   osrm_utils)
+target_link_libraries(osrm-contract     osrm_contract)
+target_link_libraries(osrm-customize    osrm_customize)
+target_link_libraries(osrm-datastore    osrm_utils)
+target_link_libraries(osrm-extract      osrm_extract)
+target_link_libraries(osrm-io-benchmark osrm_utils)
+target_link_libraries(osrm-partition    osrm_partition)
+target_link_libraries(osrm-routed       osrm_routed)
 
 # to build a shared osrm_utils lib on Windows
 #
