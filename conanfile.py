@@ -112,7 +112,7 @@ class OsrmConan(ConanFile):
                 self.output.info(f"scope={scope}: {line}")
 
     def requirements(self):
-        self.requires("boost/1.88.0")
+        self.requires("boost/1.90.0")
         self.requires("bzip2/1.0.8")
         self.requires("expat/2.6.2")
         self.requires("lua/5.4.6")
