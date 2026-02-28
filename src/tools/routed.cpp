@@ -376,7 +376,6 @@ try
         std::thread server_thread(std::move(server_task));
 
 #ifndef _WIN32
-        util::Log() << "running and waiting for requests";
         if (std::getenv("SIGNAL_PARENT_WHEN_READY"))
         {
             kill(getppid(), SIGUSR1);
@@ -387,7 +386,6 @@ try
         // Set console control handler to allow server to be stopped.
         console_ctrl_function = std::bind(&server::Server::Stop, routing_server);
         SetConsoleCtrlHandler(console_ctrl_handler, TRUE);
-        util::Log() << "running and waiting for requests";
         routing_server->Run();
 #endif
         util::Log() << "initiating shutdown";
@@ -411,27 +409,15 @@ try
     routing_server.reset();
     util::Log() << "shutdown completed";
 }
-catch (const osrm::RuntimeError &e)
-{
-    util::Log(logERROR) << e.what();
-    return e.GetCode();
-}
-catch (const util::exception &e)
-{
-    util::Log(logERROR) << e.what();
-    return EXIT_FAILURE;
-}
 catch (const std::bad_alloc &e)
 {
     util::DumpMemoryStats();
-    util::Log(logWARNING) << "[exception] " << e.what();
-    util::Log(logWARNING) << "Please provide more memory or consider using a larger swapfile";
+    util::Log(logERROR) << e.what();
+    util::Log(logERROR) << "Please provide more memory or consider using a larger swapfile";
     return EXIT_FAILURE;
 }
-#ifdef _WIN32
 catch (const std::exception &e)
 {
-    util::Log(logERROR) << "[exception] " << e.what();
+    util::Log(logERROR) << e.what();
     return EXIT_FAILURE;
 }
-#endif

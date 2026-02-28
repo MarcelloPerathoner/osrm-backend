@@ -15,7 +15,7 @@
     "docs": "./scripts/build_api_docs.sh",
     "docs:dev": "vitepress dev docs",
     "install": "node-pre-gyp install --fallback-to-build=false || ./scripts/node_install.sh",
-    "nodejs-tests": "make -C test/data && ./lib/binding_napi_v8/osrm-datastore test/data/ch/monaco.osrm && node test/nodejs/index.js | faucet",
+    "nodejs-tests": "make -C test/data && build/nodejs/bin/osrm-datastore test/data/ch/monaco.osrm && node test/nodejs/index.js | faucet",
     "prepare": "husky"
   },
   "repository": {
@@ -41,8 +41,8 @@
     "ansi-escape-sequences": "6.2.4",
     "chalk": "^5.6.2",
     "cheap-ruler": "^4.0.0",
-    "command-line-args": "6.0.1",
-    "command-line-usage": "7.0.3",
+    "command-line-args": "^6.0.1",
+    "command-line-usage": "^7.0.3",
     "csv-stringify": "^6.6.0",
     "d3-queue": "3.0.7",
     "eslint": "^10.0.0",

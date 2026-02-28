@@ -3,6 +3,7 @@ include (CheckCCompilerFlag)
 
 # Try to add -Wflag if compiler supports it (GCC/Clang)
 macro (add_warning flag)
+  if(NOT MSVC)
     string(REPLACE "-" "_" underscored_flag ${flag})
     string(REPLACE "+" "x" underscored_flag ${underscored_flag})
 
@@ -20,6 +21,7 @@ macro (add_warning flag)
     else()
         message(STATUS "Flag -W${flag} is unsupported")
     endif()
+  endif()
 endmacro()
 
 # MSVC warning management macros
@@ -61,6 +63,7 @@ endmacro ()
 
 # The same but only for specified target.
 macro (target_add_warning target flag)
+  if(NOT MSVC)
     string (REPLACE "-" "_" underscored_flag ${flag})
     string (REPLACE "+" "x" underscored_flag ${underscored_flag})
 
@@ -71,19 +74,24 @@ macro (target_add_warning target flag)
     else ()
         message (STATUS "Flag -W${flag} is unsupported")
     endif ()
+  endif()
 endmacro ()
 
 macro (target_no_warning target flag)
     target_add_warning(${target} no-${flag})
 endmacro ()
 
-add_warning(all)
-add_warning(extra)
-add_warning(pedantic)
-add_warning(error) # treat all warnings as errors
-if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
-    add_warning(strict-overflow=1)
+if(MSVC)
+  # Set warning level 3 (default level with reasonable warnings)
+  msvc_warning_level(3)
+  # set(CMAKE_COMPILE_WARNING_AS_ERROR ON)
+else()
+  add_warning(all)
+  add_warning(extra)
+  add_warning(pedantic)
+  add_warning(error) # treat all warnings as errors
 endif()
+
 add_warning(suggest-override)
 add_warning(suggest-destructor-override)
 add_warning(unused)
@@ -114,15 +122,20 @@ no_warning(comma-subscript)
 no_warning(ambiguous-reversed-operator)
 no_warning(restrict)
 no_warning(free-nonheap-object)
+
 if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+  add_warning(strict-overflow=1)
   no_warning(stringop-overflow)
+  # no_warning(uninitialized)
+  no_warning(array-bounds)
+endif()
+
+if(APPLE)
+  no_warning(shorten-64-to-32)
 endif()
 
 # MSVC-specific warning configuration
 if(MSVC)
-  # Set warning level 3 (default level with reasonable warnings)
-  msvc_warning_level(3)
-
   # Disable excessive informational warnings that don't indicate bugs
   msvc_disable_warning(4711)  # Function selected for automatic inline expansion
   msvc_disable_warning(4710)  # Function not inlined
@@ -152,9 +165,14 @@ if(MSVC)
   msvc_disable_warning(4777)  # Format string mismatch
   msvc_disable_warning(5264)  # Variable declared but not used
 
+  # these are flooding the logs
+  msvc_disable_warning(4068)  # Unknown Pragma (pragmas are supposed to be unknown to other compilers!)
+  msvc_disable_warning(4244)  # Data conversion with possible loss
+  msvc_disable_warning(4267)  # Data conversion with possible loss
+
   # KEEP these warnings enabled - they indicate potential bugs:
   # C4365: Signed/unsigned mismatch
-  # C4267: Conversion with possible loss of data
+  # C4267: Data conversion with possible loss
   # C4244: Data conversion with possible loss
   # C4242: Data conversion with possible loss
   # C4458: Declaration hides class member

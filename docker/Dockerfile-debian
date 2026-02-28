@@ -1,6 +1,7 @@
-FROM debian:bookworm-slim AS builder
+FROM debian:trixie-slim AS builder
 ARG DOCKER_TAG
 ARG BUILD_CONCURRENCY
+ARG BOOST_VERSION=1.88
 
 RUN mkdir -p /src /opt && \
     apt-get update && \
@@ -10,7 +11,7 @@ RUN mkdir -p /src /opt && \
         g++ \
         gcc \
         git \
-        libboost1.81-all-dev \
+        libboost${BOOST_VERSION}-all-dev \
         libbz2-dev \
         liblua5.4-dev \
         libtbb-dev \
@@ -30,12 +31,12 @@ RUN NPROC=${BUILD_CONCURRENCY:-$(nproc)} && \
     echo "Building OSRM gitsha $(cat /opt/OSRM_GITSHA)" && \
     mkdir -p build && \
     cd build && \
-    BUILD_TYPE="Release" && \
+    CMAKE_BUILD_TYPE="Release" && \
     ENABLE_ASSERTIONS="Off" && \
-    case ${DOCKER_TAG} in *"-debug"*) BUILD_TYPE="Debug";; esac && \
-    case ${DOCKER_TAG} in *"-assertions"*) BUILD_TYPE="RelWithDebInfo" && ENABLE_ASSERTIONS="On";; esac && \
-    echo "Building ${BUILD_TYPE} with ENABLE_ASSERTIONS=${ENABLE_ASSERTIONS}" && \
-    cmake .. -DCMAKE_BUILD_TYPE=${BUILD_TYPE} -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS} -DENABLE_LTO=On && \
+    case ${DOCKER_TAG} in *"-debug"*) CMAKE_BUILD_TYPE="Debug";; esac && \
+    case ${DOCKER_TAG} in *"-assertions"*) CMAKE_BUILD_TYPE="RelWithDebInfo" && ENABLE_ASSERTIONS="On";; esac && \
+    echo "Building ${CMAKE_BUILD_TYPE} with ENABLE_ASSERTIONS=${ENABLE_ASSERTIONS}" && \
+    cmake .. -DCMAKE_BUILD_TYPE=${CMAKE_BUILD_TYPE} -DENABLE_ASSERTIONS=${ENABLE_ASSERTIONS} -DENABLE_LTO=On && \
     make -j${NPROC} install && \
     cd ../profiles && \
     cp -r * /opt && \
@@ -45,7 +46,8 @@ RUN NPROC=${BUILD_CONCURRENCY:-$(nproc)} && \
 
 # Multistage build to reduce image size - https://docs.docker.com/build/building/multi-stage/#use-multi-stage-builds
 # Only the content below ends up in the image, this helps remove /src from the image (which is large)
-FROM debian:bookworm-slim AS runstage
+FROM debian:trixie-slim AS runstage
+ARG BOOST_VERSION=1.88
 
 COPY --from=builder /usr/local /usr/local
 COPY --from=builder /opt /opt
@@ -53,10 +55,10 @@ COPY --from=builder /opt /opt
 RUN apt-get update && \
     apt-get install -y --no-install-recommends --no-install-suggests \
         expat \
-        libboost-date-time1.81.0 \
-        libboost-iostreams1.81.0 \
-        libboost-program-options1.81.0 \
-        libboost-thread1.81.0 \
+        libboost-date-time${BOOST_VERSION}.0 \
+        libboost-iostreams${BOOST_VERSION}.0 \
+        libboost-program-options${BOOST_VERSION}.0 \
+        libboost-thread${BOOST_VERSION}.0 \
         liblua5.4-0 \
         libtbb12 && \
     rm -rf /var/lib/apt/lists/* && \
