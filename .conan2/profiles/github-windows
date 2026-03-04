@@ -1,0 +1,2 @@
+# Profile for Windows-runners on github CI
+include(github)

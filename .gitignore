@@ -43,14 +43,20 @@ Thumbs.db
 #######################
 /_build*
 /build/
-/test/data/monaco*.osrm*
 /example/build/
+/test/data/berlin.osm.pbf
 /test/data/monaco.osrm*
 /test/data/ch
 /test/data/mld
+/test/data/tmp
+/test/data/*.osrm.*
 /cmake/postinst
 .gradle/
-CMakeUserPresets.json 
+.conan2/*
+!.conan2/profiles
+.conan2/profiles/default
+!.conan2/global.conf
+CMakeUserPresets.json
 
 # Eclipse related files #
 #########################
@@ -72,17 +78,15 @@ CMakeUserPresets.json
 
 # Compiled Binary Files #
 ####################################
-/osrm-extract
-/osrm-io-benchmark
-/osrm-components
-/osrm-routed
-/osrm-datastore
-/osrm-prepare
-/osrm-unlock-all
-/osrm-cli
-/osrm-check-hsgr
-/osrm-springclean
-/nohup.out
+osrm-components
+osrm-contract
+osrm-customize
+osrm-datastore
+osrm-extract
+osrm-io-benchmark
+osrm-partition
+osrm-routed
+nohup.out
 
 # Sandbox folder #
 ###################
@@ -106,10 +110,6 @@ node_modules
 # local lua debugging file
 ##########################
 debug.lua
-
-# node-osrm artifacts
-##########################
-lib/binding_napi_v8
 
 # documentation related files
 ##########################

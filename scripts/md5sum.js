@@ -8,7 +8,7 @@ const idx = process.argv.indexOf('-c');
 if (idx > -1) {
   const validate_file = process.argv[idx+1];
   if (!process.argv[idx+1]) {
-    console.error('Please pass arg to -c with a path to the data.md5sum file used to validate');
+    console.error('Please pass arg to -c with a path to the *.md5sum file used to validate');
     process.exit(1);
   }
   validate(validate_file);
@@ -17,7 +17,7 @@ if (idx > -1) {
   if (args.length > 0) {
     generate(args);
   } else {
-    console.error('Please pass either a list of files to generate an md5sum for or validate with "-c data.md5sum"');
+    console.error('Please pass either a list of files to generate an md5sum for or validate with "-c *.md5sum"');
     process.exit(1);
   }
 }
@@ -35,7 +35,7 @@ function md5FileSync (filename) {
 
     do {
       bytesRead = fs.readSync(fd, buffer, 0, BUFFER_SIZE);
-      hash.update(buffer.slice(0, bytesRead));
+      hash.update(buffer.subarray(0, bytesRead));
     } while (bytesRead === BUFFER_SIZE);
   } finally {
     fs.closeSync(fd);
@@ -46,50 +46,32 @@ function md5FileSync (filename) {
 
 // Generate MD5 checksums for multiple files and output in standard format
 function generate(files) {
-  files.forEach(function(filename) {
+  files.forEach((filename) => {
     const md5_actual = md5FileSync(filename);
-    console.log(md5_actual,'',filename);
+    console.log(`${md5_actual}  ${filename}`);
   });
 }
 
 // Validate files against checksums stored in a .md5sum file
 function validate(validate_file) {
 
-  const sums = {};
   const lines = fs.readFileSync(validate_file).
     toString().
-    split('\n').
-    filter(function(line) {
-      return line !== '';
-    });
+    trim().
+    split(/[\r\n]+/);
 
   let error = 0;
 
-  lines.forEach(function(line) {
-    const parts = line.split('  ');
-    const filename = parts[1];
-    const md5 = parts[0];
-    sums[filename] = md5;
+  lines.forEach((line) => {
+    const [md5_expected, filename] = line.split('  ');
     const md5_actual = md5FileSync(filename);
-    if (md5_actual !== md5) {
+    if (md5_actual !== md5_expected) {
       error++;
-      console.error(filename + ': FAILED');
+      console.error(`${filename}: FAILED expected ${md5_expected} but got ${md5_actual}`);
     } else {
-      console.log(filename + ': OK');
+      console.log(`${filename}: OK`);
     }
   });
 
-  if (error > 0) {
-    console.error('ms5sum.js WARNING: 1 computed checksum did NOT match');
-    console.error('\nExpected:');
-    lines.forEach(function(line) {
-      const parts = line.split('  ');
-      const filename = parts[1];
-      const md5 = parts[0];
-      console.log(md5 + '  ' + filename);
-    });
-    process.exit(1);
-  } else {
-    process.exit(0);
-  }
+  process.exit(error ? 1 : 0);
 }
