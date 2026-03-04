@@ -181,8 +181,10 @@ unset(_lua_library_names)
 if (LUA_LIBRARY)
     # include the math library for Unix
     if (UNIX AND NOT APPLE AND NOT BEOS)
-        find_library(LUA_MATH_LIBRARY m)
-        set(LUA_LIBRARIES "${LUA_LIBRARY};${LUA_MATH_LIBRARY}")
+        # we include this elsewhere
+        # find_library(LUA_MATH_LIBRARY m)
+        # set(LUA_LIBRARIES "${LUA_LIBRARY};${LUA_MATH_LIBRARY}")
+        set(LUA_LIBRARIES "${LUA_LIBRARY}")
 
         # include dl library for statically-linked Lua library
         get_filename_component(LUA_LIB_EXT ${LUA_LIBRARY} EXT)

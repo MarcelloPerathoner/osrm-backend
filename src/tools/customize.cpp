@@ -110,19 +110,19 @@ return_code parseArguments(int argc,
         return return_code::fail;
     }
 
-    if (option_variables.count("version"))
+    if (option_variables.contains("version"))
     {
         std::cout << OSRM_VERSION << std::endl;
         return return_code::exit;
     }
 
-    if (option_variables.count("help"))
+    if (option_variables.contains("help"))
     {
         std::cout << visible_options;
         return return_code::exit;
     }
 
-    if (option_variables.count("list-inputs"))
+    if (option_variables.contains("list-inputs"))
     {
         customizer::CustomizationConfig config;
         std::set<std::string> seen;
@@ -133,7 +133,7 @@ return_code parseArguments(int argc,
 
     boost::program_options::notify(option_variables);
 
-    if (!option_variables.count("input"))
+    if (!option_variables.contains("input"))
     {
         std::cout << visible_options;
         return return_code::fail;
@@ -183,29 +183,15 @@ try
 
     return exitcode;
 }
-catch (const osrm::RuntimeError &e)
-{
-    util::DumpMemoryStats();
-    util::Log(logERROR) << e.what();
-    return e.GetCode();
-}
-catch (const util::exception &e)
-{
-    util::DumpMemoryStats();
-    util::Log(logERROR) << e.what();
-    return EXIT_FAILURE;
-}
 catch (const std::bad_alloc &e)
 {
     util::DumpMemoryStats();
-    util::Log(logERROR) << "[exception] " << e.what();
+    util::Log(logERROR) << e.what();
     util::Log(logERROR) << "Please provide more memory or consider using a larger swapfile";
     return EXIT_FAILURE;
 }
-#ifdef _WIN32
 catch (const std::exception &e)
 {
-    util::Log(logERROR) << "[exception] " << e.what() << std::endl;
+    util::Log(logERROR) << e.what();
     return EXIT_FAILURE;
 }
-#endif

@@ -10,7 +10,8 @@ RUN apk update && \
 
 ENV LD_PRELOAD=/usr/lib/libmimalloc.so.2
 ENV MIMALLOC_LARGE_OS_PAGES=1
-
+# Alpine needs special treatment for cmake --install
+ENV ALPINE=ON
 
 FROM alpine-mimalloc AS builder
 ARG DOCKER_TAG
