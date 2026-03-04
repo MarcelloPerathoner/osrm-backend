@@ -6,9 +6,6 @@
 #include "util/log.hpp"
 
 #include <boost/algorithm/string/predicate.hpp>
-#include <boost/optional/optional.hpp>
-#include <boost/ref.hpp>
-
 #include <osmium/osm.hpp>
 
 #include <algorithm>
@@ -273,13 +270,13 @@ bool RestrictionParser::ShouldIgnoreRestriction(const std::string &except_tag_st
         }
         else
         {
-            if (restrictions.find(current_string) != restrictions.end())
+            if (restrictions.contains(current_string))
             {
                 return true;
             }
             current_string.clear();
         }
     }
-    return restrictions.find(current_string) != restrictions.end();
+    return restrictions.contains(current_string);
 }
 } // namespace osrm::extractor
