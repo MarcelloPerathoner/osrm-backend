@@ -501,7 +501,7 @@ std::vector<bool> contractGraph(ContractorGraph &graph,
         tbb::parallel_for_each(remaining_nodes,
                                [&](NodeID v)
                                {
-                                   BOOST_ASSERT(node_data.contractible[v]);
+                                   BOOST_ASSERT(node_data.is_contractible[v]);
                                    ContractionStats stats;
                                    ContractNode<true>(graph,
                                                       v,
