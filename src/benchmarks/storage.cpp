@@ -1,3 +1,4 @@
+#include "util/format.hpp"
 #include "util/linear_hash_storage.hpp"
 #include "util/log.hpp"
 #include "util/query_heap.hpp"
@@ -5,7 +6,6 @@
 #include "util/typedefs.hpp"
 
 #include <algorithm>
-#include <format>
 #include <iostream>
 #include <random>
 #include <vector>
@@ -63,7 +63,7 @@ template <class StorageT> auto bench(const size_t num_entries, const size_t num_
     TIMER_STOP(read);
     dont_optimize_away(sum);
 
-    return std::format(
+    return osrm::util::compat::format(
         "{:9.1f} | {:10.1f} |", (0.001 * TIMER_USEC(read)), (0.001 * TIMER_USEC(write)));
 }
 
@@ -72,7 +72,7 @@ int main(int, char **)
     util::LogPolicy::GetInstance().Unmute();
 
     /**
-     * Occupancy of XORFastHash in percent. Performance drops drastically with
+     * Occupancy of LinearHash in percent. Performance drops drastically with
      * high occupancies.
      */
     vector<int> occupancies{50, 75, 90, 95, 99};
