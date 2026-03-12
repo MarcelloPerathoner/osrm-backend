@@ -17,6 +17,33 @@ BOOST_AUTO_TEST_SUITE(graph_contractor)
 
 BOOST_AUTO_TEST_CASE(contract_exclude_graph)
 {
+    {
+        const ContractorGraph g = makeGraph({TestEdge{0, 1, 1}, // start, target, weight
+                                             TestEdge{1, 2, 1}});
+        /*
+         * (0) <--1--> (1)
+         *              ^
+         *              |
+         *              1
+         *              |
+         *              v
+         *             (2)
+         */
+
+        // auto query_graph = g;
+        // contractGraph(query_graph, {{1}, {1}, {1}});
+
+        auto [query_graph, ignore] =
+            contractExcludableGraph(g, {{1}, {1}, {1}}, {{true, true, true}});
+
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 1);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 0);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 1);
+
+        BOOST_CHECK(query_graph.FindEdge(0, 1) != SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(2, 1) != SPECIAL_EDGEID);
+    }
+
     const ContractorGraph g = makeGraph({TestEdge{1, 0, 1}, // start, target, weight
                                          TestEdge{0, 3, 1},
                                          TestEdge{1, 2, 2},
@@ -42,15 +69,15 @@ BOOST_AUTO_TEST_CASE(contract_exclude_graph)
         REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(0), 0);
         BOOST_CHECK(query_graph.FindEdge(0, 1) == SPECIAL_EDGEID);
         BOOST_CHECK(query_graph.FindEdge(0, 3) == SPECIAL_EDGEID);
-        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 1);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(1), 2);
         BOOST_CHECK(query_graph.FindEdge(1, 0) != SPECIAL_EDGEID);
-        BOOST_CHECK(query_graph.FindEdge(1, 2) == SPECIAL_EDGEID);
-        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 2);
-        BOOST_CHECK(query_graph.FindEdge(2, 1) != SPECIAL_EDGEID);
-        BOOST_CHECK(query_graph.FindEdge(2, 3) != SPECIAL_EDGEID);
-        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 1);
+        BOOST_CHECK(query_graph.FindEdge(1, 2) != SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(2), 0);
+        BOOST_CHECK(query_graph.FindEdge(2, 1) == SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(2, 3) == SPECIAL_EDGEID);
+        REQUIRE_SIZE_RANGE(query_graph.GetAdjacentEdgeRange(3), 2);
         BOOST_CHECK(query_graph.FindEdge(3, 0) != SPECIAL_EDGEID);
-        BOOST_CHECK(query_graph.FindEdge(3, 2) == SPECIAL_EDGEID);
+        BOOST_CHECK(query_graph.FindEdge(3, 2) != SPECIAL_EDGEID);
     }
 
     /* Edge 0 is labeled with toll,

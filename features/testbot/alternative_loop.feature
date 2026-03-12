@@ -37,7 +37,7 @@ Feature: Alternative route
 
         Given the node map
             """
-              a b c
+              a b  c
             l       d
             k       e
             j       f
@@ -47,15 +47,15 @@ Feature: Alternative route
         And the nodes
             | node | barrier |
             | i    | bollard |
-            | g    | bollard |
 
         And the ways
-            | nodes         | oneway |
-            | abcdefghijkla | no     |
+            | nodes   | oneway |
+            | abcdefg | no     |
+            | ghijkla | no     |
 
         And the query options
             | alternatives | true |
 
         When I route I should get
-            | from | to | route                       | alternative                 | weight |
-            | e    | k  | abcdefghijkla,abcdefghijkla | abcdefghijkla,abcdefghijkla |    6.8 |
+            | from | to | route           | alternative     | weight |
+            | a    | g  | ghijkla,ghijkla | abcdefg,abcdefg |    6.8 |
