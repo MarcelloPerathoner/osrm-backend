@@ -63,7 +63,8 @@ template <class StorageT> auto bench(const size_t num_entries, const size_t num_
     TIMER_STOP(read);
     dont_optimize_away(sum);
 
-    return format("{:9.1f} | {:10.1f} |", (0.001 * TIMER_USEC(read)), (0.001 * TIMER_USEC(write)));
+    return std::format(
+        "{:9.1f} | {:10.1f} |", (0.001 * TIMER_USEC(read)), (0.001 * TIMER_USEC(write)));
 }
 
 int main(int, char **)
