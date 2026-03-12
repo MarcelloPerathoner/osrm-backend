@@ -149,8 +149,13 @@ template <typename EdgeDataT> class DynamicGraph
 
     DynamicGraph &operator=(const DynamicGraph &other)
     {
-        auto copy_other = other;
-        *this = std::move(other);
+        number_of_nodes = other.number_of_nodes;
+        // atomics can't be moved this is why we need an own constructor
+        number_of_edges = static_cast<std::uint32_t>(other.number_of_edges);
+
+        node_array = other.node_array;
+        edge_list = other.edge_list;
+
         return *this;
     }
 
@@ -410,8 +415,11 @@ template <typename EdgeDataT> class DynamicGraph
 
     void Renumber(const std::vector<NodeID> &old_to_new_node)
     {
+        bool renumber = old_to_new_node.size() != 0;
+
         // permutate everything but the sentinel
-        util::inplacePermutation(node_array.begin(), node_array.end(), old_to_new_node);
+        if (renumber)
+            util::inplacePermutation(node_array.begin(), node_array.end(), old_to_new_node);
 
         // Build up edge permutation
         if (edge_list.size() >= std::numeric_limits<EdgeID>::max())
@@ -427,7 +435,8 @@ template <typename EdgeDataT> class DynamicGraph
             // move all filled edges
             for (auto edge : GetAdjacentEdgeRange(node))
             {
-                edge_list[edge].target = old_to_new_node[edge_list[edge].target];
+                if (renumber)
+                    edge_list[edge].target = old_to_new_node[edge_list[edge].target];
                 BOOST_ASSERT(edge_list[edge].target != SPECIAL_NODEID);
                 old_to_new_edge[edge] = new_edge_index++;
             }
