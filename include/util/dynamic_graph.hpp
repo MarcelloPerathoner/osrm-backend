@@ -415,7 +415,7 @@ template <typename EdgeDataT> class DynamicGraph
 
     void Renumber(const std::vector<NodeID> &old_to_new_node)
     {
-        bool renumber = old_to_new_node.size() == node_array.size();
+        bool renumber = old_to_new_node.size() != 0;
 
         // permutate everything but the sentinel
         if (renumber)

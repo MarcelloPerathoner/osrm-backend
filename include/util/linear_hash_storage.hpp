@@ -41,7 +41,6 @@ class LinearHashStorage
               value(std::numeric_limits<ValueType>::max())
         {
         }
-        HashCell(const HashCell &other) = default;
     };
 
     std::vector<HashCell> cells;
