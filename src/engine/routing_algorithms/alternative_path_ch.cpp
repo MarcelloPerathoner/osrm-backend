@@ -202,6 +202,10 @@ void computeWeightAndSharingOfViaPath(SearchEngineData<Algorithm> &engine_workin
                                        min_edge_offset,
                                        {});
     }
+    // FIXME: quick and dirty fix to make UBSAN happy: integer overflow. This happens
+    // during cucumber tests of alternate routes. I suspect it happens if the top node
+    // of the contraction gets to be a waypoint. Maybe setting 0 weight for invalid
+    // edges would be a better choice?
     if (upper_bound_s_v_path_weight == INVALID_EDGE_WEIGHT ||
         upper_bound_of_v_t_path_weight == INVALID_EDGE_WEIGHT)
         *real_weight_of_via_path = INVALID_EDGE_WEIGHT;
