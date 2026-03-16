@@ -1,42 +1,95 @@
 #include "contractor/graph_contractor.hpp"
 #include "contractor/contracted_edge_container.hpp"
 #include "contractor/contractor_graph.hpp"
+#include "contractor/contractor_heap.hpp"
 #include "contractor/contractor_search.hpp"
 #include "contractor/graph_contractor_adaptors.hpp"
 #include "contractor/query_edge.hpp"
 #include "contractor/query_graph.hpp"
-#include "util/deallocating_vector.hpp"
 #include "util/integer_range.hpp"
 #include "util/log.hpp"
 #include "util/percent.hpp"
-#include "util/timing_util.hpp"
 #include "util/typedefs.hpp"
-#include "util/xor_fast_hash.hpp"
 
 #include <boost/assert.hpp>
 
-#include <tbb/blocked_range.h>
-#include <tbb/enumerable_thread_specific.h>
-#include <tbb/parallel_for.h>
-#include <tbb/parallel_invoke.h>
-#include <tbb/parallel_sort.h>
+#include <oneapi/tbb/blocked_range.h>
+#include <oneapi/tbb/concurrent_priority_queue.h>
+#include <oneapi/tbb/concurrent_vector.h>
+#include <oneapi/tbb/enumerable_thread_specific.h>
+#include <oneapi/tbb/parallel_for.h>
+#include <oneapi/tbb/parallel_for_each.h>
+#include <oneapi/tbb/parallel_invoke.h>
 
 #include <algorithm>
+#include <chrono>
+#include <cstddef>
+#include <iomanip>
 #include <limits>
-#include <memory>
+#include <oneapi/tbb/parallel_sort.h>
 #include <vector>
+
+/**
+The algorithm here implemented is described in the papers:
+
+Contraction Hierarchies: Faster and Simpler Hierarchical Routing in Road Networks
+Robert Geisberger, Peter Sanders, Dominik Schultes, and Daniel Delling
+https://turing.iem.thm.de/routeplanning/hwy/contract.pdf
+
+Parallel Time-Dependent Contraction Hierarchies
+Christian Vetter - July 13, 2009
+https://ae.iti.kit.edu/download/vetter_sa.pdf
+
+Doing More for Less: Cache-Aware Parallel Contraction Hierarchies Preprocessing
+Dennis Luxen and Dennis Schieferdecker
+https://arxiv.org/pdf/1208.2543
+
+tldr:
+
+All nodes in the graph are ordered by a unique "priority". Searches only follow edges
+from lower priority nodes (think tertiary road) to higher priority nodes (think
+motorways). Searches start from both source and target until they meet somewhere in the
+middle.
+
+Node contraction removes all edges going "down" into the node. This does not damage the
+node itself since all searches starting at that node only go "up" anyway. But all paths
+that went through the node before now are interrupted. To make up for this, contraction
+also inserts "shortcuts" around the contracted node: For each pair of immediate
+neighbours of the contracted node a shortcut is inserted iff the way through the node
+was the shortest path between both of them.
+
+The nodes get contracted in order of their priority. Since there will be fewer and fewer
+nodes left to be contracted the shortcuts will cover greater and greater distances.
+After a node is contracted the priorities of all neighbouring nodes are updated.
+
+To parallelize this process: A node is independent if it is far enough removed from
+other independent nodes.  Independent nodes can be contracted in parallel.
+
+This step is repeated until a sufficient percentage of all nodes is contracted.
+
+See: Algorithm 2 in Chapter 4.3 of https://ae.iti.kit.edu/download/vetter_sa.pdf
+
+The overlay graph G' for node v consists of v and all nodes with higher priority than v.
+The core is the set of nodes not yet contracted.
+*/
 
 namespace osrm::contractor
 {
+using CLOCK = std::chrono::high_resolution_clock;
+
+#define TIMER_DECLARE(_X)                                                                          \
+    auto _X##_start = CLOCK::now();                                                                \
+    auto _X##_duration = CLOCK::now() - CLOCK::now();
+#define TIMER_START(_X) _X##_start = CLOCK::now()
+#define TIMER_STOP(_X) _X##_duration = (CLOCK::now() - _X##_start)
+#define TIMER_MSEC(_X)                                                                             \
+    std::setprecision(2)                                                                           \
+        << (0.000001 *                                                                             \
+            std::chrono::duration_cast<std::chrono::nanoseconds>(_X##_duration).count())           \
+        << "ms"
+
 namespace
 {
-struct ContractorThreadData
-{
-    ContractorHeap heap;
-    std::vector<ContractorEdge> inserted_edges;
-    std::vector<NodeID> neighbours;
-    explicit ContractorThreadData(NodeID nodes) : heap(nodes) {}
-};
 
 struct ContractorNodeData
 {
@@ -46,530 +99,435 @@ struct ContractorNodeData
 
     ContractorNodeData(std::size_t number_of_nodes,
                        std::vector<bool> uncontracted_nodes_,
-                       std::vector<bool> contractable_,
-                       std::vector<EdgeWeight> weights_)
-        : is_core(std::move(uncontracted_nodes_)), contractable(std::move(contractable_)),
-          priorities(number_of_nodes), weights(std::move(weights_)), depths(number_of_nodes, 0)
+                       std::vector<bool> contractible_,
+                       const std::vector<bool> &one_way_streets_)
+        : is_core(std::move(uncontracted_nodes_)), is_contractible(std::move(contractible_)),
+          one_way_streets{one_way_streets_}, priorities(number_of_nodes), depths(number_of_nodes, 0)
     {
-        if (contractable.empty())
+        if (is_contractible.empty())
         {
-            contractable.resize(number_of_nodes, true);
+            is_contractible.resize(number_of_nodes, true);
         }
         if (is_core.empty())
         {
             is_core.resize(number_of_nodes, true);
         }
+        if (one_way_streets.size() < number_of_nodes)
+        {
+            one_way_streets.resize(number_of_nodes, false);
+        }
     }
 
-    void Renumber(const std::vector<NodeID> &old_to_new)
-    {
-        tbb::parallel_invoke(
-            [&] { util::inplacePermutation(priorities.begin(), priorities.end(), old_to_new); },
-            [&] { util::inplacePermutation(weights.begin(), weights.end(), old_to_new); },
-            [&] { util::inplacePermutation(is_core.begin(), is_core.end(), old_to_new); },
-            [&] { util::inplacePermutation(contractable.begin(), contractable.end(), old_to_new); },
-            [&] { util::inplacePermutation(depths.begin(), depths.end(), old_to_new); });
-    }
-
+    /** All these are keyed by NodeID */
     std::vector<bool> is_core;
-    std::vector<bool> contractable;
+    std::vector<bool> is_contractible;
+    std::vector<bool> one_way_streets;
     std::vector<NodePriority> priorities;
-    std::vector<EdgeWeight> weights;
     std::vector<NodeDepth> depths;
 };
 
 struct ContractionStats
 {
-    int edges_deleted_count;
-    int edges_added_count;
-    int original_edges_deleted_count;
-    int original_edges_added_count;
-    ContractionStats()
-        : edges_deleted_count(0), edges_added_count(0), original_edges_deleted_count(0),
-          original_edges_added_count(0)
-    {
-    }
+    int edges_deleted_count{};
+    int edges_added_count{};
+    int original_edges_deleted_count{};
+    int original_edges_added_count{};
 };
 
-struct RemainingNodeData
+using ThreadData = tbb::enumerable_thread_specific<ContractorHeap>;
+
+/**
+ * @brief Get all immediate neighbours of a node. Duplicates removed.
+ *
+ * @param graph The graph
+ * @param v The node
+ * @return std::vector<NodeID> The neighbours
+ */
+inline std::vector<NodeID> GetNeighbours(const ContractorGraph &graph, const NodeID v)
 {
-    RemainingNodeData() = default;
-    RemainingNodeData(NodeID id, bool is_independent) : id(id), is_independent(is_independent) {}
-    NodeID id : 31;
-    bool is_independent : 1;
-};
+    auto rg = graph.GetAdjacentEdgeRange(v);
+    std::vector<NodeID> neighbours;
+    neighbours.reserve(rg.size());
 
-struct ThreadDataContainer
-{
-    explicit ThreadDataContainer(int number_of_nodes) : number_of_nodes(number_of_nodes) {}
-
-    inline ContractorThreadData *GetThreadData()
-    {
-        bool exists = false;
-        auto &ref = data.local(exists);
-        if (!exists)
-        {
-            ref = std::make_shared<ContractorThreadData>(number_of_nodes);
-        }
-
-        return ref.get();
-    }
-
-    int number_of_nodes;
-    using EnumerableThreadData =
-        tbb::enumerable_thread_specific<std::shared_ptr<ContractorThreadData>>;
-    EnumerableThreadData data;
-};
-
-// This bias function takes up 22 assembly instructions in total on X86
-inline bool Bias(const util::XORFastHash<> &fast_hash, const NodeID a, const NodeID b)
-{
-    const unsigned short hasha = fast_hash(a);
-    const unsigned short hashb = fast_hash(b);
-
-    // The compiler optimizes that to conditional register flags but without branching
-    // statements!
-    if (hasha != hashb)
-    {
-        return hasha < hashb;
-    }
-    return a < b;
-}
-
-template <bool RUNSIMULATION, typename ContractorGraph>
-void ContractNode(ContractorThreadData *data,
-                  const ContractorGraph &graph,
-                  const NodeID node,
-                  std::vector<EdgeWeight> &node_weights,
-                  const std::vector<bool> &contractable,
-                  ContractionStats *stats = nullptr)
-{
-    auto &heap = data->heap;
-    std::size_t inserted_edges_size = data->inserted_edges.size();
-    std::vector<ContractorEdge> &inserted_edges = data->inserted_edges;
-    constexpr bool SHORTCUT_ARC = true;
-    constexpr bool FORWARD_DIRECTION_ENABLED = true;
-    constexpr bool FORWARD_DIRECTION_DISABLED = false;
-    constexpr bool REVERSE_DIRECTION_ENABLED = true;
-    constexpr bool REVERSE_DIRECTION_DISABLED = false;
-
-    for (auto in_edge : graph.GetAdjacentEdgeRange(node))
-    {
-        const ContractorEdgeData &in_data = graph.GetEdgeData(in_edge);
-        const NodeID source = graph.GetTarget(in_edge);
-        if (source == node)
-            continue;
-
-        if (RUNSIMULATION)
-        {
-            BOOST_ASSERT(stats != nullptr);
-            ++stats->edges_deleted_count;
-            stats->original_edges_deleted_count += in_data.originalEdges;
-        }
-        if (!in_data.backward)
-        {
-            continue;
-        }
-
-        heap.Clear();
-        heap.Insert(source, {0}, ContractorHeapData{});
-        EdgeWeight max_weight = {0};
-        unsigned number_of_targets = 0;
-
-        for (auto out_edge : graph.GetAdjacentEdgeRange(node))
-        {
-            const ContractorEdgeData &out_data = graph.GetEdgeData(out_edge);
-            if (!out_data.forward)
-            {
-                continue;
-            }
-            const NodeID target = graph.GetTarget(out_edge);
-            if (node == target)
-            {
-                continue;
-            }
-
-            const EdgeWeight path_weight = in_data.weight + out_data.weight;
-            if (target == source)
-            {
-                if (path_weight < node_weights[node])
-                {
-                    if (RUNSIMULATION)
-                    {
-                        // make sure to prune better, but keep inserting this loop if it should
-                        // still be the best
-                        // CAREFUL: This only works due to the independent node-setting. This
-                        // guarantees that source is not connected to another node that is
-                        // contracted
-                        node_weights[source] = path_weight + EdgeWeight{1};
-                        BOOST_ASSERT(stats != nullptr);
-                        stats->edges_added_count += 2;
-                        stats->original_edges_added_count +=
-                            2 * (out_data.originalEdges + in_data.originalEdges);
-                    }
-                    else
-                    {
-                        // CAREFUL: This only works due to the independent node-setting. This
-                        // guarantees that source is not connected to another node that is
-                        // contracted
-                        node_weights[source] = path_weight; // make sure to prune better
-                        inserted_edges.emplace_back(source,
-                                                    target,
-                                                    path_weight,
-                                                    in_data.duration + out_data.duration,
-                                                    in_data.distance + out_data.distance,
-                                                    out_data.originalEdges + in_data.originalEdges,
-                                                    node,
-                                                    SHORTCUT_ARC,
-                                                    FORWARD_DIRECTION_ENABLED,
-                                                    REVERSE_DIRECTION_DISABLED);
-
-                        inserted_edges.emplace_back(target,
-                                                    source,
-                                                    path_weight,
-                                                    in_data.duration + out_data.duration,
-                                                    in_data.distance + out_data.distance,
-                                                    out_data.originalEdges + in_data.originalEdges,
-                                                    node,
-                                                    SHORTCUT_ARC,
-                                                    FORWARD_DIRECTION_DISABLED,
-                                                    REVERSE_DIRECTION_ENABLED);
-                    }
-                }
-                continue;
-            }
-            max_weight = std::max(max_weight, path_weight);
-            if (!heap.WasInserted(target))
-            {
-                heap.Insert(target, INVALID_EDGE_WEIGHT, ContractorHeapData{0, true});
-                ++number_of_targets;
-            }
-        }
-
-        if (RUNSIMULATION)
-        {
-            const int constexpr SIMULATION_SEARCH_SPACE_SIZE = 1000;
-            search(heap,
-                   graph,
-                   contractable,
-                   number_of_targets,
-                   SIMULATION_SEARCH_SPACE_SIZE,
-                   max_weight,
-                   node);
-        }
-        else
-        {
-            const int constexpr FULL_SEARCH_SPACE_SIZE = 2000;
-            search(heap,
-                   graph,
-                   contractable,
-                   number_of_targets,
-                   FULL_SEARCH_SPACE_SIZE,
-                   max_weight,
-                   node);
-        }
-        for (auto out_edge : graph.GetAdjacentEdgeRange(node))
-        {
-            const ContractorEdgeData &out_data = graph.GetEdgeData(out_edge);
-            if (!out_data.forward)
-            {
-                continue;
-            }
-            const NodeID target = graph.GetTarget(out_edge);
-            if (target == node)
-                continue;
-
-            const EdgeWeight path_weight = in_data.weight + out_data.weight;
-            const EdgeWeight weight = heap.GetKey(target);
-            if (path_weight < weight)
-            {
-                if (RUNSIMULATION)
-                {
-                    BOOST_ASSERT(stats != nullptr);
-                    stats->edges_added_count += 2;
-                    stats->original_edges_added_count +=
-                        2 * (out_data.originalEdges + in_data.originalEdges);
-                }
-                else
-                {
-                    inserted_edges.emplace_back(source,
-                                                target,
-                                                path_weight,
-                                                in_data.duration + out_data.duration,
-                                                in_data.distance + out_data.distance,
-                                                out_data.originalEdges + in_data.originalEdges,
-                                                node,
-                                                SHORTCUT_ARC,
-                                                FORWARD_DIRECTION_ENABLED,
-                                                REVERSE_DIRECTION_DISABLED);
-
-                    inserted_edges.emplace_back(target,
-                                                source,
-                                                path_weight,
-                                                in_data.duration + out_data.duration,
-                                                in_data.distance + out_data.distance,
-                                                out_data.originalEdges + in_data.originalEdges,
-                                                node,
-                                                SHORTCUT_ARC,
-                                                FORWARD_DIRECTION_DISABLED,
-                                                REVERSE_DIRECTION_ENABLED);
-                }
-            }
-        }
-    }
-
-    // Check For One-Way Streets to decide on the creation of self-loops
-    if (!RUNSIMULATION)
-    {
-        std::size_t iend = inserted_edges.size();
-        for (std::size_t i = inserted_edges_size; i < iend; ++i)
-        {
-            bool found = false;
-            for (std::size_t other = i + 1; other < iend; ++other)
-            {
-                if (inserted_edges[other].source != inserted_edges[i].source)
-                {
-                    continue;
-                }
-                if (inserted_edges[other].target != inserted_edges[i].target)
-                {
-                    continue;
-                }
-                if (inserted_edges[other].data.weight != inserted_edges[i].data.weight)
-                {
-                    continue;
-                }
-                if (inserted_edges[other].data.shortcut != inserted_edges[i].data.shortcut)
-                {
-                    continue;
-                }
-                inserted_edges[other].data.forward |= inserted_edges[i].data.forward;
-                inserted_edges[other].data.backward |= inserted_edges[i].data.backward;
-                found = true;
-                break;
-            }
-            if (!found)
-            {
-                inserted_edges[inserted_edges_size++] = inserted_edges[i];
-            }
-        }
-        inserted_edges.resize(inserted_edges_size);
-    }
-}
-
-void ContractNode(ContractorThreadData *data,
-                  const ContractorGraph &graph,
-                  const NodeID node,
-                  std::vector<EdgeWeight> &node_weights,
-                  const std::vector<bool> &contractable)
-{
-    ContractNode<false>(data, graph, node, node_weights, contractable, nullptr);
-}
-
-ContractionStats SimulateNodeContraction(ContractorThreadData *data,
-                                         const ContractorGraph &graph,
-                                         const NodeID node,
-                                         std::vector<EdgeWeight> &node_weights,
-                                         const std::vector<bool> &contractable)
-{
-    ContractionStats stats;
-    ContractNode<true>(data, graph, node, node_weights, contractable, &stats);
-    return stats;
-}
-
-void RenumberGraph(ContractorGraph &graph, const std::vector<NodeID> &old_to_new)
-{
-    graph.Renumber(old_to_new);
-    // Renumber all shortcut node IDs
-    for (const auto node : util::irange<NodeID>(0, graph.GetNumberOfNodes()))
-    {
-        for (const auto edge : graph.GetAdjacentEdgeRange(node))
-        {
-            auto &data = graph.GetEdgeData(edge);
-            if (data.shortcut)
-            {
-                data.id = old_to_new[data.id];
-            }
-        }
-    }
-}
-
-/* Reorder nodes for better locality during contraction */
-void RenumberData(std::vector<RemainingNodeData> &remaining_nodes,
-                  std::vector<NodeID> &new_to_old_node_id,
-                  ContractorNodeData &node_data,
-                  ContractorGraph &graph)
-{
-    std::vector<NodeID> current_to_new_node_id(graph.GetNumberOfNodes(), SPECIAL_NODEID);
-
-    // we need to make a copy here because we are going to modify it
-    auto to_orig = new_to_old_node_id;
-
-    auto new_node_id = 0u;
-
-    // All remaining nodes get the low IDs
-    for (auto &remaining : remaining_nodes)
-    {
-        auto id = new_node_id++;
-        current_to_new_node_id[remaining.id] = id;
-        new_to_old_node_id[id] = to_orig[remaining.id];
-        remaining.id = id;
-    }
-
-    // Already contracted nodes get the high IDs
-    for (const auto current_id : util::irange<std::size_t>(0, graph.GetNumberOfNodes()))
-    {
-        if (current_to_new_node_id[current_id] == SPECIAL_NODEID)
-        {
-            auto id = new_node_id++;
-            current_to_new_node_id[current_id] = id;
-            new_to_old_node_id[id] = to_orig[current_id];
-        }
-    }
-    BOOST_ASSERT(new_node_id == graph.GetNumberOfNodes());
-
-    node_data.Renumber(current_to_new_node_id);
-    RenumberGraph(graph, current_to_new_node_id);
-}
-
-float EvaluateNodePriority(const ContractionStats &stats,
-                           const ContractorNodeData::NodeDepth node_depth)
-{
-    // Result will contain the priority
-    float result;
-    if (0 == (stats.edges_deleted_count * stats.original_edges_deleted_count))
-    {
-        result = 1.f * node_depth;
-    }
-    else
-    {
-        result =
-            2.f * (((float)stats.edges_added_count) / stats.edges_deleted_count) +
-            4.f * (((float)stats.original_edges_added_count) / stats.original_edges_deleted_count) +
-            1.f * node_depth;
-    }
-    BOOST_ASSERT(result >= 0);
-    return result;
-}
-
-void DeleteIncomingEdges(ContractorThreadData *data, ContractorGraph &graph, const NodeID node)
-{
-    std::vector<NodeID> &neighbours = data->neighbours;
-    neighbours.clear();
-
-    // find all neighbours
-    for (auto e : graph.GetAdjacentEdgeRange(node))
+    for (auto e : rg)
     {
         const NodeID u = graph.GetTarget(e);
-        if (u != node)
+        if (u != v)
         {
             neighbours.push_back(u);
         }
     }
-    // eliminate duplicate entries ( forward + backward edges )
     std::sort(neighbours.begin(), neighbours.end());
-    neighbours.resize(std::unique(neighbours.begin(), neighbours.end()) - neighbours.begin());
-
-    for (const auto i : util::irange<std::size_t>(0, neighbours.size()))
-    {
-        graph.DeleteEdgesTo(neighbours[i], node);
-    }
+    neighbours.erase(std::unique(neighbours.begin(), neighbours.end()), neighbours.end());
+    return neighbours;
 }
 
-bool UpdateNodeNeighbours(ContractorNodeData &node_data,
-                          ContractorThreadData *data,
-                          const ContractorGraph &graph,
-                          const NodeID node)
+#ifdef NOPE
+/**
+ * @brief Get all hop-2 neighbours of a node. Duplicates removed.
+ *
+ * @param graph The graph
+ * @param v The node
+ * @return std::vector<NodeID> The neighbours
+ */
+inline std::vector<NodeID> GetNeighbours2(const ContractorGraph &graph, const NodeID u)
 {
-    std::vector<NodeID> &neighbours = data->neighbours;
-    neighbours.clear();
+    std::vector<NodeID> neighbours;
 
-    // find all neighbours
-    for (auto e : graph.GetAdjacentEdgeRange(node))
+    for (auto eu : graph.GetAdjacentEdgeRange(u))
     {
-        const NodeID u = graph.GetTarget(e);
-        if (u == node)
+        const NodeID v = graph.GetTarget(eu);
+        if (v != u)
         {
-            continue;
-        }
-        neighbours.push_back(u);
-        node_data.depths[u] = std::max(node_data.depths[node] + 1, node_data.depths[u]);
-    }
-    // eliminate duplicate entries ( forward + backward edges )
-    std::sort(neighbours.begin(), neighbours.end());
-    neighbours.resize(std::unique(neighbours.begin(), neighbours.end()) - neighbours.begin());
-
-    // re-evaluate priorities of neighboring nodes
-    for (const NodeID u : neighbours)
-    {
-        if (node_data.contractable[u])
-        {
-            node_data.priorities[u] = EvaluateNodePriority(
-                SimulateNodeContraction(data, graph, u, node_data.weights, node_data.contractable),
-                node_data.depths[u]);
-        }
-    }
-    return true;
-}
-
-bool IsNodeIndependent(const util::XORFastHash<> &hash,
-                       const std::vector<float> &priorities,
-                       const std::vector<NodeID> &new_to_old_node_id,
-                       const ContractorGraph &graph,
-                       ContractorThreadData *const data,
-                       const NodeID node)
-{
-    const float priority = priorities[node];
-
-    std::vector<NodeID> &neighbours = data->neighbours;
-    neighbours.clear();
-
-    for (auto e : graph.GetAdjacentEdgeRange(node))
-    {
-        const NodeID target = graph.GetTarget(e);
-        if (node == target)
-        {
-            continue;
-        }
-        const float target_priority = priorities[target];
-        BOOST_ASSERT(target_priority >= 0);
-        // found a neighbour with lower priority?
-        if (priority > target_priority)
-        {
-            return false;
-        }
-        // tie breaking
-        if (std::abs(priority - target_priority) < std::numeric_limits<float>::epsilon() &&
-            Bias(hash, new_to_old_node_id[node], new_to_old_node_id[target]))
-        {
-            return false;
-        }
-        neighbours.push_back(target);
-    }
-
-    std::sort(neighbours.begin(), neighbours.end());
-    neighbours.resize(std::unique(neighbours.begin(), neighbours.end()) - neighbours.begin());
-
-    // examine all neighbours that are at most 2 hops away
-    for (const NodeID u : neighbours)
-    {
-        for (auto e : graph.GetAdjacentEdgeRange(u))
-        {
-            const NodeID target = graph.GetTarget(e);
-            if (node == target)
+            neighbours.push_back(v);
+            for (auto ev : graph.GetAdjacentEdgeRange(v))
             {
+                const NodeID w = graph.GetTarget(ev);
+                if (w != u)
+                {
+                    neighbours.push_back(w);
+                }
+            }
+        }
+    }
+    std::sort(neighbours.begin(), neighbours.end());
+    neighbours.erase(std::unique(neighbours.begin(), neighbours.end()), neighbours.end());
+    return neighbours;
+}
+#endif
+
+/**
+ * @brief Contract one node or simulate its contraction
+ *
+ * For each pair of neighbours (u, w) if the path u->v->w was the shortest path in the
+ * graph from u to w, a shortcut edge u->w is inserted.
+ *
+ * @tparam RUNSIMULATION
+ * @param graph
+ * @param node the node to contract
+ * @param thread_data
+ * @param node_data
+ * @param inserted_edges output of actual contraction
+ * @param stats output of simulation
+ */
+template <bool RUNSIMULATION>
+void ContractNode(const ContractorGraph &graph,
+                  const NodeID node,
+                  ThreadData &thread_data,
+                  ContractorNodeData &node_data,
+                  tbb::concurrent_vector<ContractorEdge> *inserted_edges,
+                  ContractionStats *stats)
+{
+    if (RUNSIMULATION)
+    {
+        BOOST_ASSERT(stats);
+    }
+    else
+    {
+        BOOST_ASSERT(inserted_edges);
+    }
+    const int SEARCH_SPACE_SIZE = RUNSIMULATION ? 1000 : 2000;
+
+    ContractorHeap &heap = thread_data.local();
+
+    // loop over all incoming edges
+    auto node_edge_range = graph.GetAdjacentEdgeRange(node);
+    for (auto in_edge : node_edge_range)
+    {
+        const NodeID source = graph.GetTarget(in_edge);
+        if (source == node)
+            continue;
+
+        const ContractorEdgeData &s2n_data = graph.GetEdgeData(in_edge);
+        if (RUNSIMULATION)
+        {
+            ++stats->edges_deleted_count;
+            stats->original_edges_deleted_count += s2n_data.originalEdges;
+        }
+
+        if (!s2n_data.backward)
+            continue;
+
+        heap.Clear();
+        unsigned number_of_targets = 0;
+        EdgeWeight max_weight = {0};
+
+        // A note about self-loops
+        //
+        // In a node-based graph going through a loop can only add to travel time, so we
+        // would never consider any path of the form u -> ... -> u. In an edge-based
+        // graph though, where nodes represent road segments, we may want to go u->v->u.
+        // Consider the roads u and v, a route: 1,2,3 and no u-turns allowed at
+        // waypoints:
+        //
+        // B---1---u--3-2--C
+        // |               |
+        // \-------v-------/
+        //
+        // If v gets contracted before u, there will no edge from u to v anymore.  The
+        // condition that no u-turns are allowed at 2 effectively turns u into a one-way
+        // street. 2 will be the end of our search unless we insert a self-loop edge
+        // u->u which gets us back to the start of the road.
+        //
+        // See #2016 #6852 https://github.com/Project-OSRM/osrm-backend/wiki/Graph-representation
+        //
+        // FIXME: the self-loop breaks the CH assumption that searches always go up. Do
+        // we care?
+
+        // insert all targets outgoing from node into query heap, even the start node
+        for (auto out_edge : node_edge_range)
+        {
+            const ContractorEdgeData &n2t_data = graph.GetEdgeData(out_edge);
+            if (!n2t_data.forward)
+                continue;
+            const NodeID target = graph.GetTarget(out_edge);
+            if (target == node) // self-loops from earlier contractions
+                continue;
+
+            if (!heap.WasInserted(target))
+            {
+                heap.Insert(target, INVALID_EDGE_WEIGHT, true);
+                max_weight = std::max(max_weight, s2n_data.weight + n2t_data.weight);
+                ++number_of_targets;
+            }
+        }
+
+        // Look for paths around the node that are shorter than the way through the
+        // node. If we find any we don't have to insert a shortcut.  This is a
+        // one-to-many search.
+        search(heap,
+               graph,
+               source,
+               node_data.is_contractible,
+               number_of_targets,
+               SEARCH_SPACE_SIZE,
+               max_weight,
+               node);
+
+        for (auto n2t_edge : node_edge_range)
+        {
+            const ContractorEdgeData &n2t_data = graph.GetEdgeData(n2t_edge);
+            if (!n2t_data.forward)
+                continue;
+            const NodeID target = graph.GetTarget(n2t_edge);
+            if (target == node)
+                continue;
+
+            const EdgeWeight thru_weight = s2n_data.weight + n2t_data.weight;
+            const EdgeWeight around_weight = heap.GetKey(target);
+
+            // FIXME: this test for oneway feels wrong for the above outlined reasons
+            // that roads can turn into implicit oneways. But removing it flunks
+            // cucumber tests (using distance as metric mangles trip duration).  Maybe
+            // fix the duration calculation and then remove this test.
+            //
+            // if (thru_weight < around_weight)
+            if (thru_weight < around_weight &&
+                (source != target || (source == target && node_data.one_way_streets[target])))
+            {
+                // the way through the node was the shortest: since the node after
+                // contraction is not reachable from source any more we must insert a
+                // shortcut to preserve shortest distances
+                if (RUNSIMULATION)
+                {
+                    const int mult = (target == source) ? 1 : 2;
+                    stats->edges_added_count += mult;
+                    stats->original_edges_added_count +=
+                        mult * (n2t_data.originalEdges + s2n_data.originalEdges);
+                }
+                else
+                {
+                    inserted_edges->emplace_back(source,
+                                                 target,
+                                                 thru_weight,
+                                                 s2n_data.duration + n2t_data.duration,
+                                                 s2n_data.distance + n2t_data.distance,
+                                                 n2t_data.originalEdges + s2n_data.originalEdges,
+                                                 node,
+                                                 true,
+                                                 true,
+                                                 false);
+
+                    if (target != source)
+                        inserted_edges->emplace_back(target,
+                                                     source,
+                                                     thru_weight,
+                                                     s2n_data.duration + n2t_data.duration,
+                                                     s2n_data.distance + n2t_data.distance,
+                                                     n2t_data.originalEdges +
+                                                         s2n_data.originalEdges,
+                                                     node,
+                                                     true,
+                                                     false,
+                                                     true);
+                }
+            }
+        }
+    }
+}
+
+/**
+ * @brief Calculate a node's priority. Lower priority nodes get contracted first.
+ *
+ * Note: This function is metric-agnostic to better accomodate the following
+ * customization phase in which metrics will be added.
+ *
+ * @param stats The statistics obtained from a simulated contraction.
+ * @param node_depth The node's depth.
+ * @return float The priority
+ */
+float EvaluateNodePriority(const ContractionStats &stats,
+                           const ContractorNodeData::NodeDepth node_depth)
+{
+    float priority;
+    if (stats.edges_deleted_count == 0 || stats.original_edges_deleted_count == 0)
+    {
+        priority = 1.f * node_depth;
+    }
+    else
+    {
+        priority =
+            2.f * (((float)stats.edges_added_count) / stats.edges_deleted_count) +
+            4.f * (((float)stats.original_edges_added_count) / stats.original_edges_deleted_count) +
+            1.f * node_depth;
+    }
+    BOOST_ASSERT(priority >= 0);
+    return priority;
+}
+
+/**
+ * @brief Post-process an independent node after contraction
+ *
+ * - Algo 2: Move I to their Level
+ * - delete incoming edges
+ *
+ * Note: all searches go from lower to higher priority nodes, and since an independent
+ * node is the node with the lowest priority in its neighbourhood, there need be no
+ * incoming edges.
+ *
+ * @param graph
+ * @param v
+ * @param node_data
+ */
+void PostprocessNode(ContractorGraph &graph, const NodeID v, ContractorNodeData &node_data)
+{
+    ContractorNodeData::NodeDepth depth = node_data.depths[v] + 1;
+    for (const NodeID u : GetNeighbours(graph, v))
+    {
+        node_data.depths[u] = std::max(depth, node_data.depths[u]);
+        graph.DeleteEdgesTo(u, v);
+    }
+}
+
+/**
+ * @brief Inserts the edges produced by node contraction into the graph.
+ *
+ * - Algo 2: Insert E into Remaining graph
+ *
+ * Alas edge insertion is not thread-safe even for "independent" nodes (but edge erasure
+ * curiously is!). If the graph ever gets fixed to be thread-safe, this function can use
+ * parallel execution too.
+ *
+ * @param graph
+ * @param inserted_edges
+ */
+
+void InsertEdges(ContractorGraph &graph,
+                 const tbb::concurrent_vector<ContractorEdge> &inserted_edges)
+{
+    // static std::mutex mutex;
+    for (const ContractorEdge &edge : inserted_edges)
+    {
+        const EdgeID current_edge_ID = graph.FindEdge(edge.source, edge.target);
+        if (current_edge_ID != SPECIAL_EDGEID)
+        {
+            // found edge in graph ...
+            auto &current_data = graph.GetEdgeData(current_edge_ID);
+            if (current_data.shortcut && edge.data.forward == current_data.forward &&
+                edge.data.backward == current_data.backward)
+            {
+                // ... but found edge has smaller weight, update it.
+                if (edge.data.weight < current_data.weight)
+                {
+                    current_data = edge.data;
+                }
+                // ... so don't insert a duplicate.
                 continue;
             }
-            const float target_priority = priorities[target];
-            BOOST_ASSERT(target_priority >= 0);
-            // found a neighbour with lower priority?
-            if (priority > target_priority)
-            {
-                return false;
-            }
-            // tie breaking
-            if (std::abs(priority - target_priority) < std::numeric_limits<float>::epsilon() &&
-                Bias(hash, new_to_old_node_id[node], new_to_old_node_id[target]))
+        }
+        // std::scoped_lock lock(mutex);
+        graph.InsertEdge(edge.source, edge.target, edge.data);
+    }
+}
+
+/**
+ * @brief Recalculate the priorities of all neighbouring nodes.
+ *
+ * @param graph
+ * @param v The node id
+ * @param data
+ * @param node_data
+ */
+void UpdateNeighbourPriorities(const ContractorGraph &graph,
+                               const NodeID v,
+                               ContractorNodeData &node_data,
+                               ThreadData &thread_data)
+{
+    for (const NodeID u : GetNeighbours(graph, v))
+    {
+        if (node_data.is_contractible[u])
+        {
+            ContractionStats stats;
+            ContractNode<true>(graph, u, thread_data, node_data, nullptr, &stats);
+            node_data.priorities[u] = EvaluateNodePriority(stats, node_data.depths[u]);
+        }
+    }
+}
+
+/**
+ * @brief Test if a node is independent.
+ *
+ * Two independent nodes can be contracted in parallel without influencing each other.
+ *
+ * A node is independent if there is no node with a lower priority less than 3 hops away
+ * from it. (In case of equal priorities the node id is used as tie breaker.) The
+ * next-nearest independent node must be at least 3 hops away: they can be processed at
+ * the same time because all their neighbours are distinct.
+ *
+ * @param graph
+ * @param v the node to test
+ * @param priorities
+ * @return bool true if the node is independent.
+ */
+bool IsNodeIndependent(const ContractorGraph &graph,
+                       const NodeID v,
+                       const std::vector<float> &priorities)
+{
+    const float priority = priorities[v];
+    BOOST_ASSERT(priority >= 0);
+
+    for (const NodeID hop1 : GetNeighbours(graph, v))
+    {
+        // 1 hop away
+        const float hop1_priority = priorities[hop1];
+        BOOST_ASSERT(hop1_priority >= 0);
+
+        if (hop1_priority < priority || (hop1_priority == priority && hop1 < v))
+        {
+            return false;
+        }
+
+        for (auto e : graph.GetAdjacentEdgeRange(hop1))
+        {
+            // 2 hops away
+            const NodeID hop2 = graph.GetTarget(e);
+            // it is cheaper to evaluate a node twice than to do an expensive test here
+            if (hop2 == v)
+                continue;
+            const float hop2_priority = priorities[hop2];
+            BOOST_ASSERT(hop2_priority >= 0);
+
+            if (hop2_priority < priority || (hop2_priority == priority && hop2 < v))
             {
                 return false;
             }
@@ -577,220 +535,180 @@ bool IsNodeIndependent(const util::XORFastHash<> &hash,
     }
     return true;
 }
+
 } // namespace
 
+/**
+ * @brief Contract the graph
+ *
+ * See: Algorithm 2 in Chapter 4.3 of https://ae.iti.kit.edu/download/vetter_sa.pdf
+ *
+ * @param graph
+ * @param node_is_uncontracted_
+ * @param node_is_contractible_
+ * @param edge_weights_
+ * @param core_factor
+ * @return std::vector<bool>
+ */
 std::vector<bool> contractGraph(ContractorGraph &graph,
                                 std::vector<bool> node_is_uncontracted_,
-                                std::vector<bool> node_is_contractable_,
-                                std::vector<EdgeWeight> node_weights_,
+                                std::vector<bool> node_is_contractible_,
+                                const std::vector<bool> &one_way_streets,
                                 double core_factor)
 {
-    BOOST_ASSERT(node_weights_.size() == graph.GetNumberOfNodes());
-    util::XORFastHash<> fast_hash;
+    /** A heap kept in thread-local storage to avoid multiple recreations of it. */
+    ContractorHeap heap_exemplar(8000);
+    ThreadData thread_data(heap_exemplar);
+    /** Nodes still waiting for contraction. Not all of them will be contracted though. */
+    tbb::concurrent_vector<NodeID> remaining_nodes;
 
-    // for the preperation we can use a big grain size, which is much faster (probably cache)
-    const constexpr size_t PQGrainSize = 100000;
-    // auto_partitioner will automatically increase the blocksize if we have
-    // a lot of data. It is *important* for the last loop iterations
-    // (which have a very small dataset) that it is devisible.
-    const constexpr size_t IndependentGrainSize = 1;
-    const constexpr size_t ContractGrainSize = 1;
-    const constexpr size_t NeighboursGrainSize = 1;
-    const constexpr size_t DeleteGrainSize = 1;
+    std::size_t number_of_contracted_nodes = 0;
 
-    const NodeID number_of_nodes = graph.GetNumberOfNodes();
+    const unsigned int number_of_nodes = graph.GetNumberOfNodes();
 
-    ThreadDataContainer thread_data_list(number_of_nodes);
-
-    NodeID number_of_contracted_nodes = 0;
-    std::vector<NodeID> new_to_old_node_id(number_of_nodes);
-    // Fill the map with an identiy mapping
-    std::iota(new_to_old_node_id.begin(), new_to_old_node_id.end(), 0);
-
-    ContractorNodeData node_data{graph.GetNumberOfNodes(),
+    ContractorNodeData node_data{number_of_nodes,
                                  std::move(node_is_uncontracted_),
-                                 std::move(node_is_contractable_),
-                                 std::move(node_weights_)};
+                                 std::move(node_is_contractible_),
+                                 one_way_streets};
 
-    std::vector<RemainingNodeData> remaining_nodes;
-    remaining_nodes.reserve(number_of_nodes);
-    for (auto node : util::irange<NodeID>(0, number_of_nodes))
-    {
-        if (node_data.is_core[node])
-        {
-            if (node_data.contractable[node])
-            {
-                remaining_nodes.emplace_back(node, false);
-            }
-            else
-            {
-                node_data.priorities[node] =
-                    std::numeric_limits<ContractorNodeData::NodePriority>::max();
-            }
-        }
-        else
-        {
-            node_data.priorities[node] = 0;
-        }
-    }
+    TIMER_DECLARE(init_priorities);
+    TIMER_DECLARE(contract);
+    TIMER_DECLARE(post_process);
+    TIMER_DECLARE(insert_edges);
+    TIMER_DECLARE(update_priorities);
+    TIMER_DECLARE(update_core);
+    TIMER_DECLARE(adjust_remaining);
+    TIMER_DECLARE(renumber);
 
-    {
-        util::UnbufferedLog log;
-        log << "initializing node priorities...";
-        tbb::parallel_for(
-            tbb::blocked_range<std::size_t>(0, remaining_nodes.size(), PQGrainSize),
-            [&](const auto &range)
-            {
-                ContractorThreadData *data = thread_data_list.GetThreadData();
-                for (auto x = range.begin(), end = range.end(); x != end; ++x)
-                {
-                    auto node = remaining_nodes[x].id;
-                    BOOST_ASSERT(node_data.contractable[node]);
-                    node_data.priorities[node] = EvaluateNodePriority(
-                        SimulateNodeContraction(
-                            data, graph, node, node_data.weights, node_data.contractable),
-                        node_data.depths[node]);
-                }
-            });
-        log << " ok.";
-    }
+    // Update Priorities of all Nodes with Simulated Contractions
+    util::Log() << "initializing node priorities...";
+    TIMER_START(init_priorities);
+    tbb::parallel_for(NodeID{0},
+                      NodeID{number_of_nodes},
+                      [&](const NodeID v)
+                      {
+                          if (node_data.is_core[v] && node_data.is_contractible[v])
+                          {
+                              remaining_nodes.emplace_back(v);
+                              ContractionStats stats;
+                              ContractNode<true>(graph, v, thread_data, node_data, nullptr, &stats);
+                              node_data.priorities[v] =
+                                  EvaluateNodePriority(stats, node_data.depths[v]);
+                          }
+                          else
+                          {
+                              node_data.priorities[v] =
+                                  std::numeric_limits<ContractorNodeData::NodePriority>::max();
+                          }
+                      });
+    TIMER_STOP(init_priorities);
 
     auto number_of_core_nodes = std::max<std::size_t>(0, (1 - core_factor) * number_of_nodes);
     auto number_of_nodes_to_contract = remaining_nodes.size() - number_of_core_nodes;
-    util::Log() << "preprocessing " << number_of_nodes_to_contract << " ("
+    util::Log() << "will contract " << number_of_nodes_to_contract << " ("
                 << (number_of_nodes_to_contract / (float)number_of_nodes * 100.) << "%) nodes...";
+    util::Log() << "will leave " << number_of_core_nodes << " core nodes ("
+                << (number_of_core_nodes / (float)number_of_nodes * 100.) << "%) nodes...";
 
     util::UnbufferedLog log;
     util::Percent p(log, remaining_nodes.size());
 
-    const util::XORFastHash<> hash;
-
-    std::size_t next_renumbering = number_of_nodes * 0.35;
+    // Algo 2: while Remaining Graph not Empty
+    //
+    // contract a chunk of nodes until enough nodes are contracted
     while (remaining_nodes.size() > number_of_core_nodes)
     {
-        if (remaining_nodes.size() < next_renumbering)
-        {
-            RenumberData(remaining_nodes, new_to_old_node_id, node_data, graph);
-            log << "[renumbered]";
-            // only one renumbering for now
-            next_renumbering = 0;
-        }
+        /** List of discovered independent nodes */
+        tbb::concurrent_vector<NodeID> independent_nodes;
+        /** List of new edges to insert into the graph */
+        tbb::concurrent_vector<ContractorEdge> inserted_edges;
 
-        tbb::parallel_for(
-            tbb::blocked_range<NodeID>(0, remaining_nodes.size(), IndependentGrainSize),
-            [&](const auto &range)
+        TIMER_START(contract);
+        tbb::parallel_for_each(
+            remaining_nodes,
+            [&](NodeID &v)
             {
-                ContractorThreadData *data = thread_data_list.GetThreadData();
-                // determine independent node set
-                for (auto i = range.begin(), end = range.end(); i != end; ++i)
+                // Algo 2: I ← Independent Node Set
+                //
+                // push the discovered independent nodes into
+                // `independent_nodes` and mark them for deletion from
+                // `remaining_nodes`
+                if (IsNodeIndependent(graph, v, node_data.priorities))
                 {
-                    const NodeID node = remaining_nodes[i].id;
-                    remaining_nodes[i].is_independent = IsNodeIndependent(
-                        hash, node_data.priorities, new_to_old_node_id, graph, data, node);
+                    independent_nodes.emplace_back(v);
+
+                    // Algo 2: E ← Necessary Shortcuts
+                    //
+                    // contract all independent nodes
+                    // since all nodes are independent the order does not matter
+                    ContractNode<false>(graph, v, thread_data, node_data, &inserted_edges, nullptr);
+                    v = SPECIAL_NODEID; // mark for removal
                 }
             });
+        TIMER_STOP(contract);
 
-        // sort all remaining nodes to the beginning of the sequence
-        const auto begin_independent_nodes = std::stable_partition(
-            remaining_nodes.begin(),
-            remaining_nodes.end(),
-            [](RemainingNodeData node_data) { return !node_data.is_independent; });
-        auto begin_independent_nodes_idx =
-            std::distance(remaining_nodes.begin(), begin_independent_nodes);
-        auto end_independent_nodes_idx = remaining_nodes.size();
+        if (independent_nodes.size() == 0)
+            // safety exit
+            break;
 
-        // contract independent nodes
-        tbb::parallel_for(
-            tbb::blocked_range<NodeID>(
-                begin_independent_nodes_idx, end_independent_nodes_idx, ContractGrainSize),
-            [&](const auto &range)
-            {
-                ContractorThreadData *data = thread_data_list.GetThreadData();
-                for (auto position = range.begin(), end = range.end(); position != end; ++position)
-                {
-                    const NodeID node = remaining_nodes[position].id;
-                    ContractNode(data, graph, node, node_data.weights, node_data.contractable);
-                }
-            });
+        // We cannot incorporate this into the loop above because the graph search done
+        // during `ContractNode()` may well intrude upon other nodes' zones of
+        // "independence". *The graph cannot change while searches are done.*
+        TIMER_START(post_process);
+        tbb::parallel_for_each(independent_nodes,
+                               [&](const NodeID v)
+                               {
+                                   // Algo 2: Move I to their Level
+                                   // and delete incoming edges
+                                   PostprocessNode(graph, v, node_data);
+                               });
+        TIMER_STOP(post_process);
 
+        // Algo 2: Insert E into Remaining graph
+        TIMER_START(insert_edges);
+        tbb::parallel_sort(inserted_edges);
+        InsertEdges(graph, inserted_edges);
+        TIMER_STOP(insert_edges);
+
+        // Algo 2: Update Priority of Neighbors of I with Simulated Contractions
+        // This again searches the graph, so graph updates cannot happen at the same time.
+        TIMER_START(update_priorities);
+        tbb::parallel_for_each(independent_nodes,
+                               [&](const NodeID v)
+                               { UpdateNeighbourPriorities(graph, v, node_data, thread_data); });
+        TIMER_STOP(update_priorities);
+
+        // core graph: the high(est) priority nodes
         // core flags need to be set in serial since vector<bool> is not thread safe
-        for (auto position :
-             util::irange<std::size_t>(begin_independent_nodes_idx, end_independent_nodes_idx))
-        {
-            node_data.is_core[remaining_nodes[position].id] = false;
-        }
+        TIMER_START(update_core);
+        for (const NodeID v : independent_nodes)
+            node_data.is_core[v] = false;
+        TIMER_STOP(update_core);
 
-        tbb::parallel_for(
-            tbb::blocked_range<NodeID>(
-                begin_independent_nodes_idx, end_independent_nodes_idx, DeleteGrainSize),
-            [&](const auto &range)
-            {
-                ContractorThreadData *data = thread_data_list.GetThreadData();
-                for (auto position = range.begin(), end = range.end(); position != end; ++position)
-                {
-                    const NodeID node = remaining_nodes[position].id;
-                    DeleteIncomingEdges(data, graph, node);
-                }
-            });
+        // adjust remaining_nodes
+        TIMER_START(adjust_remaining);
+        const auto new_end =
+            std::remove(remaining_nodes.begin(), remaining_nodes.end(), SPECIAL_NODEID);
+        remaining_nodes.resize(std::distance(remaining_nodes.begin(), new_end));
+        TIMER_STOP(adjust_remaining);
 
-        // make sure we really sort each block
-        tbb::parallel_for(thread_data_list.data.range(),
-                          [&](const auto &range)
-                          {
-                              for (auto &data : range)
-                                  tbb::parallel_sort(data->inserted_edges.begin(),
-                                                     data->inserted_edges.end());
-                          });
-
-        // insert new edges
-        for (auto &data : thread_data_list.data)
-        {
-            for (const ContractorEdge &edge : data->inserted_edges)
-            {
-                const EdgeID current_edge_ID = graph.FindEdge(edge.source, edge.target);
-                if (current_edge_ID != SPECIAL_EDGEID)
-                {
-                    auto &current_data = graph.GetEdgeData(current_edge_ID);
-                    if (current_data.shortcut && edge.data.forward == current_data.forward &&
-                        edge.data.backward == current_data.backward)
-                    {
-                        // found a duplicate edge with smaller weight, update it.
-                        if (edge.data.weight < current_data.weight)
-                        {
-                            current_data = edge.data;
-                        }
-                        // don't insert duplicates
-                        continue;
-                    }
-                }
-                graph.InsertEdge(edge.source, edge.target, edge.data);
-            }
-            data->inserted_edges.clear();
-        }
-
-        tbb::parallel_for(
-            tbb::blocked_range<NodeID>(
-                begin_independent_nodes_idx, end_independent_nodes_idx, NeighboursGrainSize),
-            [&](const auto &range)
-            {
-                ContractorThreadData *data = thread_data_list.GetThreadData();
-                for (auto position = range.begin(), end = range.end(); position != end; ++position)
-                {
-                    NodeID node = remaining_nodes[position].id;
-                    UpdateNodeNeighbours(node_data, data, graph, node);
-                }
-            });
-
-        // remove contracted nodes from the pool
-        BOOST_ASSERT(end_independent_nodes_idx - begin_independent_nodes_idx > 0);
-        number_of_contracted_nodes += end_independent_nodes_idx - begin_independent_nodes_idx;
-        remaining_nodes.resize(begin_independent_nodes_idx);
-
+        number_of_contracted_nodes += independent_nodes.size();
         p.PrintStatus(number_of_contracted_nodes);
     }
 
-    node_data.Renumber(new_to_old_node_id);
-    RenumberGraph(graph, new_to_old_node_id);
+    // no permutation happens here but the edge list is compressed
+    TIMER_START(renumber);
+    graph.Renumber(std::vector<NodeID>());
+    TIMER_STOP(renumber);
+
+    util::Log() << "node priorities initialized in " << TIMER_MSEC(init_priorities);
+    util::Log() << "nodes contracted in " << TIMER_MSEC(contract);
+    util::Log() << "nodes post-processed in " << TIMER_MSEC(post_process);
+    util::Log() << "edges inserted in " << TIMER_MSEC(insert_edges);
+    util::Log() << "node priorities updated in " << TIMER_MSEC(update_priorities);
+    util::Log() << "core flags updated in " << TIMER_MSEC(update_core);
+    util::Log() << "adjusted remaining nodes left in " << TIMER_MSEC(adjust_remaining);
+    util::Log() << "graph renumbered in " << TIMER_MSEC(renumber);
 
     return std::move(node_data.is_core);
 }
@@ -798,10 +716,10 @@ std::vector<bool> contractGraph(ContractorGraph &graph,
 using GraphAndFilter = std::tuple<QueryGraph, std::vector<std::vector<bool>>>;
 
 GraphAndFilter contractFullGraph(ContractorGraph contractor_graph,
-                                 std::vector<EdgeWeight> node_weights)
+                                 const std::vector<bool> &one_way_streets)
 {
     auto num_nodes = contractor_graph.GetNumberOfNodes();
-    contractGraph(contractor_graph, std::move(node_weights));
+    contractGraph(contractor_graph, one_way_streets);
 
     auto edges = toEdges<QueryEdge>(std::move(contractor_graph));
     std::vector<bool> edge_filter(edges.size(), true);
@@ -810,14 +728,14 @@ GraphAndFilter contractFullGraph(ContractorGraph contractor_graph,
 }
 
 GraphAndFilter contractExcludableGraph(ContractorGraph contractor_graph_,
-                                       std::vector<EdgeWeight> node_weights,
+                                       const std::vector<bool> &one_way_streets,
                                        const std::vector<std::vector<bool>> &filters)
 {
     if (filters.size() == 1)
     {
         if (std::all_of(filters.front().begin(), filters.front().end(), [](auto v) { return v; }))
         {
-            return contractFullGraph(std::move(contractor_graph_), std::move(node_weights));
+            return contractFullGraph(std::move(contractor_graph_), one_way_streets);
         }
     }
 
@@ -836,12 +754,12 @@ GraphAndFilter contractExcludableGraph(ContractorGraph contractor_graph_,
             }
         }
 
-        // By not contracting all contractable nodes we avoid creating
+        // By not contracting all contractible nodes we avoid creating
         // a very dense core. This increases the overall graph sizes a little bit
         // but increases the final CH quality and contraction speed.
         constexpr float BASE_CORE = 0.9f;
         is_shared_core =
-            contractGraph(contractor_graph, std::move(always_allowed), node_weights, BASE_CORE);
+            contractGraph(contractor_graph, std::move(always_allowed), one_way_streets, BASE_CORE);
 
         // Add all non-core edges to container
         {
@@ -871,7 +789,7 @@ GraphAndFilter contractExcludableGraph(ContractorGraph contractor_graph_,
         auto filtered_core_graph =
             shared_core_graph.Filter([&filter](const NodeID node) { return filter[node]; });
 
-        contractGraph(filtered_core_graph, is_shared_core, is_shared_core, node_weights);
+        contractGraph(filtered_core_graph, is_shared_core, is_shared_core, one_way_streets);
 
         edge_container.Merge(toEdges<QueryEdge>(std::move(filtered_core_graph)));
     }

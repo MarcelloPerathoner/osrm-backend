@@ -25,6 +25,7 @@
 #include "util/typedefs.hpp"
 
 #include <algorithm>
+#include <cstddef>
 #include <cstdint>
 #include <iterator>
 #include <vector>
@@ -55,11 +56,11 @@ int Contractor::Run()
     EdgeID number_of_edge_based_nodes = updater.LoadAndUpdateEdgeExpandedGraph(
         edge_based_edge_list, node_weights, connectivity_checksum);
 
-    // Convert node weights for oneway streets to INVALID_EDGE_WEIGHT
-    for (auto &weight : node_weights)
+    std::vector<bool> one_way_streets(number_of_edge_based_nodes, false);
+    for (std::size_t i = 0; i < number_of_edge_based_nodes; ++i)
     {
-        weight = (from_alias<EdgeWeight::value_type>(weight) & 0x80000000) ? INVALID_EDGE_WEIGHT
-                                                                           : weight;
+        if ((from_alias<EdgeWeight::value_type>(node_weights[i]) & 0x80000000) != 0)
+            one_way_streets[i] = true;
     }
 
     // Contracting the edge-expanded graph
@@ -85,7 +86,7 @@ int Contractor::Run()
     std::vector<std::vector<bool>> cores;
     std::tie(query_graph, edge_filters) =
         contractExcludableGraph(toContractorGraph(number_of_edge_based_nodes, edge_based_edge_list),
-                                std::move(node_weights),
+                                one_way_streets,
                                 node_filters);
     TIMER_STOP(contraction);
     util::Log() << "Contracted graph has " << query_graph.GetNumberOfEdges() << " edges.";
