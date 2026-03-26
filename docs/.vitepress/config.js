@@ -41,15 +41,19 @@ export default defineConfig({
         ]
       },
       {
-        text: 'Testing',
+        text: 'Building from Source',
         items: [
-          { text: 'Cucumber Tests', link: '/cucumber' }
+          { text: 'Tutorial',    link: '/building/tutorial' },
+          { text: 'How-To',      link: '/building/howto' },
+          { text: 'Reference',   link: '/building/reference' },
+          { text: 'In-Depth',    link: '/building/explanation' },
+          { text: 'Windows Dependencies', link: '/windows-deps' }
         ]
       },
       {
-        text: 'Platform Specific',
+        text: 'Testing',
         items: [
-          { text: 'Windows Dependencies', link: '/windows-deps' }
+          { text: 'Cucumber Tests', link: '/cucumber' }
         ]
       }
     ],

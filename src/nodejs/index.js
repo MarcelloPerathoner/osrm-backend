@@ -1,7 +1,7 @@
 // Main OSRM module entry point - loads native binding and exports OSRM class
 import { readFileSync } from 'fs';
 import { fileURLToPath } from 'url';
-import path from 'path';
+import path from 'node:path';
 import { createRequire } from 'module';
 
 // ESM compatibility shims for __dirname and require()

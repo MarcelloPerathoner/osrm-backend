@@ -46,6 +46,7 @@ OSRM provides powerful routing services through both HTTP and Node.js APIs:
 
 ## Documentation
 
+- [Building](./building/index.md) - Building OSRM from source
 - [Developing](./developing.md) - Development guide
 - [Profiles](./profiles.md) - Lua profile configuration
 - [Testing](./testing.md) - Testing guidelines
