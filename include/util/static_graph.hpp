@@ -14,7 +14,6 @@
 #include <boost/assert.hpp>
 
 #include <algorithm>
-#include <type_traits>
 #include <utility>
 #include <vector>
 
@@ -74,14 +73,10 @@ template <> struct SortableEdgeWithData<void>
     }
 
     bool operator<(const SortableEdgeWithData &right) const
-    {
-        return std::tie(source, target) < std::tie(right.source, right.target);
-    }
+    { return std::tie(source, target) < std::tie(right.source, right.target); }
 
     bool operator==(const SortableEdgeWithData &right) const
-    {
-        return std::tie(source, target) == std::tie(right.source, right.target);
-    }
+    { return std::tie(source, target) == std::tie(right.source, right.target); }
 };
 
 template <typename EdgeDataT> struct SortableEdgeWithData : SortableEdgeWithData<void>
@@ -99,15 +94,12 @@ template <typename EdgeDataT> struct SortableEdgeWithData : SortableEdgeWithData
     }
 };
 
-template <typename EntryT, typename OtherEdge>
-EntryT edgeToEntry(const OtherEdge &from, std::true_type)
+template <typename EntryT, typename OtherEdge> EntryT edgeToEntry(const OtherEdge &from)
 {
-    return EntryT{from.target, from.data};
-}
-template <typename EntryT, typename OtherEdge>
-EntryT edgeToEntry(const OtherEdge &from, std::false_type)
-{
-    return EntryT{from.target};
+    if constexpr (traits::HasDataMember<EntryT>)
+        return EntryT{from.target, from.data};
+    else
+        return EntryT{from.target};
 }
 
 } // namespace static_graph_details
@@ -126,9 +118,7 @@ class StaticGraph
     using EdgeArrayEntry = static_graph_details::EdgeArrayEntry<EdgeDataT>;
 
     EdgeRange GetAdjacentEdgeRange(const NodeID node) const
-    {
-        return irange(BeginEdges(node), EndEdges(node));
-    }
+    { return irange(BeginEdges(node), EndEdges(node)); }
 
     StaticGraph() {}
 
@@ -158,23 +148,17 @@ class StaticGraph
     unsigned GetOutDegree(const NodeIterator n) const { return EndEdges(n) - BeginEdges(n); }
 
     inline NodeIterator GetTarget(const EdgeIterator e) const
-    {
-        return NodeIterator(edge_array[e].target);
-    }
+    { return NodeIterator(edge_array[e].target); }
 
     auto &GetEdgeData(const EdgeIterator e) { return edge_array[e].data; }
 
     const auto &GetEdgeData(const EdgeIterator e) const { return edge_array[e].data; }
 
     EdgeIterator BeginEdges(const NodeIterator n) const
-    {
-        return EdgeIterator(node_array.at(n).first_edge);
-    }
+    { return EdgeIterator(node_array.at(n).first_edge); }
 
     EdgeIterator EndEdges(const NodeIterator n) const
-    {
-        return EdgeIterator(node_array.at(n + 1).first_edge);
-    }
+    { return EdgeIterator(node_array.at(n + 1).first_edge); }
 
     // searches for a specific edge
     EdgeIterator FindEdge(const NodeIterator from, const NodeIterator to) const
@@ -204,7 +188,7 @@ class StaticGraph
     EdgeIterator
     FindSmallestEdge(const NodeIterator from, const NodeIterator to, FilterFunction &&filter) const
     {
-        static_assert(traits::HasDataMember<EdgeArrayEntry>::value,
+        static_assert(traits::HasDataMember<EdgeArrayEntry>,
                       "Filtering on .data not possible without .data member attribute");
 
         EdgeIterator smallest_edge = SPECIAL_EDGEID;
@@ -307,10 +291,7 @@ class StaticGraph
                        end,
                        edge_array.begin(),
                        [](const auto &from)
-                       {
-                           return static_graph_details::edgeToEntry<EdgeArrayEntry>(
-                               from, traits::HasDataMember<EdgeArrayEntry>{});
-                       });
+                       { return static_graph_details::edgeToEntry<EdgeArrayEntry>(from); });
     }
 
   protected:

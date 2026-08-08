@@ -21,7 +21,8 @@ const constexpr double DEGREE_TO_RAD = 0.017453292519943295769236907684886;
 const constexpr double RAD_TO_DEGREE = 1. / DEGREE_TO_RAD;
 // earth radius varies between 6,356.750-6,378.135 km (3,949.901-3,963.189mi)
 // The IUGG value for the equatorial radius is 6378.137 km (3963.19 miles)
-const constexpr long double EARTH_RADIUS = 6372797.560856;
+// Using the IUGG mean radius: (2a + b) / 3
+const constexpr long double EARTH_RADIUS = 6371008.771415;
 
 inline double degToRad(const double degree) { return degree * (std::numbers::pi / 180.0); }
 
@@ -31,9 +32,7 @@ inline double radToDeg(const double radian) { return radian * (180.0 * std::numb
 const constexpr static double METERS_PER_DEGREE_LAT = 110567.0;
 
 inline double metersPerLngDegree(const FixedLatitude lat)
-{
-    return std::cos(detail::degToRad(static_cast<double>(toFloating(lat)))) * METERS_PER_DEGREE_LAT;
-}
+{ return std::cos(detail::degToRad(static_cast<double>(toFloating(lat)))) * METERS_PER_DEGREE_LAT; }
 
 //! Takes the squared euclidean distance of the input coordinates. Does not return meters!
 std::uint64_t squaredEuclideanDistance(const Coordinate lhs, const Coordinate rhs);

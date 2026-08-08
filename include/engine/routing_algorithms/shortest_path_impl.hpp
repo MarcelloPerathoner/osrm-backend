@@ -218,6 +218,7 @@ inline void initializeHeap<mld::Algorithm>(SearchEngineData<mld::Algorithm> &eng
     const auto nodes_number = facade.GetNumberOfNodes();
     const auto border_nodes_number = facade.GetMaxBorderNodeID() + 1;
     engine_working_data.InitializeOrClearFirstThreadLocalStorage(nodes_number, border_nodes_number);
+    engine_working_data.InitializeUnpackingCache(nodes_number, facade.GetNumberOfEdges());
 }
 
 template <typename Algorithm>
@@ -503,14 +504,10 @@ struct route_state
     }
 
     size_t previousForwardPath(size_t previous_leg) const
-    {
-        return previous_leg_path_offset + 2 * previous_leg;
-    }
+    { return previous_leg_path_offset + 2 * previous_leg; }
 
     size_t previousReversePath(size_t previous_leg) const
-    {
-        return previous_leg_path_offset + 2 * previous_leg + 1;
-    }
+    { return previous_leg_path_offset + 2 * previous_leg + 1; }
 
     void addSearchResult(const PhantomCandidatesToTarget &candidates,
                          const std::vector<NodeID> &packed_leg_to_forward,

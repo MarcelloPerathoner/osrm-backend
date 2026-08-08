@@ -10,7 +10,7 @@
 #include "util/tarjan_scc.hpp"
 #include "util/typedefs.hpp"
 
-#include <boost/iterator/function_output_iterator.hpp>
+#include "util/iterator_adapters.hpp"
 
 #include <tbb/parallel_sort.h>
 
@@ -64,9 +64,7 @@ std::size_t loadGraph(const std::string &path,
 struct FeatureWriter
 {
     FeatureWriter(std::ostream &out_) : out(out_)
-    {
-        out << "{\"type\":\"FeatureCollection\",\"features\":[";
-    }
+    { out << "{\"type\":\"FeatureCollection\",\"features\":["; }
 
     void AddLine(const util::Coordinate from,
                  const util::Coordinate to,

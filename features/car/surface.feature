@@ -33,6 +33,9 @@ Feature: Car - Surfaces
             | trunk   | asphalt  | x     |
             | trunk   | sett     | x     |
             | trunk   | gravel   | x     |
+            | trunk   | laterite | x     |
+            | trunk   | ice      | x     |
+            | trunk   | snow     | x     |
             | trunk   | nonsense | x     |
 
     Scenario: Car - Good surfaces should not grant access
@@ -88,11 +91,14 @@ Feature: Car - Surfaces
             | motorway | no     | tartan          | 40 km/h +-1 | 40 km/h +-1 |
             | motorway | no     | cobblestone     | 30 km/h +-1 | 30 km/h +-1 |
             | motorway | no     | clay            | 30 km/h +-1 | 30 km/h +-1 |
+            | motorway | no     | laterite        | 15 km/h +-1 | 15 km/h +-1 |
             | motorway | no     | earth           | 20 km/h +-1 | 20 km/h +-1 |
             | motorway | no     | stone           | 20 km/h +-1 | 20 km/h +-1 |
             | motorway | no     | rocky           | 20 km/h +-1 | 20 km/h +-1 |
             | motorway | no     | sand            | 20 km/h +-1 | 20 km/h +-1 |
             | motorway | no     | mud             | 10 km/h +-1 | 10 km/h +-1 |
+            | motorway | no     | ice             | 20 km/h +-1 | 20 km/h +-1 |
+            | motorway | no     | snow            | 30 km/h +-1 | 30 km/h +-1 |
 
     Scenario: Car - Tracktypes should reduce speed
         Then routability should be
@@ -120,8 +126,9 @@ Feature: Car - Surfaces
             | motorway | no     |           |         |               | 90 km/h |
             | service  | no     | grade1    | asphalt | excellent     | 15 km/h |
             | motorway | no     | grade5    | asphalt | excellent     | 20 km/h |
-            | motorway | no     | grade1    | mud     | excellent     | 10 km/h |
-            | motorway | no     | grade1    | asphalt | very_horrible |  5 km/h |
+            | motorway | no     | grade1    | mud      | excellent     | 10 km/h |
+            | motorway | no     | grade1    | laterite | excellent     | 15 km/h |
+            | motorway | no     | grade1    | asphalt  | very_horrible |  5 km/h |
             | service  | no     | grade5    | mud     | very_horrible |  5 km/h |
 
     Scenario: Car - Surfaces should not affect oneway direction

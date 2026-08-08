@@ -8,6 +8,7 @@ Handlers = require("lib/way_handlers")
 Relations = require("lib/relations")
 Obstacles = require("lib/obstacles")
 find_access_tag = require("lib/access").find_access_tag
+resolve_access = require("lib/access").resolve_access
 limit = require("lib/maxspeed").limit
 Utils = require("lib/utils")
 Measure = require("lib/measure")
@@ -41,6 +42,13 @@ function setup()
     -- Penalty multiplier for roads with no lane markings (lane_markings=no)
     -- Applied to bidirectional roads to prefer roads with clear lane markings
     lane_markings_penalty     = 0.75,
+
+    -- Penalty multiplier for the disadvantaged direction on ways tagged 'priority=forward'/'priority=backward'.
+    -- Applies to the per-direction rate (speed). A value < 1 reduces the disadvantaged
+    -- direction's rate which increases its routing weight (weight ≈ duration / rate).
+    -- This is applied to any way with a 'priority' tag; add an explicit width/lanes
+    -- guard if the penalty should only target narrow or single-lane roads.
+    priority_penalty          = 0.7,
 
     -- Size of the vehicle, to be limited by physical restriction of the way
     vehicle_height = 2.0, -- in meters, 2.0m is the height slightly above biggest SUVs
@@ -91,10 +99,17 @@ function setup()
       'share_taxi', -- sub class of psv
       'minibus', -- sub class of psv
       'bus', -- sub class of psv
+      'foot',
+      'emergency_vehicle',
+      'restricted',
+      'military',
+      'official',
       'customers',
       'private',
       'delivery',
-      'destination'
+      'destination',
+      'permit',
+      'residents'
     },
 
     -- tags disallow access to in combination with highway=service
@@ -107,6 +122,9 @@ function setup()
       'delivery',
       'destination',
       'customers',
+      'permit',
+      'residents',
+      'unknown',
     },
 
     access_tags_hierarchy = Sequence {
@@ -163,7 +181,10 @@ function setup()
         unclassified    = 25,
         residential     = 25,
         living_street   = 10,
-        service         = 15
+        service         = 15,
+        -- winter highway types (OSM highway=winter_road / highway=ice_road)
+        winter_road     = 20,
+        ice_road        = 15
       }
     },
 
@@ -195,7 +216,9 @@ function setup()
       'residential',
       'living_street',
       'unclassified',
-      'service'
+      'service',
+      'winter_road',
+      'ice_road'
     },
 
     construction_whitelist = Set {
@@ -251,7 +274,13 @@ function setup()
       rocky = 20,
       sand = 20,
 
-      mud = 10
+      laterite = 15,
+
+      mud = 10,
+
+      -- winter surfaces (OSM surface=ice / surface=snow)
+      ice  = 20,
+      snow = 30
     },
 
     -- max speed for tracktypes
@@ -346,7 +375,7 @@ end
 
 function process_node(profile, node, result, relations)
   -- parse access and barrier tags
-  local access = find_access_tag(node, profile.access_tags_hierarchy)
+  local access = resolve_access(find_access_tag(node, profile.access_tags_hierarchy), profile)
   if access then
     if profile.access_tag_blacklist[access] and not profile.restricted_access_tag_list[access] then
       obstacle_map:add(node, Obstacle.new(obstacle_type.barrier))

@@ -89,42 +89,68 @@ template <storage::Ownership Ownership> class CellStorageImpl
         // Possibly replace with
         // http://www.boost.org/doc/libs/1_55_0/libs/range/doc/html/range/reference/adaptors/reference/strided.html
 
-        template <typename ValuePtrT>
-        class ColumnIterator : public boost::iterator_facade<ColumnIterator<ValuePtrT>,
-                                                             decltype(*std::declval<ValuePtrT>()),
-                                                             boost::random_access_traversal_tag>
+        template <typename ValuePtrT> class ColumnIterator
         {
-
             using ValueT = decltype(*std::declval<ValuePtrT>());
-            using base_t = boost::
-                iterator_facade<ColumnIterator<ValueT>, ValueT, boost::random_access_traversal_tag>;
 
           public:
-            using value_type = typename base_t::value_type;
-            using difference_type = typename base_t::difference_type;
-            using reference = typename base_t::reference;
+            using value_type = ValueT;
+            using difference_type = std::ptrdiff_t;
+            using reference = ValueT &;
             using iterator_category = std::random_access_iterator_tag;
 
             explicit ColumnIterator() : current(nullptr), stride(1) {}
 
             explicit ColumnIterator(ValuePtrT begin, std::size_t row_length)
                 : current(begin), stride(row_length)
+            { BOOST_ASSERT(begin != nullptr); }
+
+            ColumnIterator &operator+=(difference_type n)
             {
-                BOOST_ASSERT(begin != nullptr);
+                current += stride * n;
+                return *this;
             }
+            ColumnIterator &operator-=(difference_type n)
+            {
+                current -= stride * n;
+                return *this;
+            }
+
+            ColumnIterator &operator++()
+            {
+                current += stride;
+                return *this;
+            }
+            ColumnIterator operator++(int)
+            {
+                auto tmp = *this;
+                ++*this;
+                return tmp;
+            }
+
+            ColumnIterator &operator--()
+            {
+                current -= stride;
+                return *this;
+            }
+            ColumnIterator operator--(int)
+            {
+                auto tmp = *this;
+                --*this;
+                return tmp;
+            }
+
+            reference operator*() const { return *current; }
+
+            friend difference_type operator-(const ColumnIterator &a, const ColumnIterator &b)
+            { return (a.current - b.current) / static_cast<std::intptr_t>(a.stride); }
+
+            friend bool operator==(const ColumnIterator &a, const ColumnIterator &b)
+            { return a.current == b.current; }
+            friend bool operator!=(const ColumnIterator &a, const ColumnIterator &b)
+            { return !(a == b); }
 
           private:
-            void increment() { current += stride; }
-            void decrement() { current -= stride; }
-            void advance(difference_type offset) { current += stride * offset; }
-            bool equal(const ColumnIterator &other) const { return current == other.current; }
-            reference dereference() const { return *current; }
-            difference_type distance_to(const ColumnIterator &other) const
-            {
-                return (other.current - current) / static_cast<std::intptr_t>(stride);
-            }
-
-            friend class ::boost::iterator_core_access;
             ValuePtrT current;
             std::size_t stride;
         };
@@ -170,9 +196,7 @@ template <storage::Ownership Ownership> class CellStorageImpl
         auto GetOutDistance(NodeID node) const { return GetOutRange(distances, node); }
 
         auto GetSourceNodes() const
-        {
-            return std::ranges::subrange(source_boundary, source_boundary + num_source_nodes);
-        }
+        { return std::ranges::subrange(source_boundary, source_boundary + num_source_nodes); }
 
         auto GetDestinationNodes() const
         {
@@ -225,8 +249,8 @@ template <storage::Ownership Ownership> class CellStorageImpl
 
     CellStorageImpl() {}
 
-    template <typename GraphT,
-              typename = std::enable_if<Ownership == storage::Ownership::Container>>
+    template <typename GraphT>
+        requires(Ownership == storage::Ownership::Container)
     CellStorageImpl(const partitioner::MultiLevelPartition &partition, const GraphT &base_graph)
     {
         // pre-allocate storge for CellData so we can have random access to it by cell id
@@ -377,11 +401,11 @@ template <storage::Ownership Ownership> class CellStorageImpl
         return metric;
     }
 
-    template <typename = std::enable_if<Ownership == storage::Ownership::View>>
     CellStorageImpl(Vector<NodeID> source_boundary_,
                     Vector<NodeID> destination_boundary_,
                     Vector<CellData> cells_,
                     Vector<std::uint64_t> level_to_cell_offset_)
+        requires(Ownership == storage::Ownership::View)
         : source_boundary(std::move(source_boundary_)),
           destination_boundary(std::move(destination_boundary_)), cells(std::move(cells_)),
           level_to_cell_offset(std::move(level_to_cell_offset_))
@@ -417,8 +441,8 @@ template <storage::Ownership Ownership> class CellStorageImpl
                          destination_boundary.empty() ? nullptr : destination_boundary.data()};
     }
 
-    template <typename = std::enable_if<Ownership == storage::Ownership::Container>>
     Cell GetCell(customizer::CellMetric &metric, LevelID level, CellID id) const
+        requires(Ownership == storage::Ownership::Container)
     {
         const auto level_index = LevelIDToIndex(level);
         BOOST_ASSERT(level_index < level_to_cell_offset.size());

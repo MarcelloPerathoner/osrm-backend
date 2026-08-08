@@ -2,9 +2,12 @@
 #define LINEAR_HASH_STORAGE
 
 #include <concepts>
+#include <cstddef>
 #include <cstdlib>
 #include <limits>
 #include <vector>
+
+#include <boost/assert.hpp>
 
 namespace osrm::util
 {
@@ -45,26 +48,12 @@ class LinearHashStorage
     };
 
     std::vector<HashCell> cells;
-    unsigned current_timestamp;
+    unsigned current_timestamp{0u};
     std::size_t mask;
 
   public:
-    explicit LinearHashStorage(std::size_t size) : current_timestamp{0u}
-    {
-        // round up to the next power of two
-        // See: Figure 3.3 in Warren Henry S., Hacker's Delight, 2nd ed., Pearson 2013
-        --size;
-        size = size | (size >> 1);
-        size = size | (size >> 2);
-        size = size | (size >> 4);
-        size = size | (size >> 8);
-        size = size | (size >> 16);
-        size = size | (size >> 32);
-        mask = size;
-        ++size;
-
-        cells.resize(size);
-    }
+    explicit LinearHashStorage(std::size_t size) : cells(size), mask{size - 1}
+    { BOOST_ASSERT_MSG((size & mask) == 0, "size must be a power of 2"); }
 
     ValueType &operator[](const KeyType key)
     {
@@ -110,7 +99,11 @@ class LinearHashStorage
         ++current_timestamp;
         if (std::numeric_limits<unsigned>::max() == current_timestamp)
         {
-            cells.clear();
+            // Reset all cells to default state and restart timestamp.
+            // Using cells.assign() instead of cells.clear() keeps the vector sized
+            // so subsequent operator[] never accesses an empty vector.
+            cells.assign(cells.size(), HashCell{});
+            current_timestamp = 0;
         }
     }
 };

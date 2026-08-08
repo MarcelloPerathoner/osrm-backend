@@ -66,11 +66,11 @@ template <typename Data> struct SharedMonitor
             bi::offset_t size = 0;
             if (!shmem.get_size(size) || size != rounded_internal_size + sizeof(Data))
             {
-                auto message = osrm::util::compat::format(
-                    "Wrong shared memory block '{}' size {}, expected {} bytes",
-                    (const char *)Data::name,
-                    size,
-                    rounded_internal_size + sizeof(Data));
+                auto message =
+                    std::format("Wrong shared memory block '{}' size {}, expected {} bytes",
+                                (const char *)Data::name,
+                                size,
+                                rounded_internal_size + sizeof(Data));
                 throw util::exception(message + SOURCE_REF);
             }
 
@@ -78,7 +78,7 @@ template <typename Data> struct SharedMonitor
         }
         catch (const bi::interprocess_exception &)
         {
-            auto message = osrm::util::compat::format(
+            auto message = std::format(
                 "No shared memory block '{}' found, have you forgotten to run osrm-datastore?",
                 (const char *)Data::name);
             throw util::exception(message + SOURCE_REF);
@@ -204,9 +204,7 @@ template <typename Data> struct SharedMonitor
         }
 
         void invalidate_semaphore(void *semaphore) const
-        {
-            std::memset(semaphore, 0xff, sizeof(bi::interprocess_semaphore));
-        }
+        { std::memset(semaphore, 0xff, sizeof(bi::interprocess_semaphore)); }
 
         bool is_semaphore_valid(void *semaphore) const
         {
@@ -228,9 +226,7 @@ template <typename Data> struct SharedMonitor
                   "Data and internal data need to fit into shared memory");
 
     InternalData &internal() const
-    {
-        return *reinterpret_cast<InternalData *>(reinterpret_cast<char *>(region.get_address()));
-    }
+    { return *reinterpret_cast<InternalData *>(reinterpret_cast<char *>(region.get_address())); }
 
     bi::shared_memory_object shmem;
     bi::mapped_region region;

@@ -74,9 +74,7 @@ template <typename EdgeDataT> class DynamicGraph
         }
 
         bool operator<(const InputEdge &rhs) const
-        {
-            return std::tie(source, target) < std::tie(rhs.source, rhs.target);
-        }
+        { return std::tie(source, target) < std::tie(rhs.source, rhs.target); }
     };
 
     DynamicGraph() : DynamicGraph(0) {}
@@ -249,19 +247,13 @@ template <typename EdgeDataT> class DynamicGraph
     const EdgeDataT &GetEdgeData(const EdgeIterator e) const { return edge_list[e].data; }
 
     EdgeIterator BeginEdges(const NodeIterator n) const
-    {
-        return EdgeIterator(node_array[n].first_edge);
-    }
+    { return EdgeIterator(node_array[n].first_edge); }
 
     EdgeIterator EndEdges(const NodeIterator n) const
-    {
-        return EdgeIterator(node_array[n].first_edge + node_array[n].edges);
-    }
+    { return EdgeIterator(node_array[n].first_edge + node_array[n].edges); }
 
     EdgeRange GetAdjacentEdgeRange(const NodeIterator node) const
-    {
-        return irange(BeginEdges(node), EndEdges(node));
-    }
+    { return irange(BeginEdges(node), EndEdges(node)); }
 
     NodeIterator InsertNode()
     {
@@ -415,8 +407,11 @@ template <typename EdgeDataT> class DynamicGraph
 
     void Renumber(const std::vector<NodeID> &old_to_new_node)
     {
+        bool renumber = old_to_new_node.size() != 0;
+
         // permutate everything but the sentinel
-        util::inplacePermutation(node_array.begin(), node_array.end(), old_to_new_node);
+        if (renumber)
+            util::inplacePermutation(node_array.begin(), node_array.end(), old_to_new_node);
 
         // Build up edge permutation
         if (edge_list.size() >= std::numeric_limits<EdgeID>::max())
@@ -432,7 +427,8 @@ template <typename EdgeDataT> class DynamicGraph
             // move all filled edges
             for (auto edge : GetAdjacentEdgeRange(node))
             {
-                edge_list[edge].target = old_to_new_node[edge_list[edge].target];
+                if (renumber)
+                    edge_list[edge].target = old_to_new_node[edge_list[edge].target];
                 BOOST_ASSERT(edge_list[edge].target != SPECIAL_NODEID);
                 old_to_new_edge[edge] = new_edge_index++;
             }
@@ -459,14 +455,10 @@ template <typename EdgeDataT> class DynamicGraph
 
   protected:
     bool isDummy(const EdgeIterator edge) const
-    {
-        return edge_list[edge].target == (std::numeric_limits<NodeIterator>::max)();
-    }
+    { return edge_list[edge].target == (std::numeric_limits<NodeIterator>::max)(); }
 
     void makeDummy(const EdgeIterator edge)
-    {
-        edge_list[edge].target = (std::numeric_limits<NodeIterator>::max)();
-    }
+    { edge_list[edge].target = (std::numeric_limits<NodeIterator>::max)(); }
 
     NodeIterator number_of_nodes;
     std::atomic_uint number_of_edges;

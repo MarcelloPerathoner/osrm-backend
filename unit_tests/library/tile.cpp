@@ -13,8 +13,9 @@
 #include "util/typedefs.hpp"
 #include "util/vector_tile.hpp"
 
-#include <boost/variant.hpp>
 #include <vtzero/vector_tile.hpp>
+
+#include <variant>
 
 #include <map>
 
@@ -38,12 +39,10 @@ osrm::Status run_tile(const osrm::OSRM &osrm,
 
 BOOST_AUTO_TEST_SUITE(tile)
 
-using variant_type = boost::variant<std::string, float, double, int64_t, uint64_t, bool>;
+using variant_type = std::variant<std::string, float, double, int64_t, uint64_t, bool>;
 
 std::string to_string(const protozero::data_view &view)
-{
-    return std::string{view.data(), view.size()};
-}
+{ return std::string{view.data(), view.size()}; }
 
 void validate_feature_layer(vtzero::layer layer)
 {
@@ -62,28 +61,28 @@ void validate_feature_layer(vtzero::layer layer)
         auto props = vtzero::create_properties_map<std::map<std::string, variant_type>>(feature);
 
         BOOST_CHECK(props.contains("speed"));
-        BOOST_CHECK(props["speed"].type() == typeid(uint64_t));
+        BOOST_CHECK(std::holds_alternative<uint64_t>(props["speed"]));
 
         BOOST_CHECK(props.contains("rate"));
-        BOOST_CHECK(props["rate"].type() == typeid(double));
+        BOOST_CHECK(std::holds_alternative<double>(props["rate"]));
 
         BOOST_CHECK(props.contains("weight"));
-        BOOST_CHECK(props["weight"].type() == typeid(double));
+        BOOST_CHECK(std::holds_alternative<double>(props["weight"]));
 
         BOOST_CHECK(props.contains("duration"));
-        BOOST_CHECK(props["duration"].type() == typeid(double));
+        BOOST_CHECK(std::holds_alternative<double>(props["duration"]));
 
         BOOST_CHECK(props.contains("is_small"));
-        BOOST_CHECK(props["is_small"].type() == typeid(bool));
+        BOOST_CHECK(std::holds_alternative<bool>(props["is_small"]));
 
         BOOST_CHECK(props.contains("is_startpoint"));
-        BOOST_CHECK(props["is_startpoint"].type() == typeid(bool));
+        BOOST_CHECK(std::holds_alternative<bool>(props["is_startpoint"]));
 
         BOOST_CHECK(props.contains("datasource"));
-        BOOST_CHECK(props["datasource"].type() == typeid(std::string));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["datasource"]));
 
         BOOST_CHECK(props.contains("name"));
-        BOOST_CHECK(props["name"].type() == typeid(std::string));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["name"]));
     }
 
     auto number_of_uint_values =
@@ -110,22 +109,22 @@ void validate_turn_layer(vtzero::layer layer)
         auto props = vtzero::create_properties_map<std::map<std::string, variant_type>>(feature);
 
         BOOST_CHECK(props.contains("bearing_in"));
-        BOOST_CHECK(props["bearing_in"].type() == typeid(std::int64_t));
+        BOOST_CHECK(std::holds_alternative<std::int64_t>(props["bearing_in"]));
 
         BOOST_CHECK(props.contains("turn_angle"));
-        BOOST_CHECK(props["turn_angle"].type() == typeid(std::int64_t));
+        BOOST_CHECK(std::holds_alternative<std::int64_t>(props["turn_angle"]));
 
         BOOST_CHECK(props.contains("weight"));
-        BOOST_CHECK(props["weight"].type() == typeid(float));
+        BOOST_CHECK(std::holds_alternative<float>(props["weight"]));
 
         BOOST_CHECK(props.contains("cost"));
-        BOOST_CHECK(props["cost"].type() == typeid(float));
+        BOOST_CHECK(std::holds_alternative<float>(props["cost"]));
 
         BOOST_CHECK(props.contains("type"));
-        BOOST_CHECK(props["type"].type() == typeid(std::string));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["type"]));
 
         BOOST_CHECK(props.contains("modifier"));
-        BOOST_CHECK(props["modifier"].type() == typeid(std::string));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["modifier"]));
     }
 
     auto number_of_float_values =
@@ -237,18 +236,18 @@ void test_tile_turns(const osrm::OSRM &osrm, bool use_string_only_api)
     {
         auto props = vtzero::create_properties_map<std::map<std::string, variant_type>>(feature);
 
-        BOOST_CHECK(props["cost"].type() == typeid(float));
-        actual_time_turn_penalties.push_back(boost::get<float>(props["cost"]));
-        BOOST_CHECK(props["weight"].type() == typeid(float));
-        actual_weight_turn_penalties.push_back(boost::get<float>(props["weight"]));
-        BOOST_CHECK(props["turn_angle"].type() == typeid(std::int64_t));
-        actual_turn_angles.push_back(boost::get<std::int64_t>(props["turn_angle"]));
-        BOOST_CHECK(props["bearing_in"].type() == typeid(std::int64_t));
-        actual_turn_bearings.push_back(boost::get<std::int64_t>(props["bearing_in"]));
-        BOOST_CHECK(props["type"].type() == typeid(std::string));
-        actual_turn_types.push_back(boost::get<std::string>(props["type"]));
-        BOOST_CHECK(props["modifier"].type() == typeid(std::string));
-        actual_turn_modifiers.push_back(boost::get<std::string>(props["modifier"]));
+        BOOST_CHECK(std::holds_alternative<float>(props["cost"]));
+        actual_time_turn_penalties.push_back(std::get<float>(props["cost"]));
+        BOOST_CHECK(std::holds_alternative<float>(props["weight"]));
+        actual_weight_turn_penalties.push_back(std::get<float>(props["weight"]));
+        BOOST_CHECK(std::holds_alternative<std::int64_t>(props["turn_angle"]));
+        actual_turn_angles.push_back(std::get<std::int64_t>(props["turn_angle"]));
+        BOOST_CHECK(std::holds_alternative<std::int64_t>(props["bearing_in"]));
+        actual_turn_bearings.push_back(std::get<std::int64_t>(props["bearing_in"]));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["type"]));
+        actual_turn_types.push_back(std::get<std::string>(props["type"]));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["modifier"]));
+        actual_turn_modifiers.push_back(std::get<std::string>(props["modifier"]));
     }
 
     // Verify that we got the expected turn penalties
@@ -328,13 +327,9 @@ void test_tile_turns_ch(osrm::EngineConfig::Algorithm algorithm, bool use_string
     test_tile_turns(osrm, use_string_only_api);
 }
 BOOST_AUTO_TEST_CASE(test_tile_turns_ch_old_api)
-{
-    test_tile_turns_ch(osrm::EngineConfig::Algorithm::CH, true);
-}
+{ test_tile_turns_ch(osrm::EngineConfig::Algorithm::CH, true); }
 BOOST_AUTO_TEST_CASE(test_tile_turns_ch_new_api)
-{
-    test_tile_turns_ch(osrm::EngineConfig::Algorithm::CH, false);
-}
+{ test_tile_turns_ch(osrm::EngineConfig::Algorithm::CH, false); }
 
 void test_tile_turns_mld(bool use_string_only_api)
 {
@@ -370,8 +365,8 @@ void test_tile_speeds(const osrm::OSRM &osrm, bool use_string_only_api)
     {
         auto props = vtzero::create_properties_map<std::map<std::string, variant_type>>(feature);
 
-        BOOST_CHECK(props["name"].type() == typeid(std::string));
-        actual_names.push_back(boost::get<std::string>(props["name"]));
+        BOOST_CHECK(std::holds_alternative<std::string>(props["name"]));
+        actual_names.push_back(std::get<std::string>(props["name"]));
     }
     std::sort(actual_names.begin(), actual_names.end());
     const std::vector<std::string> expected_names = {"Avenue du Carnier",
@@ -405,13 +400,9 @@ void test_tile_speeds_ch(osrm::EngineConfig::Algorithm algorithm, bool use_strin
     test_tile_speeds(osrm, use_string_only_api);
 }
 BOOST_AUTO_TEST_CASE(test_tile_speeds_ch_old_api)
-{
-    test_tile_speeds_ch(osrm::EngineConfig::Algorithm::CH, true);
-}
+{ test_tile_speeds_ch(osrm::EngineConfig::Algorithm::CH, true); }
 BOOST_AUTO_TEST_CASE(test_tile_speeds_ch_new_api)
-{
-    test_tile_speeds_ch(osrm::EngineConfig::Algorithm::CH, false);
-}
+{ test_tile_speeds_ch(osrm::EngineConfig::Algorithm::CH, false); }
 
 void test_tile_speeds_mld(bool use_string_only_api)
 {
@@ -466,13 +457,9 @@ void test_tile_nodes_ch(osrm::EngineConfig::Algorithm algorithm, bool use_string
     test_tile_nodes(osrm, use_string_only_api);
 }
 BOOST_AUTO_TEST_CASE(test_tile_node_ch_old_api)
-{
-    test_tile_nodes_ch(osrm::EngineConfig::Algorithm::CH, true);
-}
+{ test_tile_nodes_ch(osrm::EngineConfig::Algorithm::CH, true); }
 BOOST_AUTO_TEST_CASE(test_tile_node_ch_new_api)
-{
-    test_tile_nodes_ch(osrm::EngineConfig::Algorithm::CH, false);
-}
+{ test_tile_nodes_ch(osrm::EngineConfig::Algorithm::CH, false); }
 
 void test_tile_nodes_mld(bool use_string_only_api)
 {

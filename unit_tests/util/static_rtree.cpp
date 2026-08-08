@@ -8,6 +8,7 @@
 #include "util/std_hash.hpp"
 #include "util/typedefs.hpp"
 
+#include "../common/random_seed.hpp"
 #include "../common/temporary_file.hpp"
 #include "mocks/mock_datafacade.hpp"
 
@@ -40,8 +41,7 @@ using TestStaticRTree = StaticRTree<TestData,
 using MiniStaticRTree = StaticRTree<TestData, osrm::storage::Ownership::Container, 2, 128>;
 using TestDataFacade = MockDataFacade<osrm::engine::routing_algorithms::ch::Algorithm>;
 
-// Choosen by a fair W20 dice roll (this value is completely arbitrary)
-constexpr unsigned RANDOM_SEED = 42;
+// Chosen by a fair W20 dice roll (this value is completely arbitrary)
 static const int32_t WORLD_MIN_LAT = -85 * COORDINATE_PRECISION;
 static const int32_t WORLD_MAX_LAT = 85 * COORDINATE_PRECISION;
 static const int32_t WORLD_MIN_LON = -180 * COORDINATE_PRECISION;
@@ -92,7 +92,7 @@ template <unsigned NUM_NODES, unsigned NUM_EDGES> struct RandomGraphFixture
 {
     RandomGraphFixture()
     {
-        std::mt19937 g(RANDOM_SEED);
+        std::mt19937 g(osrm::test::getTestRandomSeed());
 
         std::uniform_int_distribution<> lat_udist(WORLD_MIN_LAT, WORLD_MAX_LAT);
         std::uniform_int_distribution<> lon_udist(WORLD_MIN_LON, WORLD_MAX_LON);
@@ -196,7 +196,7 @@ void sampling_verify_rtree(RTreeT &rtree,
                            const std::vector<Coordinate> &coords,
                            unsigned num_samples)
 {
-    std::mt19937 g(RANDOM_SEED);
+    std::mt19937 g(osrm::test::getTestRandomSeed());
     std::uniform_int_distribution<> lat_udist(WORLD_MIN_LAT, WORLD_MAX_LAT);
     std::uniform_int_distribution<> lon_udist(WORLD_MIN_LON, WORLD_MAX_LON);
     std::vector<Coordinate> queries;
@@ -228,9 +228,7 @@ void sampling_verify_rtree(RTreeT &rtree,
 
 template <typename RTreeT, typename FixtureT>
 auto make_rtree(const std::filesystem::path &path, FixtureT &fixture)
-{
-    return RTreeT(fixture.edges, fixture.coords, path);
-}
+{ return RTreeT(fixture.edges, fixture.coords, path); }
 
 template <typename RTreeT = TestStaticRTree, typename FixtureT>
 void construction_test(const std::string &path, FixtureT &fixture)
@@ -249,29 +247,19 @@ BOOST_FIXTURE_TEST_CASE(construct_tiny, TestRandomGraphFixture_10_30)
 }
 
 BOOST_FIXTURE_TEST_CASE(construct_half_leaf_test, TestRandomGraphFixture_LeafHalfFull)
-{
-    construction_test("test_1", *this);
-}
+{ construction_test("test_1", *this); }
 
 BOOST_FIXTURE_TEST_CASE(construct_full_leaf_test, TestRandomGraphFixture_LeafFull)
-{
-    construction_test("test_2", *this);
-}
+{ construction_test("test_2", *this); }
 
 BOOST_FIXTURE_TEST_CASE(construct_two_leaves_test, TestRandomGraphFixture_TwoLeaves)
-{
-    construction_test("test_3", *this);
-}
+{ construction_test("test_3", *this); }
 
 BOOST_FIXTURE_TEST_CASE(construct_branch_test, TestRandomGraphFixture_Branch)
-{
-    construction_test("test_4", *this);
-}
+{ construction_test("test_4", *this); }
 
 BOOST_FIXTURE_TEST_CASE(construct_multiple_levels_test, TestRandomGraphFixture_MultipleLevels)
-{
-    construction_test("test_5", *this);
-}
+{ construction_test("test_5", *this); }
 
 // Bug: If you querry a point that lies between two BBs that have a gap,
 // one BB will be pruned, even if it could contain a nearer match.

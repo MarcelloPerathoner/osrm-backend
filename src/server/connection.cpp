@@ -24,9 +24,7 @@ Connection::Connection(tcp::socket socket,
                        short keepalive_timeout)
     : stream_(std::move(socket)), request_handler_(handler), max_header_size_(max_header_size),
       keepalive_timeout_(keepalive_timeout)
-{
-    stream_.expires_after(std::chrono::seconds(keepalive_timeout_));
-}
+{ stream_.expires_after(std::chrono::seconds(keepalive_timeout_)); }
 
 void Connection::start() { handle_read(); }
 
@@ -100,9 +98,9 @@ void Connection::process_request()
     {
         response_.set(bhttp::field::connection, "keep-alive");
         response_.set("Keep-Alive",
-                      util::compat::format("timeout={}, max={}",
-                                           keepalive_timeout_,
-                                           KEEPALIVE_MAX_REQUESTS - processed_requests_));
+                      std::format("timeout={}, max={}",
+                                  keepalive_timeout_,
+                                  KEEPALIVE_MAX_REQUESTS - processed_requests_));
     }
     else
     {

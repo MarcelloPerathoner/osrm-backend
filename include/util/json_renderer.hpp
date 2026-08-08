@@ -67,12 +67,12 @@ template <typename Out> struct Renderer
             std::trunc(number.value) == number.value)
         {
             auto int_value = static_cast<std::uint64_t>(number.value);
-            std::string formatted = compat::format("{}", int_value);
+            std::string formatted = std::format("{}", int_value);
             write(formatted.data(), formatted.size());
         }
         else
         {
-            std::string formatted = compat::format("{:.10g}", number.value);
+            std::string formatted = std::format("{:.10g}", number.value);
             write(formatted.data(), formatted.size());
         }
     }
@@ -120,41 +120,31 @@ template <typename Out> struct Renderer
     void write(char ch);
 
     template <size_t StrLength> void write(const char (&str)[StrLength])
-    {
-        write(str, StrLength - 1);
-    }
+    { write(str, StrLength - 1); }
 
   private:
     Out &out;
 };
 
 template <> inline void Renderer<std::vector<char>>::write(std::string_view str)
-{
-    out.insert(out.end(), str.begin(), str.end());
-}
+{ out.insert(out.end(), str.begin(), str.end()); }
 
 template <> inline void Renderer<std::vector<char>>::write(const char *str, size_t size)
-{
-    out.insert(out.end(), str, str + size);
-}
+{ out.insert(out.end(), str, str + size); }
 
 template <> inline void Renderer<std::vector<char>>::write(char ch) { out.push_back(ch); }
 
 template <> inline void Renderer<std::ostream>::write(std::string_view str) { out << str; }
 
 template <> inline void Renderer<std::ostream>::write(const char *str, size_t size)
-{
-    out.write(str, size);
-}
+{ out.write(str, size); }
 
 template <> inline void Renderer<std::ostream>::write(char ch) { out << ch; }
 
 template <> inline void Renderer<std::string>::write(std::string_view str) { out += str; }
 
 template <> inline void Renderer<std::string>::write(const char *str, size_t size)
-{
-    out.append(str, size);
-}
+{ out.append(str, size); }
 
 template <> inline void Renderer<std::string>::write(char ch) { out += ch; }
 

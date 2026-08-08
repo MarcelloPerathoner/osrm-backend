@@ -47,7 +47,8 @@ class BaseAPI
     util::json::Object MakeWaypoint(const PhantomNodeCandidates &candidates) const
     {
         // TODO: check forward/reverse
-        const auto toName = [this](const auto &phantom) {
+        const auto toName = [this](const auto &phantom)
+        {
             return std::string(
                 facade.GetNameForID(facade.GetNameIndex(phantom.forward_segment_id.id)));
         };
@@ -63,12 +64,14 @@ class BaseAPI
         const auto &input_location = candidatesInputLocation(candidates);
         if (parameters.generate_hints)
         {
-            std::vector<SegmentHint> seg_hints(candidates.size());
-            std::transform(candidates.begin(),
-                           candidates.end(),
-                           seg_hints.begin(),
-                           [this](const auto &phantom)
-                           { return SegmentHint{phantom, facade.GetCheckSum()}; });
+            // Hints are deprecated; generate fixed-size placeholder segment hints
+            const auto num_candidates = candidates.size();
+            std::vector<SegmentHint> seg_hints;
+            seg_hints.reserve(num_candidates);
+            for (std::size_t i = 0; i < num_candidates; ++i)
+            {
+                seg_hints.push_back({.data_checksum = facade.GetCheckSum()});
+            }
 
             return json::makeWaypoint(
                 snapped_location,
@@ -114,7 +117,8 @@ class BaseAPI
             static_cast<float>(static_cast<double>(util::toFloating(snapped_location.lon))),
             static_cast<float>(static_cast<double>(util::toFloating(snapped_location.lat))));
 
-        const auto toName = [this](const auto &phantom) {
+        const auto toName = [this](const auto &phantom)
+        {
             return std::string(
                 facade.GetNameForID(facade.GetNameIndex(phantom.forward_segment_id.id)));
         };
@@ -130,12 +134,14 @@ class BaseAPI
         flatbuffers::Offset<flatbuffers::String> hint_string;
         if (parameters.generate_hints)
         {
-            std::vector<SegmentHint> seg_hints(candidates.size());
-            std::transform(candidates.begin(),
-                           candidates.end(),
-                           seg_hints.begin(),
-                           [this](const auto &phantom)
-                           { return SegmentHint{phantom, facade.GetCheckSum()}; });
+            // Hints are deprecated; generate fixed-size placeholder segment hints
+            const auto num_candidates = candidates.size();
+            std::vector<SegmentHint> seg_hints;
+            seg_hints.reserve(num_candidates);
+            for (std::size_t i = 0; i < num_candidates; ++i)
+            {
+                seg_hints.push_back({.data_checksum = facade.GetCheckSum()});
+            }
             Hint hint{std::move(seg_hints)};
             hint_string = builder->CreateString(hint.ToBase64());
         }

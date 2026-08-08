@@ -522,7 +522,7 @@ class RouteAPI : public BaseAPI
                                                    [](const guidance::LegGeometry::Annotation &anno)
                                                    { return anno.datasource; });
         }
-        std::vector<uint32_t> nodes;
+        std::vector<uint64_t> nodes;
         if (requested_annotations & RouteParameters::AnnotationsType::Nodes)
         {
             nodes.reserve(leg_geometry.node_ids.size());
@@ -571,14 +571,10 @@ class RouteAPI : public BaseAPI
         GeometryVisitor(Builder &builder) : builder(builder) {}
 
         void operator()(const flatbuffers::Offset<flatbuffers::String> &value)
-        {
-            builder.add_polyline(value);
-        }
+        { builder.add_polyline(value); }
         void operator()(
             const flatbuffers::Offset<flatbuffers::Vector<const fbresult::Position *>> &value)
-        {
-            builder.add_coordinates(value);
-        }
+        { builder.add_coordinates(value); }
 
       private:
         Builder &builder;

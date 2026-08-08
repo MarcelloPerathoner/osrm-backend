@@ -10,12 +10,9 @@
 #include "util/node_based_graph.hpp"
 #include "util/typedefs.hpp" // EdgeID
 
-#include <boost/range/algorithm/count_if.hpp>
-#include <boost/range/algorithm/find_if.hpp>
-#include <boost/range/algorithm/min_element.hpp>
-
 #include <algorithm>
 #include <limits>
+#include <ranges>
 #include <type_traits>
 #include <vector>
 
@@ -75,7 +72,7 @@ template <typename Self> struct EnableShapeOps
     // search a given eid in the intersection
     auto FindEid(const EdgeID eid) const
     {
-        return boost::range::find_if(*self(), [eid](const auto &road) { return road.eid == eid; });
+        return std::ranges::find_if(*self(), [eid](const auto &road) { return road.eid == eid; });
     }
 
     // find the maximum value based on a conversion operator
@@ -90,7 +87,7 @@ template <typename Self> struct EnableShapeOps
             return false;
         };
 
-        boost::range::find_if(*self(), extract_maximal_value);
+        std::ranges::find_if(*self(), extract_maximal_value);
         return initial;
     }
 
@@ -98,7 +95,7 @@ template <typename Self> struct EnableShapeOps
     template <typename UnaryPredicate> auto Count(UnaryPredicate detector) const
     {
         BOOST_ASSERT(!self()->empty());
-        return boost::range::count_if(*self(), detector);
+        return std::ranges::count_if(*self(), detector);
     }
 
   private:
@@ -126,7 +123,7 @@ template <typename Self> struct EnableIntersectionOps
     auto findClosestTurn(double angle) const
     {
         auto comp = makeCompareAngularDeviation(angle);
-        return boost::range::min_element(*self(), comp);
+        return std::ranges::min_element(*self(), comp);
     }
     // returns a non-const_interator
     auto findClosestTurn(double angle)
@@ -164,15 +161,11 @@ template <typename Self> struct EnableIntersectionOps
 
     // Returns the right-most road at this intersection.
     const auto &getRightmostRoad() const
-    {
-        return self()->size() > 1 ? self()->operator[](1) : self()->getUTurnRoad();
-    }
+    { return self()->size() > 1 ? self()->operator[](1) : self()->getUTurnRoad(); }
 
     // Returns the left-most road at this intersection.
     const auto &getLeftmostRoad() const
-    {
-        return self()->size() > 1 ? self()->back() : self()->getUTurnRoad();
-    }
+    { return self()->size() > 1 ? self()->back() : self()->getUTurnRoad(); }
 
     // Can this be skipped over?
     auto isObstacle() const { return self()->size() == 2; }
@@ -188,7 +181,7 @@ template <typename Self> struct EnableIntersectionOps
     auto countEnterable() const
     {
         auto pred = [](const auto &road) { return road.entry_allowed; };
-        return boost::range::count_if(*self(), pred);
+        return std::ranges::count_if(*self(), pred);
     }
 
     // Returns the number of roads we can not enter at this intersection, respectively.
@@ -200,7 +193,7 @@ template <typename Self> struct EnableIntersectionOps
     auto findClosestTurn(const double angle, const UnaryPredicate filter) const
     {
         BOOST_ASSERT(!self()->empty());
-        const auto candidate = boost::range::min_element(
+        const auto candidate = std::ranges::min_element(
             *self(),
             [angle, &filter](const auto &lhs, const auto &rhs)
             {

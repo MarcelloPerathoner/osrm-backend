@@ -12,7 +12,6 @@
 #include <boost/assert.hpp>
 
 #include <algorithm>
-#include <boost/core/ignore_unused.hpp>
 #include <iterator>
 #include <limits>
 #include <tuple>
@@ -49,9 +48,7 @@ template <typename MultiLevelPartition>
 inline LevelID getNodeQueryLevel(const MultiLevelPartition &partition,
                                  NodeID node,
                                  const PhantomEndpoints &endpoints)
-{
-    return getNodeQueryLevel(partition, node, endpoints.source_phantom, endpoints.target_phantom);
-}
+{ return getNodeQueryLevel(partition, node, endpoints.source_phantom, endpoints.target_phantom); }
 
 template <typename MultiLevelPartition>
 inline LevelID getNodeQueryLevel(const MultiLevelPartition &partition,
@@ -87,7 +84,8 @@ inline LevelID getNodeQueryLevel(const MultiLevelPartition &partition,
                 std::accumulate(endpoint_candidates.target_phantoms.begin(),
                                 endpoint_candidates.target_phantoms.end(),
                                 level_1,
-                                [&](LevelID level_2, const PhantomNode &target) {
+                                [&](LevelID level_2, const PhantomNode &target)
+                                {
                                     return std::min(
                                         level_2,
                                         getNodeQueryLevel(partition, node, source, target));
@@ -98,23 +96,17 @@ inline LevelID getNodeQueryLevel(const MultiLevelPartition &partition,
 
 template <typename PhantomCandidateT>
 inline bool checkParentCellRestriction(CellID, const PhantomCandidateT &)
-{
-    return true;
-}
+{ return true; }
 
 // Restricted search (Args is LevelID, CellID):
 //   * use the fixed level for queries
 //   * check if the node cell is the same as the specified parent
 template <typename MultiLevelPartition>
 inline LevelID getNodeQueryLevel(const MultiLevelPartition &, NodeID, LevelID level, CellID)
-{
-    return level;
-}
+{ return level; }
 
 inline bool checkParentCellRestriction(CellID cell, LevelID, CellID parent)
-{
-    return cell == parent;
-}
+{ return cell == parent; }
 
 // Unrestricted search with a single phantom node (Args is const PhantomNode &):
 //   * use partition.GetQueryLevel to find the node query level
@@ -303,7 +295,7 @@ void relaxOutgoingEdges(const DataFacade<Algorithm> &facade,
     const auto level = getNodeQueryLevel(partition, heapNode.node, args...);
 
     static constexpr auto IS_MAP_MATCHING =
-        std::is_same_v<typename SearchEngineData<mld::Algorithm>::MapMatchingQueryHeap, Heap>;
+        std::is_same_v<SearchEngineData<mld::Algorithm>::MapMatchingQueryHeap, Heap>;
 
     if (level >= 1 && !heapNode.data.from_clique_arc)
     {
@@ -313,16 +305,14 @@ void relaxOutgoingEdges(const DataFacade<Algorithm> &facade,
             const auto &cell =
                 cells.GetCell(metric, level, partition.GetCell(level, heapNode.node));
             auto destination = cell.GetDestinationNodes().begin();
-            auto distance = [&cell, node = heapNode.node]() -> auto
+            auto distance = [&]() -> auto
             {
                 if constexpr (IS_MAP_MATCHING)
                 {
-
-                    return cell.GetOutDistance(node).begin();
+                    return cell.GetOutDistance(heapNode.node).begin();
                 }
                 else
                 {
-                    boost::ignore_unused(cell, node);
                     return 0;
                 }
             }();
@@ -360,16 +350,14 @@ void relaxOutgoingEdges(const DataFacade<Algorithm> &facade,
             const auto &cell =
                 cells.GetCell(metric, level, partition.GetCell(level, heapNode.node));
             auto source = cell.GetSourceNodes().begin();
-            auto distance = [&cell, node = heapNode.node]() -> auto
+            auto distance = [&]() -> auto
             {
                 if constexpr (IS_MAP_MATCHING)
                 {
-
-                    return cell.GetInDistance(node).begin();
+                    return cell.GetInDistance(heapNode.node).begin();
                 }
                 else
                 {
-                    boost::ignore_unused(cell, node);
                     return 0;
                 }
             }();
@@ -594,29 +582,67 @@ UnpackedPath search(SearchEngineData<Algorithm> &engine_working_data,
 
             LevelID sublevel = level - 1;
 
-            // Here heaps can be reused, let's go deeper!
-            forward_heap.Clear();
-            reverse_heap.Clear();
-            forward_heap.Insert(source, {0}, {source});
-            reverse_heap.Insert(target, {0}, {target});
+            constexpr bool has_cache = requires { engine_working_data.unpacking_cache; };
 
-            auto unpacked_subpath = search(engine_working_data,
-                                           facade,
-                                           forward_heap,
-                                           reverse_heap,
-                                           force_step_nodes,
-                                           INVALID_EDGE_WEIGHT,
-                                           sublevel,
-                                           parent_cell_id);
-            BOOST_ASSERT(!unpacked_subpath.edges.empty());
-            BOOST_ASSERT(unpacked_subpath.nodes.size() > 1);
-            BOOST_ASSERT(unpacked_subpath.nodes.front() == source);
-            BOOST_ASSERT(unpacked_subpath.nodes.back() == target);
-            unpacked_nodes.insert(unpacked_nodes.end(),
-                                  std::next(unpacked_subpath.nodes.begin()),
-                                  unpacked_subpath.nodes.end());
-            unpacked_edges.insert(
-                unpacked_edges.end(), unpacked_subpath.edges.begin(), unpacked_subpath.edges.end());
+            bool cache_hit = false;
+            if constexpr (has_cache)
+            {
+                if (engine_working_data.unpacking_cache)
+                {
+                    MLDUnpackingCacheKey cache_key{source, target, sublevel, parent_cell_id};
+                    auto &cache = *engine_working_data.unpacking_cache;
+                    if (auto *cached = cache.get(cache_key))
+                    {
+                        BOOST_ASSERT(cached->nodes.size() > 1);
+                        BOOST_ASSERT(cached->nodes.front() == source);
+                        BOOST_ASSERT(cached->nodes.back() == target);
+                        unpacked_nodes.insert(unpacked_nodes.end(),
+                                              std::next(cached->nodes.begin()),
+                                              cached->nodes.end());
+                        unpacked_edges.insert(
+                            unpacked_edges.end(), cached->edges.begin(), cached->edges.end());
+                        cache_hit = true;
+                    }
+                }
+            }
+
+            if (!cache_hit)
+            {
+                forward_heap.Clear();
+                reverse_heap.Clear();
+                forward_heap.Insert(source, {0}, {source});
+                reverse_heap.Insert(target, {0}, {target});
+
+                auto unpacked_subpath = search(engine_working_data,
+                                               facade,
+                                               forward_heap,
+                                               reverse_heap,
+                                               force_step_nodes,
+                                               INVALID_EDGE_WEIGHT,
+                                               sublevel,
+                                               parent_cell_id);
+                BOOST_ASSERT(!unpacked_subpath.edges.empty());
+                BOOST_ASSERT(unpacked_subpath.nodes.size() > 1);
+                BOOST_ASSERT(unpacked_subpath.nodes.front() == source);
+                BOOST_ASSERT(unpacked_subpath.nodes.back() == target);
+                unpacked_nodes.insert(unpacked_nodes.end(),
+                                      std::next(unpacked_subpath.nodes.begin()),
+                                      unpacked_subpath.nodes.end());
+                unpacked_edges.insert(unpacked_edges.end(),
+                                      unpacked_subpath.edges.begin(),
+                                      unpacked_subpath.edges.end());
+
+                if constexpr (has_cache)
+                {
+                    if (engine_working_data.unpacking_cache)
+                    {
+                        MLDUnpackingCacheKey cache_key{source, target, sublevel, parent_cell_id};
+                        engine_working_data.unpacking_cache->insert(
+                            cache_key,
+                            {std::move(unpacked_subpath.nodes), std::move(unpacked_subpath.edges)});
+                    }
+                }
+            }
         }
     }
 

@@ -3,8 +3,6 @@
 
 #include "util/exception.hpp"
 
-#include <boost/algorithm/string/predicate.hpp>
-
 #include <array>
 #include <filesystem>
 #include <set>
@@ -38,9 +36,7 @@ struct IOConfig
     }
 
     bool IsRequiredConfiguredInput(const std::string &fileName) const
-    {
-        return IsConfigured(fileName, required_input_files);
-    }
+    { return IsConfigured(fileName, required_input_files); }
 
     std::filesystem::path base_path;
 
@@ -101,7 +97,7 @@ struct IOConfig
     {
         for (auto &path : paths)
         {
-            if (boost::algorithm::ends_with(path.string(), fileName))
+            if (path.string().ends_with(fileName))
             {
                 return true;
             }

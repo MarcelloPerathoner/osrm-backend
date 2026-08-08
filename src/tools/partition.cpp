@@ -7,13 +7,15 @@
 #include "util/timing_util.hpp"
 #include "util/version.hpp"
 
+#include "util/program_options_path.hpp"
 #include <boost/algorithm/string/join.hpp>
 #include <boost/program_options.hpp>
-#include <boost/range/adaptor/transformed.hpp>
 
+#include <array>
 #include <filesystem>
 #include <iostream>
 #include <iterator>
+#include <ranges>
 #include <regex>
 #include <thread>
 
@@ -34,13 +36,14 @@ struct MaxCellSizesArgument
 std::ostream &operator<<(std::ostream &os, const MaxCellSizesArgument &arg)
 {
     auto to_string = [](std::size_t x) { return std::to_string(x); };
-    return os << boost::algorithm::join(arg.value | boost::adaptors::transformed(to_string), ",");
+    auto view = arg.value | std::views::transform(to_string);
+    std::vector<std::string> parts(view.begin(), view.end());
+    return os << boost::algorithm::join(parts, ",");
 }
 
 void validate(boost::any &v, const std::vector<std::string> &values, MaxCellSizesArgument *, int)
 {
     using namespace boost::program_options;
-    using namespace boost::adaptors;
 
     // Make sure no previous assignment to 'v' was made.
     validators::check_first_occurrence(v);
@@ -113,7 +116,10 @@ return_code parseArguments(int argc,
          boost::program_options::value<MaxCellSizesArgument>()->default_value(
              MaxCellSizesArgument{config.max_cell_sizes}),
          "Maximum cell sizes starting from the level 1. The first cell size value is a bisection "
-         "termination citerion");
+         "termination criterion")(
+            "output,o",
+            boost::program_options::value<std::filesystem::path>(&config.output_path),
+            "Output base path for generated files (default: same as input)");
 
     // hidden options, will be allowed on command line, but will not be
     // shown to the user
@@ -217,6 +223,24 @@ try
 
     // set the default in/output names
     partition_config.UseDefaultOutputNames(partition_config.base_path);
+
+    if (!partition_config.output_path.empty())
+    {
+        // Strip known extensions from the user-provided output path
+        std::string path = partition_config.output_path.string();
+        const std::array<std::string, 6> known_extensions{
+            {".osm.bz2", ".osm.pbf", ".osm.xml", ".pbf", ".osm", ".osrm"}};
+        for (const auto &ext : known_extensions)
+        {
+            const auto pos = path.find(ext);
+            if (pos != std::string::npos)
+            {
+                path.replace(pos, ext.size(), "");
+                break;
+            }
+        }
+        partition_config.output_path = path;
+    }
 
     if (1 > partition_config.requested_num_threads)
     {
